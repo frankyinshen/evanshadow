@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V60 (单词Fix)</title>
+<title>影子跟读 Pro V61 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V60</div>
+<div class="nav-title">🎧 影子跟读 V61</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -281,7 +281,6 @@ const net = {
         return url;
     },
 
-    // 基础 Fetch 封装，带超时
     fetchWithTimeout(url, timeout) {
         return Promise.race([
             fetch(url),
@@ -292,8 +291,7 @@ const net = {
     },
 
     async fetchCommon(url, type) {
-        // 1. 直连尝试：给予 30秒 的超长宽限期
-        // 对于 iPad + 动态DNS，DNS解析和SSL握手可能就需要几秒
+        // 直连尝试：30秒超时
         ui.setLoadBtnText("正在直连下载(耐心等待)...");
         try {
             const res = await this.fetchWithTimeout(url, 30000); 
@@ -303,7 +301,7 @@ const net = {
             console.warn("直连失败，准备切换代理:", e); 
         }
 
-        // 2. 代理尝试
+        // 代理尝试：10秒超时
         ui.setLoadBtnText("直连超时，尝试代理...");
         for (const proxy of CONST.PROXY) {
             try {
@@ -326,40 +324,58 @@ const net = {
 
 
 const engine = {
-    playToken: 0,      // 唯一令牌，防止操作冲突
-    mode: 'IDLE',      // 当前模式
-    reqId: null,       // 动画帧ID
-    targetEnd: 0,      // 目标结束时间
-    stopTimer: null,   // 短音频专用定时器
+    playToken: 0,
+    mode: 'IDLE',
+    reqId: null,
+    targetEnd: 0,
+    stopTimer: null,
+    
+    // 【V61 新增】物理锁：当 Audio 正在进行异步操作时，锁死引擎
+    isLocked: false,
 
-    // 开始心跳（仅用于长音频）
     startTicker() {
         if (this.reqId) cancelAnimationFrame(this.reqId);
         this.tick();
     },
 
-    // 停止一切
-    stopAll(releaseMic = false) {
-        this.playToken++; // 销毁令牌，作废旧操作
+    // 【V61 核心】安全停止：物理层面的硬刹车
+    safeStop(releaseMic = false) {
+        // 1. 逻辑重置
+        this.playToken++;
         this.mode = 'IDLE';
         
-        const a = document.getElementById('main-audio');
-        const r = document.getElementById('record-audio');
-        
-        // 清理定时器和动画帧
         if (this.reqId) cancelAnimationFrame(this.reqId);
         if (this.stopTimer) clearTimeout(this.stopTimer);
         
-        if (a) { a.pause(); a.loop = false; }
+        // 2. 物理重置
+        const a = document.getElementById('main-audio');
+        const r = document.getElementById('record-audio');
+        
+        if (a) {
+            // iOS 关键：先暂停，再归零。防止“幽灵继续播放”
+            a.pause();
+            a.currentTime = 0; 
+            a.loop = false;
+        }
         if (r) r.pause();
         if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
         
         ui.resetButtons();
     },
 
-    // --- 核心播放逻辑 (策略分流) ---
+    // 为了兼容旧代码调用，stopAll 实际上就是 safeStop
+    stopAll(releaseMic = false) {
+        this.safeStop(releaseMic);
+    },
+
+    // --- 核心播放入口 ---
     async playRange(start, end, newMode) {
-        // 1. 生成新令牌
+        // 【V61】如果锁住了（上一个操作还没完成），直接拒绝本次点击
+        // 这解决了“点击上一句变下一句”的乱序问题
+        if (this.isLocked) return;
+        this.isLocked = true;
+
+        // 1. 拿到新令牌
         const myToken = ++this.playToken;
         
         // 2. 清理旧环境
@@ -367,50 +383,51 @@ const engine = {
         if (this.stopTimer) clearTimeout(this.stopTimer);
 
         const a = document.getElementById('main-audio');
-        if (!a.src) return ui.toast("音频未就绪");
+        if (!a.src) {
+            this.isLocked = false;
+            return ui.toast("音频未就绪");
+        }
 
         this.mode = newMode;
         this.targetEnd = end;
-        
         const duration = end - start;
-        // 【关键策略】: 小于 2.0 秒算短音频
-        const isShortClip = duration < 2.0; 
+        const isShortClip = duration < 2.0;
 
         try {
-            // 3. 无论长短，先暂停再seek，这是iOS铁律
-            a.pause();
-            a.currentTime = start;
+            // 3. 物理操作序列
+            a.pause(); // 先确保停下
+            a.currentTime = start; // 瞬间移位
 
-            // 4. 发起播放
-            const p = a.play();
-            if (p !== undefined) await p;
+            // 4. 发起播放请求，并等待结果
+            // 这里 await 是关键！它确保了 iOS 硬件层真正开始播放之前，我们不会跑后续逻辑
+            await a.play();
 
-            // 5. 再次校验令牌 (防止 await 期间用户狂点)
-            if (this.playToken !== myToken) return;
+            // 5. 再次校验令牌 (防止 await 期间被 stopAll 了)
+            if (this.playToken !== myToken) {
+                // 如果令牌变了，说明用户点了停止，立刻再次硬刹车
+                a.pause();
+                return;
+            }
 
-            // --- 分流处理 ---
+            // --- 策略分流 ---
             
             if (newMode === 'FULL_PLAY') {
-                // 场景 A: 全文播放 -> 必须用 Tick 检测高亮
                 this.startTicker();
             } 
             else if (isShortClip) {
-                // 场景 B: 短单词 -> 盲播模式 (Fire & Forget)
-                // iOS 更新 currentTime 太慢，我们不看它，直接定个闹钟关掉
-                // 【关键优化】多给 0.5秒 安全垫，宁可多听一点空白，不能截断发音
-                const safetyPadding = 0.5; 
-                console.log(`短音频模式: 播放 ${duration}s + 缓冲 ${safetyPadding}s`);
+                // 短音频：傻瓜倒计时模式
+                // 增加 0.4s 安全垫，保证听完
+                const safetyDuration = (duration + 0.4) * 1000;
                 
                 this.stopTimer = setTimeout(() => {
+                    // 只有令牌匹配才执行停止
                     if (this.playToken === myToken) {
                         this.finishPlayback();
                     }
-                }, (duration + safetyPadding) * 1000);
+                }, safetyDuration);
             } 
             else {
-                // 场景 C: 长句子 -> 精准检测模式
-                // 句子很长，iOS有足够时间同步 currentTime，用 Tick 更准
-                console.log("长音频模式: 启动精准检测");
+                // 长音频：精准检测模式
                 this.startTicker();
             }
 
@@ -418,22 +435,25 @@ const engine = {
 
         } catch (e) {
             console.error(e);
-            if (this.playToken === myToken) {
-                if (e.name === 'NotAllowedError') ui.toast("请点击播放按钮激活");
-            }
+            // 只有 NotAllowedError 提示用户，其他错误可能是因为快速点击导致的 AbortError，忽略即可
+            if (e.name === 'NotAllowedError') ui.toast("请点击播放按钮激活");
+        } finally {
+            // 【V61】无论成功失败，必须解锁，否则按钮就永远点不动了
+            // 加一点点延迟，让 UI 喘口气
+            setTimeout(() => { this.isLocked = false; }, 50);
         }
     },
 
-    // --- 结束处理 ---
     finishPlayback() {
+        // 双重校验锁
+        if (this.isLocked) return;
+
         const a = document.getElementById('main-audio');
         
         if (this.mode === 'PLAY_ONCE') {
-            a.pause();
-            this.stopAll();
+            this.safeStop(); // 硬刹车
         } 
         else if (this.mode === 'LOOP_ONE') {
-            // 单句循环：获取当前句子的参数重新触发
             const seg = state.segments[state.currIndex];
             if (seg) this.playRange(seg.start, seg.end, 'LOOP_ONE');
         } 
@@ -442,15 +462,16 @@ const engine = {
         }
     },
 
-    // --- 长音频/全文播放的心跳检测 ---
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
         const a = document.getElementById('main-audio');
         if (a.paused) return;
 
+        // 全局模式校验
+        if (this.mode === 'IDLE') return;
+
         const ct = a.currentTime;
 
-        // 全文播放：只负责更新高亮，不负责停
         if (this.mode === 'FULL_PLAY') {
             const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
             if (activeIdx !== -1 && activeIdx !== state.currIndex) {
@@ -464,7 +485,7 @@ const engine = {
             return;
         }
 
-        // 长音频模式：检测结束时间
+        // 长音频结束检测
         if (ct >= this.targetEnd) {
             this.finishPlayback();
         }
@@ -904,12 +925,12 @@ const app = {
         spin.style.display = 'inline-block';
 
         try {
-            ui.toast("正在下载音频(请勿锁屏)...");
+            ui.toast("正在下载音频...");
             const audioBlob = await net.fetchBlobSmart(mp3);
             const a = document.getElementById('main-audio');
             a.src = URL.createObjectURL(audioBlob);
             
-            // 【V59】预加载配置
+            // 【V61】强力加载
             a.preload = "auto";
             a.load(); 
 
@@ -963,10 +984,7 @@ const app = {
     },
 
     switchView(v) {
-        // 切换视图时，只有退出练习模式才停止。
-        // 进入练习模式保留状态，方便连续操作。
-        if (v !== 'practice') engine.stopAll();
-        
+        engine.stopAll();
         if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
 
         document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
@@ -982,18 +1000,23 @@ const app = {
         }
     },
 
-    // 统一的跳转加载逻辑
+    // --- 统一播放入口 ---
     loadItem(i, playNow) {
         if (i < 0 || i >= state.segments.length) return;
         
+        // 【V61】先硬刹车，确保之前的 Promise 链被打断
+        if (playNow) engine.stopAll();
+
         state.currIndex = i;
         ui.updatePractice(i);
         app.save(); 
 
         if (playNow) {
             const seg = state.segments[i];
-            // 只要用户点击，就强制播放单句（这是最符合直觉的）
-            engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
+            // 稍等 10ms 让 UI 刷新，然后启动播放
+            setTimeout(() => {
+                engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
+            }, 10);
         }
     },
 
