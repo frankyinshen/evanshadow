@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V52 (单词Fix)</title>
+<title>影子跟读 Pro V53 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V52</div>
+<div class="nav-title">🎧 影子跟读 V53</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -299,8 +299,8 @@ const engine = {
     editorTimer: null,
     isWaiting: false,
     waitTimer: null,
-    // 【修改点1】新增一个标志位，用来标记是否正在跳转
-    seeking: false, 
+    // 【核心修复】iOS 专用：跳转状态锁
+    seeking: false,
 
     startTicker() {
         if (this.reqId) cancelAnimationFrame(this.reqId);
@@ -310,49 +310,48 @@ const engine = {
     stopAll(releaseMic = false) {
         this.mode = 'IDLE';
         this.isWaiting = false;
-        this.seeking = false; // 重置跳转状态
+        this.seeking = false;
         if (this.waitTimer) clearTimeout(this.waitTimer);
+        
         const a = document.getElementById('main-audio');
         const r = document.getElementById('record-audio');
-        // 加一个空值检查防止报错
-        if(a) { a.pause(); a.loop = false; }
-        if(r) r.pause();
-        
+        if (a) { a.pause(); a.loop = false; }
+        if (r) r.pause();
+
         if (this.reqId) cancelAnimationFrame(this.reqId);
         clearTimeout(this.editorTimer);
-        if(typeof recorder !== 'undefined') recorder.stop(releaseMic);
+        if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
         ui.resetButtons();
     },
 
     playSegment(i) {
         this.stopAll();
+        if (!state.segments[i]) return;
         const s = state.segments[i];
         const a = document.getElementById('main-audio');
         if (!a.src) return ui.toast("音频未就绪");
-        
+
+        // 【iOS 优化】使用 play().then() 确保硬件唤醒
         a.currentTime = s.start;
-        a.play();
-        // 编辑模式下的简单的定时停止，不需要复杂的ticker
-        this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start) * 1000);
+        a.play().then(() => {
+            // 简单的单句播放使用定时器最稳，不依赖 ticker
+            this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start + 0.1) * 1000); 
+        }).catch(e => ui.toast("播放受阻，请手动点击播放"));
     },
 
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
-        
-        // 【修改点2】如果正在跳转中，跳过这次检测，防止因为时间未更新导致的误判
-        if (this.seeking) return;
 
         const a = document.getElementById('main-audio');
-        if (a.paused) return;
-        
-        const ct = a.currentTime;
+        // 【关键修复】如果正在跳转(seeking)或者音频暂停，绝对不执行逻辑
+        if (this.seeking || a.seeking || a.paused) return;
 
-        // --- 逻辑分支 ---
+        const ct = a.currentTime;
 
         if (this.mode === 'PLAY_ONCE') {
             const seg = state.segments[state.currIndex];
-            // 只有当 当前时间确实大于结束时间，且当前时间大于开始时间（防止回跳时的残留时间）
-            if (seg && ct >= seg.end && ct > seg.start) {
+            // 增加 0.05秒 容错，防止浮点数精度问题导致提前停止
+            if (seg && ct >= seg.end - 0.05) {
                 a.pause();
                 this.mode = 'IDLE';
                 ui.resetButtons();
@@ -361,11 +360,8 @@ const engine = {
         else if (this.mode === 'LOOP_ONE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end && ct > seg.start) {
-                this.startWait(() => {
-                    a.currentTime = seg.start;
-                    a.play();
-                });
+            if (seg && ct >= seg.end - 0.05) {
+                this.startWait(() => this.safeSeekAndPlay(seg.start));
             }
         } 
         else if (this.mode === 'LOOP_RANGE') {
@@ -374,37 +370,30 @@ const engine = {
             const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
             const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
 
-            if (seg && ct >= seg.end) {
+            if (seg && ct >= seg.end - 0.05) {
                 let nextIdx = state.currIndex + 1;
-                // 范围循环逻辑
                 if (nextIdx > endLimit || nextIdx >= state.segments.length) {
                     nextIdx = Math.max(0, startLimit);
                 }
-                
                 this.startWait(() => {
                     state.currIndex = nextIdx;
-                    // 这里由于涉及跳转，也需要调用带锁的播放逻辑，但这里简化处理
-                    a.currentTime = state.segments[nextIdx].start;
                     ui.updatePractice(nextIdx);
-                    a.play();
+                    this.safeSeekAndPlay(state.segments[nextIdx].start);
                 });
             }
         } 
         else if (this.mode === 'FULL_PLAY') {
-            // 【修改点3】优化全文播放的高亮逻辑：
-            // 原逻辑是必须在 start和end之间。现在逻辑是：找到第一个“还没结束”的句子。
-            // 这样在单词之间的静音空隙时，高亮会停留在下一个即将播放的单词上，而不是消失。
-            const activeIdx = state.segments.findIndex(s => ct < s.end);
+            // 【UI 优化】粘性高亮：只有当确切进入下一句的时间范围时才切换
+            // 解决单词之间静音时高亮消失的问题
+            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
             
+            // 只有找到了有效句子，且不一样时才更新。如果处于静音区(activeIdx为-1)，保持原状
             if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                // 只有当跳转幅度较大（真的进入下一句）时才更新，防止边缘抖动
-                // 增加一个判断：如果当前时间还没到这个句子的开始（处于空隙），也算作这个句子
                 state.currIndex = activeIdx;
                 ui.updatePractice(activeIdx);
             }
 
-            // 播放结束检查
-            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.2)) {
+            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.1)) {
                 a.currentTime = 0;
                 a.play();
                 state.currIndex = 0;
@@ -421,16 +410,34 @@ const engine = {
             if (this.mode === 'IDLE') return;
             this.isWaiting = false;
             cb();
-        }, 1500); // 这里的1500是循环间隔，可根据需要调整
+        }, 800); // 缩短等待时间，提升单词跟读节奏感
     },
 
-    // 各种按钮触发的入口函数
+    // 【核心函数】iOS 安全跳转：等待 'seeked' 事件
+    safeSeekAndPlay(time) {
+        const a = document.getElementById('main-audio');
+        this.seeking = true; // 开启软锁
+        a.currentTime = time;
+        
+        // 定义一次性事件监听
+        const onSeeked = () => {
+            this.seeking = false; // 解除软锁
+            a.play();
+            a.removeEventListener('seeked', onSeeked);
+        };
+        
+        // 监听浏览器的 seeked 事件（硬件层面的跳转完成）
+        a.addEventListener('seeked', onSeeked);
+    },
+
+    // 按钮入口
     playOnce() {
         this.stopAll();
         if (!this.check()) return;
         this.mode = 'PLAY_ONCE';
         document.getElementById('btn-play-once').classList.add('active');
-        this.startPlay();
+        this.safeSeekAndPlay(state.segments[state.currIndex].start);
+        this.startTicker();
     },
 
     toggleLoop() {
@@ -440,7 +447,8 @@ const engine = {
             if (!this.check()) return;
             this.mode = 'LOOP_ONE';
             document.getElementById('btn-loop').classList.add('active');
-            this.startPlay();
+            this.safeSeekAndPlay(state.segments[state.currIndex].start);
+            this.startTicker();
         }
     },
 
@@ -456,7 +464,8 @@ const engine = {
             const btn = document.getElementById('btn-range-play');
             btn.classList.add('active');
             btn.innerText = "⏸";
-            this.startPlay();
+            this.safeSeekAndPlay(state.segments[start].start);
+            this.startTicker();
         }
     },
 
@@ -466,87 +475,36 @@ const engine = {
             this.stopAll();
             if (!this.check()) return;
             const a = document.getElementById('main-audio');
-            // 全文播放从头开始
             a.currentTime = 0;
             state.currIndex = 0;
             ui.updatePractice(0);
-            a.loop = false; // 全文播放由JS控制循环，不依赖Audio标签loop
+            a.loop = false;
             
-            a.play().then(() => {
-                this.mode = 'FULL_PLAY';
-                const btn = document.getElementById('btn-full-play');
-                btn.classList.add('active');
-                btn.innerText = " ⏸ 停止";
-                this.startTicker();
-            });
+            this.mode = 'FULL_PLAY';
+            const btn = document.getElementById('btn-full-play');
+            btn.classList.add('active');
+            btn.innerText = " ⏸ 停止";
+            
+            a.play().then(() => this.startTicker());
         }
-    },
-
-    // 【修改点4】核心播放启动函数，加入“安全锁”
-    startPlay() {
-        const seg = state.segments[state.currIndex];
-        const a = document.getElementById('main-audio');
-        
-        // 1. 设置标记：告诉 tick() 函数，“我正在跳转，别急着判断结束”
-        this.seeking = true; 
-        
-        a.currentTime = seg.start;
-        
-        a.play().then(() => {
-            this.startTicker();
-            // 2. 给予 300ms 的缓冲时间，等待浏览器的时间轴稳定
-            setTimeout(() => {
-                this.seeking = false;
-            }, 300);
-        }).catch(e => {
-            console.error(e);
-            ui.toast("播放失败");
-            this.seeking = false;
-        });
     },
 
     check() {
-        if (!state.segments.length) {
-            ui.toast("请先加载内容");
-            return false;
-        }
-        if (!document.getElementById('main-audio').src) {
-            ui.toast("音频未就绪");
-            return false;
-        }
+        if (!state.segments.length) { ui.toast("请先加载内容"); return false; }
+        if (!document.getElementById('main-audio').src) { ui.toast("音频未就绪"); return false; }
         return true;
     }
 };
 
 const ui = {
     init() {
-        // 1. 原有的智能粘贴监听（保留）
-        const urlAudio = document.getElementById('url-audio');
-        if (urlAudio) {
-            urlAudio.addEventListener('paste', (e) => app.handleSmartPaste(e));
-            
-            // --- 【修改点】点击音频框 -> 清空所有 ---
-            urlAudio.addEventListener('focus', function() {
-                // 清空自己
-                this.value = '';
-                // 顺便把下面3个字幕也全部清空
-                document.getElementById('url-srt-1').value = '';
-                document.getElementById('url-srt-2').value = '';
-                document.getElementById('url-srt-3').value = '';
-            });
-        }
+        // 将智能输入逻辑绑定到所有 URL 输入框
+        this.attachSmartInput('url-audio', true); // true 表示这是主音频框
+        this.attachSmartInput('url-srt-1', false);
+        this.attachSmartInput('url-srt-2', false);
+        this.attachSmartInput('url-srt-3', false);
 
-        // --- 【修改点】点击字幕框 -> 只清空自己 ---
-        ['url-srt-1', 'url-srt-2', 'url-srt-3'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('focus', function() {
-                    this.value = '';
-                });
-            }
-        });
-
-        // 2. 原有的 Tab 切换逻辑（保留）
+        // 恢复之前的状态
         const p = new URLSearchParams(location.search);
         if (p.get('mp3')) {
             document.getElementById('url-audio').value = p.get('mp3');
@@ -559,10 +517,10 @@ const ui = {
             if (inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
             if (inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
         }
+        
         this.renderHistory();
         const d = localStorage.getItem(CONST.STORAGE);
 
-        // 3. 原有的加载逻辑（保留）
         if (d && JSON.parse(d).length) {
             state.segments = JSON.parse(d);
             state.currIndex = parseInt(localStorage.getItem(CONST.INDEX) || 0);
@@ -573,8 +531,41 @@ const ui = {
         }
         this.updateAudioStatus();
     },
-    
-    // --- 下面的函数保持不变，复制刚才给你的即可，或者保留原样 ---
+
+    // 【新功能】封装的智能输入处理器
+    attachSmartInput(id, isMaster) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        // 1. 监听粘贴事件 (处理智能识别)
+        el.addEventListener('paste', (e) => {
+            // 获取粘贴板文字
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            if (!text) return;
+
+            // 简单判断：如果包含 mp3 或者包含换行/多个链接，就尝试交给 app 处理
+            // 否则让浏览器执行默认的单行粘贴
+            if (text.includes('.mp3') || (text.match(/http/g) || []).length > 1) {
+                e.preventDefault(); // 阻止默认粘贴，由 app 全权接管
+                app.handleSmartPaste(e);
+            }
+            // 如果只是普通短链，什么都不做，让浏览器自然粘贴进去
+        });
+
+        // 2. 监听聚焦事件 (处理自动清空)
+        el.addEventListener('focus', function() {
+            // 为了防止和“点击粘贴”冲突，这里做一个微小的判断
+            // 如果是主音频框(isMaster)，清空所有；否则只清空自己
+            this.value = '';
+            if (isMaster) {
+                ['url-srt-1', 'url-srt-2', 'url-srt-3'].forEach(sid => {
+                    const sel = document.getElementById(sid);
+                    if (sel) sel.value = '';
+                });
+            }
+        });
+    },
+
     renderHistory() {
         const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
         const sel = document.getElementById('history-select');
