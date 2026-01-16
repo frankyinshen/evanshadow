@@ -1,369 +1,527 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>影子跟读 Pro V38 (UI完美适配版)</title>
-    <style>
-        :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; /* V38: 禁止页面级滚动 */ }
-        
-        /* 导航栏 */
-        .navbar { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; }
-        .nav-title { font-weight: 500; font-size: 18px; color: var(--primary); }
-        .mode-switch { background: #F1F3F4; padding: 4px; border-radius: 20px; }
-        .mode-btn { border: none; background: none; padding: 6px 16px; font-weight: 600; border-radius: 18px; color: #5F6368; cursor: pointer; transition: 0.2s; }
-        .mode-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>影子跟读 Pro V51 (单词Fix)</title>
+<style>
+:root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.navbar { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; height: 50px; }
+.nav-title { font-weight: 500; font-size: 18px; color: var(--primary); }
+.mode-switch { background: #F1F3F4; padding: 3px; border-radius: 20px; }
+.mode-btn { border: none; background: none; padding: 6px 16px; font-weight: 700; border-radius: 18px; color: #5F6368; cursor: pointer; transition: 0.2s; font-size: 14px; }
+.mode-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.view-container { flex: 1; width: 100%; position: relative; overflow: hidden; }
 
-        .container { padding: 15px; max-width: 800px; margin: 0 auto; flex: 1; overflow-y: auto; width: 100%; } /* 编辑页允许滚动 */
-        .card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(60,64,67,0.15); }
-        .hidden { display: none !important; }
+/* 编辑页 */
+#editor-view { width: 100%; height: 100%; overflow-y: auto; padding: 16px; max-width: 800px; margin: 0 auto; display: block; }
 
-        /* Practice Mode Layout (V38 核心布局重构) */
-        #practice-view { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%; /* 占满剩余高度 */
-            padding: 10px; 
-            overflow: hidden; /* 禁止外层滚动 */
-        }
-        
-        .practice-card { 
-            background: #fff; 
-            border-radius: 16px; 
-            padding: 15px; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-            display: flex; 
-            flex-direction: column; 
-            height: 100%; /* 卡片占满容器 */
-            overflow: hidden; 
-        }
+/* 练习页 */
+#practice-view { width: 100%; height: 100%; padding: 0; display: none; flex-direction: column; align-items: center; }
+#practice-view.active { display: flex; }
 
-        .practice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0; }
-        .menu-btn { font-size: 24px; cursor: pointer; padding: 0 10px; color: #333; }
-        .jump-select { font-size: 16px; font-weight: 600; background: #F1F3F4; border: none; padding: 6px 20px; border-radius: 20px; outline: none; text-align: center; }
-        
-        .sub-switcher { display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; flex-shrink: 0; }
-        .sub-btn { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #5F6368; }
-        .sub-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(60,64,67,0.15); border: 1px solid #eee; }
+.practice-card { background: #fff; width: 100%; height: 100%; max-width: 800px; padding: 12px; display: flex; flex-direction: column; box-shadow: none; position: relative; }
+@media (min-width: 800px) { .practice-card { height: 96%; margin-top: 2%; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 24px; } }
 
-        /* V38: 弹性文字容器 */
-        .practice-text-container { 
-            flex: 1; /* 占据所有剩余空间 */
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            position: relative; 
-            cursor: pointer; 
-            margin: 10px 0; 
-            overflow: hidden; /* 防止溢出 */
-            background: #FAFAFA; /* 淡淡的背景提示区域 */
-            border-radius: 12px;
-            border: 1px dashed #eee;
-        }
-        
-        .practice-text { 
-            width: 100%;
-            max-height: 100%;
-            padding: 20px;
-            font-size: 32px; /* 默认大字体 */
-            line-height: 1.4;
-            font-weight: 500;
-            color: var(--text);
-            text-align: center;
-            overflow-y: auto; /* 内容过多时内部滚动 */
-            /* 隐藏滚动条但保留功能 */
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
-        }
-        .practice-text::-webkit-scrollbar { display: none; }
+/* Header & Sleep Timer */
+.practice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; height: 40px; position: relative; z-index: 20; }
+.icon-btn { font-size: 24px; cursor: pointer; padding: 5px; color: #5F6368; z-index: 2; user-select: none; }
+.header-right-group { display: flex; align-items: center; gap: 10px; z-index: 2; }
+.sleep-wrapper { position: relative; display: flex; align-items: center; }
+.sleep-display { font-size: 13px; color: var(--orange); font-weight: bold; margin-left: 4px; display: none; font-family: monospace; }
+.sleep-popup { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; display: none; width: 180px; z-index: 100; margin-top: 5px; }
+.sleep-popup.show { display: block; }
+.text-toggle { font-size: 14px; font-weight: 600; color: var(--primary); cursor: pointer; padding: 5px; }
 
-        .practice-text.blur { filter: blur(12px); opacity: 0.3; overflow: hidden; }
-        
-        .click-hint { 
-            position: absolute; 
-            bottom: 10px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-size: 12px; 
-            color: #999; 
-            opacity: 0.6; 
-            pointer-events: none; 
-            background: rgba(255,255,255,0.8);
-            padding: 2px 8px;
-            border-radius: 10px;
-        }
+.jump-select-wrapper { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; width: 100%; text-align: center; pointer-events: none; }
+.jump-select { font-size: 15px; font-weight: 600; background: #F1F3F4; border: none; padding: 6px 20px; border-radius: 20px; outline: none; text-align: center; pointer-events: auto; }
 
-        /* 底部控制区 (固定高度) */
-        .control-area { 
-            flex-shrink: 0; /* 不允许被压缩 */
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            margin-top: auto; 
-            padding-top: 10px;
-            border-top: 1px solid #f5f5f5;
-        }
+.sub-switcher { display: flex; gap: 6px; justify-content: center; margin-bottom: 5px; flex-shrink: 0; min-height: 28px; }
+.sub-btn { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #5F6368; transition: 0.2s; }
+.sub-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* 按钮样式维持不变 */
-        .btn-full-play { width: 100%; background: var(--purple); color: white; border: none; padding: 12px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-full-play.active { background: #D93025; animation: pulse 2s infinite; }
-        
-        .range-panel { background: #F1F3F4; padding: 8px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; }
-        .range-select { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 4px; width: 50px; text-align: center; }
-        .btn-range-play { background: var(--purple); color: white; border: none; padding: 6px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; flex: 1; }
-        .btn-range-play.active { background: #D93025; animation: pulse 2s infinite; }
+.practice-text-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; margin: 5px 0 10px 0; background: #FAFAFA; border-radius: 12px; border: 1px dashed #E0E0E0; overflow: hidden; min-height: 0; }
+.practice-text { width: 100%; padding: 10px 15px; line-height: 1.4; font-weight: 500; color: var(--text); text-align: center; font-size: 34px; white-space: pre-wrap; overflow-y: auto; max-height: 100%; }
+.practice-text.blur { filter: blur(10px); opacity: 0.3; overflow: hidden; }
+.click-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #999; background: rgba(255,255,255,0.8); padding: 2px 8px; border-radius: 10px; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; }
+.click-hint.show { opacity: 1; }
 
-        .top-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .small-btn { padding: 12px; border-radius: 12px; border: none; font-weight: 600; background: #E8F0FE; color: var(--primary); cursor: pointer; }
-        .small-btn.active { background: var(--primary); color: white; }
-        .small-btn.looping { background: #FEF7E0; color: #EA8600; border: 1px solid #F9AB00; }
+.control-area { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 8px; border-top: 1px solid #f5f5f5; }
+.row-mixed { display: grid; grid-template-columns: 2fr 3fr; gap: 8px; height: 44px; }
+.btn-full-play { width: 100%; height: 100%; background: var(--purple); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 4px; white-space: nowrap; }
+.btn-full-play.active { background: #7C28C7; animation: pulse 2s infinite; }
+.range-panel { width: 100%; height: 100%; background: #FEF7E0; border: 1px solid #FFE0B2; border-radius: 10px; display: flex; align-items: center; justify-content: space-evenly; padding: 0 5px; }
+.range-label { font-size: 12px; color: #E37400; font-weight: bold; margin-right: 2px; }
+.range-input { width: 32px; text-align: center; border: 1px solid #FFCC80; border-radius: 4px; padding: 2px 0; font-weight: bold; background: #fff; font-size: 13px; box-sizing: border-box; }
+.btn-range-play { background: var(--orange); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+.btn-range-play.active { background: #E37400; animation: pulse 2s infinite; }
 
-        .btn-record { width: 100%; padding: 18px; border-radius: 16px; border: 2px solid #E8EAED; background: #fff; font-size: 18px; font-weight: 700; color: #3C4043; cursor: pointer; }
-        .btn-record.recording { background: #FCE8E6; border-color: var(--red); color: var(--red); animation: pulse 1s infinite; }
-        .btn-record.playing { background: #E6F4EA; border-color: var(--green); color: var(--green); }
+.row-dual { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; height: 44px; }
+.btn-action { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-blue { background: #E8F0FE; color: var(--primary); } 
+.btn-blue.active { background: var(--primary); color: white; }
+.btn-orange { background: #FFF3E0; color: #E37400; border: 1px solid #FFE0B2; } 
+.btn-orange.active { background: var(--orange); color: white; border-color: var(--orange); }
 
-        .nav-controls { display: flex; gap: 12px; }
-        .nav-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; background: #F1F3F4; font-weight: 600; cursor: pointer; }
+.btn-record { width: 100%; height: 54px; border-radius: 27px; border: 2px solid #EEE; background: #fff; font-size: 16px; font-weight: 700; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.btn-record.recording { background: #FCE8E6; border-color: var(--red); color: var(--red); animation: pulse 1s infinite; }
+.btn-record.playing { background: #E6F4EA; border-color: var(--green); color: var(--green); }
+.btn-nav { background: #F1F3F4; color: #3C4043; }
 
-        /* 编辑页样式 (保持原样) */
-        .input-tabs { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-        .tab-btn { padding: 8px 12px; font-size: 14px; color: #5F6368; cursor: pointer; border-radius: 6px; font-weight: 500; }
-        .tab-btn.active { background: #E8F0FE; color: var(--primary); }
-        .input-group { display: none; }
-        .input-group.active { display: block; }
-        .url-input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; font-size: 14px; }
-        .btn-load-url { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; gap: 8px; }
-        .loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite; display: none; }
-        .file-box { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
-        .btn-file { flex: 1; min-width: 100px; background: #F1F3F4; padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
-        .btn-file input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
-        .btn-file.primary { background: #E8F0FE; color: var(--primary); }
-        .btn-file.green { background: #E6F4EA; color: #137333; }
-        .sub-item { background: #fff; padding: 16px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; }
-        .sub-meta { display: flex; justify-content: space-between; font-size: 12px; color: #5F6368; margin-bottom: 8px; }
-        .sub-line { padding: 8px; border: 1px solid #eee; border-radius: 4px; font-size: 15px; width: 100%; resize: vertical; margin-bottom: 5px; }
-        .sub-actions { display: flex; gap: 8px; margin-top: 10px; }
-        .action-btn { flex: 1; padding: 8px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
-        
-        .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; display: none; }
-        .drawer-overlay.open { display: block; }
-        .drawer-content { width: 80%; max-width: 300px; height: 100%; background: #fff; padding: 20px; position: absolute; left: 0; top: 0; transform: translateX(-100%); transition: 0.3s; z-index: 501; display: flex; flex-direction: column; gap: 10px; }
-        .drawer-overlay.open .drawer-content { transform: translateX(0); }
+/* 编辑页列表 */
+.sub-item { background: #fff; padding: 16px; border: 1px solid #E0E0E0; border-radius: 12px; margin-bottom: 12px; }
+.sub-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+.idx-badge { background: #F1F3F4; padding: 2px 8px; border-radius: 6px; font-weight: bold; color: #5F6368; font-size: 12px; }
+.time-input { width: 80px; padding: 4px; border: 1px solid #DADCE0; border-radius: 4px; text-align: center; font-family: monospace; font-size: 13px; }
+.sub-text-block { margin-bottom: 8px; }
+.sub-label { display: inline-block; font-size: 10px; font-weight: 700; color: #188038; background: #E6F4EA; padding: 2px 4px; border-radius: 4px; margin-bottom: 4px; }
+.sub-label.secondary { color: #1967D2; background: #E8F0FE; }
+.sub-line { width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 4px; font-size: 15px; resize: vertical; min-height: 40px; }
+.sub-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.action-btn { width: 100%; padding: 10px 0; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-play-sm { background: #E8F0FE; color: var(--primary); }
+.btn-split { background: #FEF7E0; color: #E37400; }
+.btn-merge { background: #E6F4EA; color: #137333; }
+.btn-del { background: #FCE8E6; color: #C5221F; flex: none; }
 
-        .audio-status { font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; display: none; }
-        .audio-status.warn { background: #FCE8E6; color: #C5221F; }
-        .audio-status.ok { background: #E6F4EA; color: #137333; }
+/* 通用组件 */
+.audio-status { font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; display: none; }
+.audio-status.warn { background: #FCE8E6; color: #C5221F; }
+.audio-status.ok { background: #E6F4EA; color: #137333; }
+.input-tabs { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+.tab-btn { padding: 8px 12px; font-size: 14px; color: #5F6368; cursor: pointer; border-radius: 6px; font-weight: 500; }
+.tab-btn.active { background: #E8F0FE; color: var(--primary); }
+.input-group { display: none; }
+.input-group.active { display: block; }
+.url-block { margin-bottom: 15px; }
+.url-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; display: block; }
+.url-input { width: 100%; padding: 12px; border: 1px solid #DADCE0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
+.url-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+.history-select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 14px; }
+.btn-load-url { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-load-url:disabled { background: #ccc; cursor: not-allowed; }
+.loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite; display: none; }
+.file-box { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.btn-file { flex: 1; min-width: 100px; background: #F1F3F4; padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
+.btn-file input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+.btn-file.primary { background: #E8F0FE; color: var(--primary); }
+.btn-file.green { background: #E6F4EA; color: #137333; }
+.slider-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-top: 15px; }
+.btn-mini { padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; }
-        .toast.show { opacity: 1; bottom: 100px; }
-        .restore-bar { background: #FFF3E0; color: #E65100; padding: 12px; text-align: center; font-size: 14px; display: none; cursor: pointer; border-bottom: 1px solid #FEEFC3; font-weight: 500; }
-    </style>
+/* Drawer */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; display: none; }
+.drawer-overlay.open { display: block; }
+.drawer-content { width: 80%; max-width: 300px; height: 100%; background: #fff; padding: 24px; position: absolute; left: 0; top: 0; transform: translateX(-100%); transition: 0.3s; z-index: 501; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.drawer-overlay.open .drawer-content { transform: translateX(0); }
+
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #323232; color: white; padding: 12px 24px; border-radius: 24px; font-size: 14px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; text-align: center; width: max-content; max-width: 80%; }
+.toast.show { opacity: 1; bottom: 100px; }
+.restore-bar { background: #FFF3E0; color: #B06000; padding: 12px; text-align: center; font-size: 14px; display: none; cursor: pointer; border-bottom: 1px solid #FEEFC3; font-weight: 500; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
+<div id="restore-bar" class="restore-bar" onclick="app.restoreProgress()">
+ 发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
+</div>
+<div class="navbar">
+<div class="nav-title">🎧 影子跟读 V51</div>
+<div class="mode-switch">
+<button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
+<button class="mode-btn" onclick="app.switchView('practice')">练习</button>
+</div>
+</div>
+<audio id="main-audio" crossorigin="anonymous"></audio>
+<audio id="record-audio"></audio>
+<div class="view-container">
+<div id="editor-view">
+<div class="card">
+<div id="audio-status-msg" class="audio-status"></div>
+<div class="input-tabs">
+<div class="tab-btn active" onclick="ui.setTab('url')">🌐 网络链接</div>
+<div class="tab-btn" onclick="ui.setTab('local')">📂 本地文件</div>
+</div>
+<div id="group-url" class="input-group active">
+<select id="history-select" class="history-select" style="width:100%" onchange="app.fillHistory(this.value)">
+<option value="">▼ 选择历史记录...</option>
+</select>
 
-    <div id="restore-bar" class="restore-bar" onclick="app.restoreProgress()">
-        🔄 发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
-    </div>
-
-    <div class="navbar">
-        <div class="nav-title">🎧 影子跟读 V38</div>
-        <div class="mode-switch">
-            <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
-            <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
-        </div>
-    </div>
-
-    <audio id="main-audio" crossorigin="anonymous"></audio>
-    <audio id="record-audio"></audio>
-
-    <div id="editor-view" class="container">
-        <!-- 编辑页内容保持不变 -->
-        <div class="card">
-            <div id="audio-status-msg" class="audio-status"></div>
-            <div class="input-tabs">
-                <div class="tab-btn active" onclick="ui.setTab('url')">🌐 网络链接</div>
-                <div class="tab-btn" onclick="ui.setTab('local')">📁 本地文件</div>
-            </div>
-            <div id="group-url" class="input-group active">
-                <select id="history-select" class="history-select" style="width:100%;padding:10px;margin-bottom:10px;" onchange="app.fillHistory(this.value)"><option value="">▼ 选择历史记录...</option></select>
-                <input type="text" class="url-input" id="url-audio" placeholder="粘贴 MP3 链接..." onchange="app.saveInput()">
-                <input type="text" class="url-input" id="url-srt-1" placeholder="字幕 1 (主)" onchange="app.saveInput()">
-                <input type="text" class="url-input" id="url-srt-2" placeholder="字幕 2" onchange="app.saveInput()">
-                <input type="text" class="url-input" id="url-srt-3" placeholder="字幕 3" onchange="app.saveInput()">
-                <button class="btn-load-url" id="btn-load-url" onclick="app.loadFromUrl()">
-                    <span class="loading-spinner" id="url-spinner"></span> 🚀 极速加载
-                </button>
-            </div>
-            <div id="group-local" class="input-group">
-                <div class="file-box">
-                    <div class="btn-file primary">🎵 导入 MP3 <input type="file" id="audio-file" accept="audio/*"></div>
-                    <div class="btn-file sub-slot">📄 字幕 1 <input type="file" onchange="app.importSub(this, 0)" accept=".srt,.txt"></div>
-                    <div class="btn-file sub-slot">📄 字幕 2 <input type="file" onchange="app.importSub(this, 1)" accept=".srt,.txt"></div>
-                    <div class="btn-file sub-slot">📄 字幕 3 <input type="file" onchange="app.importSub(this, 2)" accept=".srt,.txt"></div>
-                </div>
-            </div>
-            <div class="file-box" style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
-                <button class="btn-file" onclick="app.exportProject()">💾 保存工程</button>
-                <div class="btn-file">📂 加载工程 <input type="file" id="project-file" accept=".json" onclick="this.value=null"></div>
-                <button class="btn-file green" onclick="app.exportSRT(1)">⬇️ 导出字1</button>
-                <button class="btn-file green" onclick="app.exportSRT(2)">⬇️ 导出字2</button>
-                <button class="btn-file green" onclick="app.exportSRT(3)">⬇️ 导出字3</button>
-            </div>
-            <div style="margin-top:15px; display:flex; gap:10px; align-items:center; background:#f9f9f9; padding:10px; border-radius:8px;">
-                <span style="font-size:12px;">✂️ 断句灵敏度:</span>
-                <input type="range" id="threshold-range" min="0.01" max="0.1" step="0.01" value="0.02" style="flex:1" oninput="ui.updateThresh(this.value)">
-                <span id="threshold-val" style="font-family:monospace; font-size:12px;">0.02</span>
-                <button class="btn-mini" style="padding:4px 8px; font-size:12px; background:var(--primary); color:#fff; border:none; border-radius:4px;" onclick="app.applyReAnalyze()">执行</button>
-            </div>
-            <div style="text-align:center; margin-top:10px; font-size:12px; color:#666">共 <span id="row-count">0</span> 句</div>
-        </div>
-        <div id="editor-list"></div>
-        <div style="text-align:center; padding:20px;">
-            <button class="btn-file" style="display:inline-flex; width:auto; border:1px dashed #ccc;" onclick="app.addNewRow()">+ 添加空行</button>
-        </div>
-    </div>
-
-    <!-- 练习模式 (核心修复) -->
-    <div id="practice-view" class="container hidden">
-        <div class="practice-card">
-            <div id="drawer-overlay" class="drawer-overlay" onclick="ui.toggleDrawer()">
-                <div class="drawer-content" onclick="event.stopPropagation()">
-                    <h3>⚙️ 菜单</h3>
-                    <button class="btn-file" onclick="app.exportProject()">💾 备份工程</button>
-                    <button class="btn-file" onclick="app.exportSRT(1)">⬇️ 导出字幕1</button>
-                    <button class="btn-file" style="margin-top:10px" onclick="ui.toggleDrawer()">关闭</button>
-                </div>
-            </div>
-
-            <div class="practice-header">
-                <div onclick="ui.toggleDrawer()" style="font-size:24px; cursor:pointer">☰</div>
-                <select id="jump-select" class="jump-select" onchange="app.jumpTo(this.value)"><option>1</option></select>
-                <div id="text-toggle-btn" style="color:var(--primary); font-weight:bold; cursor:pointer" onclick="ui.toggleTextBlur()">👁️ 显示</div>
-            </div>
-
-            <div class="sub-switcher">
-                <button class="sub-btn active" onclick="ui.switchSubTab(0)">字幕1</button>
-                <button class="sub-btn" onclick="ui.switchSubTab(1)">字幕2</button>
-                <button class="sub-btn" onclick="ui.switchSubTab(2)">字幕3</button>
-            </div>
-            
-            <!-- V38: 弹性文字容器 -->
-            <div class="practice-text-container" onclick="ui.toggleTextBlur()">
-                <div id="practice-text-display" class="practice-text blur">(请加载内容)</div>
-                <div class="click-hint">👆 点击切换显隐</div>
-            </div>
-
-            <div class="control-area">
-                <button class="btn-full-play" id="btn-full-play" onclick="engine.toggleFullPlay()">🎧 全文循环 (磨耳朵)</button>
-                
-                <div class="range-panel">
-                    <span>🔄 范围:</span>
-                    <input type="number" id="loop-start" class="range-select" value="1" min="1">
-                    - <input type="number" id="loop-end" class="range-select" value="10" min="1">
-                    <button class="btn-range-play" id="btn-range-play" onclick="engine.toggleRangeLoop()">▶ 循环</button>
-                </div>
-
-                <div class="top-btns">
-                    <button class="small-btn" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
-                    <button class="small-btn" id="btn-loop" onclick="engine.toggleLoop()">🔄 循环单句</button>
-                </div>
-                <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
-                <div class="nav-controls">
-                    <button class="nav-btn" onclick="app.prev()">⬅️ 上一句</button>
-                    <button class="nav-btn" onclick="app.next()">下一句 ➡️</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">提示</div>
-
+<div class="url-block">
+<label class="url-label">🎵 音频链接 (智能粘贴多链接)</label>
+<input type="text" class="url-input" id="url-audio" placeholder="在此粘贴，系统自动识别分配..." onchange="app.saveInput()">
+</div>
+<div class="url-block">
+<label class="url-label">📄 字幕链接 (任意一条即可)</label>
+<input type="text" class="url-input" id="url-srt-1" placeholder="字幕 1 (Eng)" onchange="app.saveInput()">
+<input type="text" class="url-input" style="margin-top:6px" id="url-srt-2" placeholder="字幕 2 (Eng+Chs)" onchange="app.saveInput()">
+<input type="text" class="url-input" style="margin-top:6px" id="url-srt-3" placeholder="字幕 3 (Chs)" onchange="app.saveInput()">
+</div>
+<button class="btn-load-url" id="btn-load-url" onclick="app.loadFromUrl()">
+<span class="loading-spinner" id="url-spinner"></span> 🚀 极速加载
+</button>
+</div>
+<div id="group-local" class="input-group">
+<div class="file-box">
+<div class="btn-file primary">🎵 导入 MP3 <input type="file" id="audio-file" accept="audio/*"></div>
+<div class="btn-file sub-slot">📄 字幕 1 <input type="file" onchange="app.importSub(this, 0)" accept=".srt,.txt"></div>
+<div class="btn-file sub-slot">📄 字幕 2 <input type="file" onchange="app.importSub(this, 1)" accept=".srt,.txt"></div>
+<div class="btn-file sub-slot">📄 字幕 3 <input type="file" onchange="app.importSub(this, 2)" accept=".srt,.txt"></div>
+</div>
+</div>
+<div class="file-box" style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+<button class="btn-file" onclick="app.exportProject()">💾 保存工程</button>
+<div class="btn-file">📂 加载工程 <input type="file" id="project-file" accept=".json" onclick="this.value=null"></div>
+</div>
+<div class="file-box">
+<button class="btn-file green" onclick="app.exportSRT(1)">⬇ 导出字幕1</button>
+<button class="btn-file green" onclick="app.exportSRT(2)">⬇ 导出字幕2</button>
+<button class="btn-file green" onclick="app.exportSRT(3)">⬇ 导出字幕3</button>
+</div>
+<div class="slider-row">
+<span style="font-size:13px; font-weight:600; color:#555">✂ 断句灵敏度:</span>
+<input type="range" id="threshold-range" min="0.01" max="0.1" step="0.01" value="0.02" style="flex:1" oninput="ui.updateThresh(this.value)">
+<span id="threshold-val" style="font-family:monospace; font-size:12px;">0.02</span>
+<button class="btn-mini" onclick="app.applyReAnalyze()">执行</button>
+</div>
+<div style="text-align:center; margin-top:10px; font-size:12px; color:#666">共 <span id="row-count">0</span> 句</div>
+</div>
+<div id="editor-list"></div>
+<div style="text-align:center; padding:20px;">
+<button class="btn-file" style="display:inline-flex; width:auto; border:1px dashed #ccc;" onclick="app.addNewRow()">+ 添加空行</button>
+</div>
+</div>
+<div id="practice-view">
+<div class="practice-card">
+<div id="drawer-overlay" class="drawer-overlay" onclick="ui.toggleDrawer()">
+<div class="drawer-content" onclick="event.stopPropagation()">
+<h3>⚙ 菜单</h3>
+<button class="btn-file" onclick="app.exportProject()">💾 备份工程</button>
+<button class="btn-file" onclick="app.exportSRT(1)">⬇ 导出字幕1</button>
+<button class="btn-file" style="margin-top:10px" onclick="ui.toggleDrawer()">关闭</button>
+</div>
+</div>
+<div class="practice-header">
+<div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
+<div class="jump-select-wrapper">
+<select id="jump-select" class="jump-select" onchange="app.jumpTo(this.value)"><option>1</option></select>
+</div>
+<div class="header-right-group">
+<div class="sleep-wrapper">
+<div class="icon-btn" onclick="ui.toggleSleepModal()">⏰</div>
+<div id="sleep-display" class="sleep-display"></div>
+<div id="sleep-popup" class="sleep-popup">
+<div style="font-size:12px;color:#666;margin-bottom:5px;">定时关闭 (分钟)</div>
+<div style="display:flex;gap:5px;">
+<input type="number" id="sleep-input" value="30" min="1" max="100" style="width:60px;padding:4px;border:1px solid #ddd;border-radius:4px;">
+<button class="btn-mini" onclick="app.startSleepTimer()">开始</button>
+</div>
+</div>
+</div>
+<div id="text-toggle-btn" class="text-toggle" onclick="ui.toggleTextBlur()">👁 显示</div>
+</div>
+</div>
+<div class="sub-switcher">
+<button class="sub-btn active" onclick="ui.switchSubTab(0)">字幕1</button>
+<button class="sub-btn" onclick="ui.switchSubTab(1)">字幕2</button>
+<button class="sub-btn" onclick="ui.switchSubTab(2)">字幕3</button>
+</div>
+<div class="practice-text-container" onclick="ui.toggleTextBlur()">
+<div id="practice-text-display" class="practice-text blur">(请加载内容)</div>
+<div id="click-hint" class="click-hint">👆 点击切换显隐</div>
+</div>
+<div class="control-area">
+<div class="row-mixed">
+<button class="btn-full-play" id="btn-full-play" onclick="engine.toggleFullPlay()">🎧 全文磨耳朵</button>
+<div class="range-panel">
+<span class="range-label">页码:</span>
+<input type="number" id="loop-start" class="range-input" value="1">
+<span>-</span>
+<input type="number" id="loop-end" class="range-input" value="10">
+<button class="btn-range-play" id="btn-range-play" onclick="engine.toggleRangeLoop()">循环</button>
+</div>
+</div>
+<div class="row-dual">
+<button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
+<button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
+</div>
+<button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+<div class="row-dual">
+<button class="btn-action btn-nav" onclick="app.prev()">⬅ 上一句</button>
+<button class="btn-action btn-nav" onclick="app.next()">下一句 ➡</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="toast" class="toast">提示</div>
 <script>
-const CONST = { STORAGE: 'shadow_v38_data', INDEX: 'shadow_v38_idx', HIST: 'shadow_v38_hist', INPUTS: 'shadow_v38_inputs', PROXY: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='] };
-const state = { segments: [], currIndex: 0, activeSub: 0, audioBuffer: null, userBlurState: true };
+const CONST = { STORAGE: 'shadow_v50_data', INDEX: 'shadow_v50_idx', HIST: 'shadow_v50_hist', INPUTS: 'shadow_v50_inputs', 
+PROXY: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='] };
+const state = { segments: [], currIndex: 0, activeSub: 0, audioBuffer: null, userBlurState: true, hasShownHint: false };
+let hintTimer = null;
+
+const net = {
+    fixUrl(url) {
+        if (!url) return '';
+        url = url.trim();
+        if (url.includes('gitee.com') && (url.includes('/edit/') || url.includes('/blob/'))) return url.replace(/\/edit\/|\/blob\//, '/raw/');
+        if (url.includes('github.com') && url.includes('/blob/')) return url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
+        return url;
+    },
+    async fetchCommon(url, type) {
+        ui.setLoadBtnText("尝试直连下载...");
+        try {
+            const res = await fetch(url);
+            if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
+        } catch (e) { console.warn("直连失败，尝试代理", e); }
+        ui.setLoadBtnText("直连失败，尝试代理...");
+        for (const proxy of CONST.PROXY) {
+            try {
+                const res = await fetch(proxy + encodeURIComponent(url));
+                if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
+            } catch (e) {}
+        }
+        throw new Error("下载失败 (请检查链接或网络)");
+    },
+    async fetchBlobSmart(url) { return this.fetchCommon(url, 'blob'); },
+    async fetchTextSmart(url) { return this.fetchCommon(url, 'text'); }
+};
 
 const engine = {
-    mode: 'IDLE', reqId: null, editorTimer: null, isWaiting: false,
-    startTicker() { if(this.reqId) cancelAnimationFrame(this.reqId); this.tick(); },
-    stopAll(releaseMic = false) {
-        this.mode = 'IDLE'; this.isWaiting = false;
-        const a = document.getElementById('main-audio'); const r = document.getElementById('record-audio');
-        a.pause(); r.pause(); a.loop = false;
-        if(this.reqId) cancelAnimationFrame(this.reqId); clearTimeout(this.editorTimer);
-        recorder.stop(releaseMic); ui.resetButtons();
+    mode: 'IDLE',
+    reqId: null,
+    editorTimer: null,
+    isWaiting: false,
+    waitTimer: null,
+    // 【修改点1】新增一个标志位，用来标记是否正在跳转
+    seeking: false, 
+
+    startTicker() {
+        if (this.reqId) cancelAnimationFrame(this.reqId);
+        this.tick();
     },
+
+    stopAll(releaseMic = false) {
+        this.mode = 'IDLE';
+        this.isWaiting = false;
+        this.seeking = false; // 重置跳转状态
+        if (this.waitTimer) clearTimeout(this.waitTimer);
+        const a = document.getElementById('main-audio');
+        const r = document.getElementById('record-audio');
+        // 加一个空值检查防止报错
+        if(a) { a.pause(); a.loop = false; }
+        if(r) r.pause();
+        
+        if (this.reqId) cancelAnimationFrame(this.reqId);
+        clearTimeout(this.editorTimer);
+        if(typeof recorder !== 'undefined') recorder.stop(releaseMic);
+        ui.resetButtons();
+    },
+
     playSegment(i) {
         this.stopAll();
-        const s = state.segments[i]; const a = document.getElementById('main-audio');
-        if(!a.src) return ui.toast("音频未就绪");
-        a.currentTime = s.start; a.play();
+        const s = state.segments[i];
+        const a = document.getElementById('main-audio');
+        if (!a.src) return ui.toast("音频未就绪");
+        
+        a.currentTime = s.start;
+        a.play();
+        // 编辑模式下的简单的定时停止，不需要复杂的ticker
         this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start) * 1000);
     },
+
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
+        
+        // 【修改点2】如果正在跳转中，跳过这次检测，防止因为时间未更新导致的误判
+        if (this.seeking) return;
+
         const a = document.getElementById('main-audio');
-        if(a.paused) return;
+        if (a.paused) return;
+        
         const ct = a.currentTime;
+
+        // --- 逻辑分支 ---
 
         if (this.mode === 'PLAY_ONCE') {
             const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) { a.pause(); this.mode = 'IDLE'; ui.resetButtons(); }
-        } else if (this.mode === 'LOOP_ONE') {
-            if(this.isWaiting) return;
-            const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) {
-                this.startWait(() => { a.currentTime = seg.start; a.play(); });
+            // 只有当 当前时间确实大于结束时间，且当前时间大于开始时间（防止回跳时的残留时间）
+            if (seg && ct >= seg.end && ct > seg.start) {
+                a.pause();
+                this.mode = 'IDLE';
+                ui.resetButtons();
             }
-        } else if (this.mode === 'LOOP_RANGE') {
-            if(this.isWaiting) return;
+        } 
+        else if (this.mode === 'LOOP_ONE') {
+            if (this.isWaiting) return;
+            const seg = state.segments[state.currIndex];
+            if (seg && ct >= seg.end && ct > seg.start) {
+                this.startWait(() => {
+                    a.currentTime = seg.start;
+                    a.play();
+                });
+            }
+        } 
+        else if (this.mode === 'LOOP_RANGE') {
+            if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
             const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
             const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
+
             if (seg && ct >= seg.end) {
                 let nextIdx = state.currIndex + 1;
-                if (nextIdx > endLimit || nextIdx >= state.segments.length) nextIdx = Math.max(0, startLimit);
+                // 范围循环逻辑
+                if (nextIdx > endLimit || nextIdx >= state.segments.length) {
+                    nextIdx = Math.max(0, startLimit);
+                }
+                
                 this.startWait(() => {
                     state.currIndex = nextIdx;
+                    // 这里由于涉及跳转，也需要调用带锁的播放逻辑，但这里简化处理
                     a.currentTime = state.segments[nextIdx].start;
                     ui.updatePractice(nextIdx);
                     a.play();
                 });
             }
-        } else if (this.mode === 'FULL_PLAY') {
-            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
+        } 
+        else if (this.mode === 'FULL_PLAY') {
+            // 【修改点3】优化全文播放的高亮逻辑：
+            // 原逻辑是必须在 start和end之间。现在逻辑是：找到第一个“还没结束”的句子。
+            // 这样在单词之间的静音空隙时，高亮会停留在下一个即将播放的单词上，而不是消失。
+            const activeIdx = state.segments.findIndex(s => ct < s.end);
+            
             if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                state.currIndex = activeIdx; ui.updatePractice(activeIdx);
+                // 只有当跳转幅度较大（真的进入下一句）时才更新，防止边缘抖动
+                // 增加一个判断：如果当前时间还没到这个句子的开始（处于空隙），也算作这个句子
+                state.currIndex = activeIdx;
+                ui.updatePractice(activeIdx);
             }
+
+            // 播放结束检查
             if (a.ended || (a.duration > 0 && ct >= a.duration - 0.2)) {
-                a.currentTime = 0; a.play();
-                state.currIndex = 0; ui.updatePractice(0);
+                a.currentTime = 0;
+                a.play();
+                state.currIndex = 0;
+                ui.updatePractice(0);
             }
         }
     },
+
     startWait(cb) {
         this.isWaiting = true;
         const a = document.getElementById('main-audio');
         a.pause();
-        setTimeout(() => {
+        this.waitTimer = setTimeout(() => {
+            if (this.mode === 'IDLE') return;
             this.isWaiting = false;
             cb();
-        }, 1500); 
+        }, 1500); // 这里的1500是循环间隔，可根据需要调整
     },
-    playOnce() { this.stopAll(); if(!this.check()) return; this.mode = 'PLAY_ONCE'; document.getElementById('btn-play-once').classList.add('active'); this.startPlay(); },
-    toggleLoop() { if(this.mode === 'LOOP_ONE') this.stopAll(); else { this.stopAll(); if(!this.check()) return; this.mode = 'LOOP_ONE'; document.getElementById('btn-loop').classList.add('active'); this.startPlay(); } },
-    toggleRangeLoop() { if(this.mode === 'LOOP_RANGE') this.stopAll(); else { this.stopAll(); if(!state.segments.length) return ui.toast("无内容"); const start = Math.max(0, parseInt(document.getElementById('loop-start').value)-1); state.currIndex = start; ui.updatePractice(start); this.mode = 'LOOP_RANGE'; document.getElementById('btn-range-play').classList.add('active'); document.getElementById('btn-range-play').innerText = "⏸ 停止"; this.startPlay(); } },
-    toggleFullPlay() { if(this.mode === 'FULL_PLAY') this.stopAll(); else { this.stopAll(); if(!this.check()) return; const a = document.getElementById('main-audio'); a.currentTime = 0; state.currIndex = 0; ui.updatePractice(0); a.loop = true; a.play().then(()=>{ this.mode = 'FULL_PLAY'; document.getElementById('btn-full-play').classList.add('active'); document.getElementById('btn-full-play').innerText = "⏸ 停止磨耳朵"; this.startTicker(); }); } },
-    startPlay() { const seg = state.segments[state.currIndex]; const a = document.getElementById('main-audio'); a.currentTime = seg.start; a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); }); },
-    check() { if(!state.segments.length) { ui.toast("请先加载内容"); return false; } if(!document.getElementById('main-audio').src) { ui.toast("音频未就绪"); return false; } return true; }
+
+    // 各种按钮触发的入口函数
+    playOnce() {
+        this.stopAll();
+        if (!this.check()) return;
+        this.mode = 'PLAY_ONCE';
+        document.getElementById('btn-play-once').classList.add('active');
+        this.startPlay();
+    },
+
+    toggleLoop() {
+        if (this.mode === 'LOOP_ONE') this.stopAll();
+        else {
+            this.stopAll();
+            if (!this.check()) return;
+            this.mode = 'LOOP_ONE';
+            document.getElementById('btn-loop').classList.add('active');
+            this.startPlay();
+        }
+    },
+
+    toggleRangeLoop() {
+        if (this.mode === 'LOOP_RANGE') this.stopAll();
+        else {
+            this.stopAll();
+            if (!state.segments.length) return ui.toast("无内容");
+            const start = Math.max(0, parseInt(document.getElementById('loop-start').value) - 1);
+            state.currIndex = start;
+            ui.updatePractice(start);
+            this.mode = 'LOOP_RANGE';
+            const btn = document.getElementById('btn-range-play');
+            btn.classList.add('active');
+            btn.innerText = "⏸";
+            this.startPlay();
+        }
+    },
+
+    toggleFullPlay() {
+        if (this.mode === 'FULL_PLAY') this.stopAll();
+        else {
+            this.stopAll();
+            if (!this.check()) return;
+            const a = document.getElementById('main-audio');
+            // 全文播放从头开始
+            a.currentTime = 0;
+            state.currIndex = 0;
+            ui.updatePractice(0);
+            a.loop = false; // 全文播放由JS控制循环，不依赖Audio标签loop
+            
+            a.play().then(() => {
+                this.mode = 'FULL_PLAY';
+                const btn = document.getElementById('btn-full-play');
+                btn.classList.add('active');
+                btn.innerText = " ⏸ 停止";
+                this.startTicker();
+            });
+        }
+    },
+
+    // 【修改点4】核心播放启动函数，加入“安全锁”
+    startPlay() {
+        const seg = state.segments[state.currIndex];
+        const a = document.getElementById('main-audio');
+        
+        // 1. 设置标记：告诉 tick() 函数，“我正在跳转，别急着判断结束”
+        this.seeking = true; 
+        
+        a.currentTime = seg.start;
+        
+        a.play().then(() => {
+            this.startTicker();
+            // 2. 给予 300ms 的缓冲时间，等待浏览器的时间轴稳定
+            setTimeout(() => {
+                this.seeking = false;
+            }, 300);
+        }).catch(e => {
+            console.error(e);
+            ui.toast("播放失败");
+            this.seeking = false;
+        });
+    },
+
+    check() {
+        if (!state.segments.length) {
+            ui.toast("请先加载内容");
+            return false;
+        }
+        if (!document.getElementById('main-audio').src) {
+            ui.toast("音频未就绪");
+            return false;
+        }
+        return true;
+    }
 };
 
 const ui = {
     init() {
+        document.getElementById('url-audio').addEventListener('paste', (e) => app.handleSmartPaste(e));
+        
         const p = new URLSearchParams(location.search);
         if(p.get('mp3')) {
             document.getElementById('url-audio').value = p.get('mp3');
@@ -379,7 +537,10 @@ const ui = {
         this.renderHistory();
         const d = localStorage.getItem(CONST.STORAGE);
         if(d && JSON.parse(d).length) {
-            document.getElementById('restore-idx').innerText = parseInt(localStorage.getItem(CONST.INDEX)||0)+1;
+            state.segments = JSON.parse(d);
+            state.currIndex = parseInt(localStorage.getItem(CONST.INDEX)||0);
+            this.renderEditor(); this.updatePractice(state.currIndex);
+            document.getElementById('restore-idx').innerText = state.currIndex + 1;
             document.getElementById('restore-bar').style.display = 'block';
         }
         this.updateAudioStatus();
@@ -387,7 +548,7 @@ const ui = {
     renderHistory() {
         const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
         const sel = document.getElementById('history-select');
-        sel.innerHTML = '<option value="">▼ 选择最近使用的课程...</option>';
+        sel.innerHTML = '<option value="">▼ 选择历史记录...</option>';
         h.forEach((item, i) => { const opt = document.createElement('option'); opt.value = i; opt.text = item.name; sel.appendChild(opt); });
     },
     setTab(t) {
@@ -395,18 +556,19 @@ const ui = {
         document.getElementById('group-url').style.display = t==='url' ? 'block' : 'none';
         document.getElementById('group-local').style.display = t==='local' ? 'block' : 'none';
     },
+    setLoadBtnText(t) { document.getElementById('btn-load-url').innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span> 🚀 极速加载' : t; },
     updateThresh(v) { document.getElementById('threshold-val').innerText = v; },
     toast(m) { const t=document.getElementById('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); },
     updateAudioStatus() {
         const m = document.getElementById('audio-status-msg'); const a = document.getElementById('main-audio');
         if(a.src && a.src!==location.href) { m.className='audio-status ok'; m.style.display='block'; m.innerText="✅ 音频已就绪"; setTimeout(()=>m.style.display='none',3000); }
-        else { m.className='audio-status warn'; m.style.display='block'; m.innerText="⚠️ 音频未就绪"; }
+        else { m.className='audio-status warn'; m.style.display='block'; m.innerText="⚠ 音频未就绪"; }
     },
     resetButtons() {
         document.getElementById('btn-play-once').classList.remove('active');
         document.getElementById('btn-loop').classList.remove('active');
-        const rangeBtn = document.getElementById('btn-range-play'); rangeBtn.classList.remove('active'); rangeBtn.innerText = "▶ 循环";
-        const fullBtn = document.getElementById('btn-full-play'); fullBtn.classList.remove('active'); fullBtn.innerText = "🎧 全文循环 (磨耳朵)";
+        const rangeBtn = document.getElementById('btn-range-play'); rangeBtn.classList.remove('active'); rangeBtn.innerText = "循环";
+        const fullBtn = document.getElementById('btn-full-play'); fullBtn.classList.remove('active'); fullBtn.innerText = "🎧 全文磨耳朵";
         const recBtn = document.getElementById('btn-record'); recBtn.classList.remove('recording', 'playing'); recBtn.innerText = "🎤 按下开始录音";
     },
     renderEditor() {
@@ -415,22 +577,11 @@ const ui = {
         state.segments.forEach((s,i)=>{
             const d = document.createElement('div'); d.className='sub-item';
             d.innerHTML = `
-                <div class="sub-meta">
-                    <span class="idx-badge">#${i+1}</span>
-                    <div class="time-edit-group">
-                        <input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - 
-                        <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)">
-                    </div>
-                </div>
-                ${s.text!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
-                ${s.text2!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
-                ${s.text3!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
-                <div class="sub-actions">
-                    <button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button>
-                    <button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂️ 拆分</button>
-                    <button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🔗 合并</button>
-                    <button class="action-btn btn-del" onclick="app.delSeg(${i})">✕ 删除</button>
-                </div>`;
+            <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+            ${s.text!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
+            ${s.text2!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
+            ${s.text3!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
+            <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🔗 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">✕ 删除</button></div>`;
             l.appendChild(d);
         });
         document.getElementById('loop-start').max = state.segments.length;
@@ -446,50 +597,116 @@ const ui = {
         const txt = document.getElementById('practice-text-display');
         const content = state.segments[idx][key] || "(无内容)";
         txt.innerText = content;
-        
-        // V38: 字体自适应 (FitText)
         this.fitText(txt);
-        
-        if (state.userBlurState) {
-            txt.classList.add("blur");
-            document.getElementById('text-toggle-btn').innerText = "👁️ 显示";
-        } else {
-            txt.classList.remove("blur");
-            document.getElementById('text-toggle-btn').innerText = "🙈 隐藏";
-        }
-        
+        if (state.userBlurState) { txt.classList.add("blur"); document.getElementById('text-toggle-btn').innerText = "👁 显示"; } 
+        else { txt.classList.remove("blur"); document.getElementById('text-toggle-btn').innerText = "🙈 隐藏"; }
         if (content === "(无内容)") txt.className = "practice-text empty";
         document.getElementById('jump-select').value = idx;
-    },
-    fitText(el) {
-        let size = 32; el.style.fontSize = size + 'px';
-        while (el.scrollHeight > el.clientHeight && size > 14) {
-            size--; el.style.fontSize = size + 'px';
+        if(!state.hasShownHint) {
+            const hint = document.getElementById('click-hint'); hint.classList.add('show');
+            setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
         }
     },
-    toggleTextBlur() { state.userBlurState = !state.userBlurState; ui.updatePractice(state.currIndex); },
+    showHintManual() {
+        const hint = document.getElementById('click-hint'); hint.classList.add('show'); setTimeout(() => hint.classList.remove('show'), 3000);
+    },
+    fitText(el) {
+        let size = 34; el.style.fontSize = size + 'px';
+        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
+    },
+    toggleTextBlur() { state.userBlurState = !state.userBlurState; ui.updatePractice(state.currIndex); ui.showHintManual(); },
     switchSubTab(i) { state.activeSub = i; document.querySelectorAll('.sub-btn').forEach((b,k)=>b.classList.toggle('active',k===i)); ui.updatePractice(state.currIndex); },
-    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); }
+    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
+    toggleSleepModal() {
+        const popup = document.getElementById('sleep-popup');
+        popup.classList.toggle('show');
+    }
 };
 
 const app = {
+    handleSmartPaste(e) {
+        const text = (e.clipboardData || window.clipboardData).getData('text');
+        if (!text) return;
+        
+        if (text.match(/https?:\/\//g).length > 1 || text.includes('.mp3')) {
+            e.preventDefault();
+            
+            document.getElementById('url-audio').value = '';
+            document.getElementById('url-srt-1').value = '';
+            document.getElementById('url-srt-2').value = '';
+            document.getElementById('url-srt-3').value = '';
+
+            const mp3Match = text.match(/https?:\/\/[^\s"']+\.mp3/i);
+            if (mp3Match) document.getElementById('url-audio').value = mp3Match[0];
+
+            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i); 
+            const srtEngChs = text.match(/https?:\/\/[^\s"']+\.engchs\.srt/i);
+            const srtChs = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.chs\.srt/i);
+
+            if (srtEng) document.getElementById('url-srt-1').value = srtEng[0];
+            if (srtEngChs) document.getElementById('url-srt-2').value = srtEngChs[0];
+            if (srtChs) document.getElementById('url-srt-3').value = srtChs[0];
+
+            this.saveInput();
+            ui.toast("📋 智能粘贴：链接已分配");
+        }
+    },
+    // V50: Sleep Timer with MM:SS
+    sleepTimerId: null,
+    sleepInterval: null,
+    startSleepTimer() {
+        const input = document.getElementById('sleep-input');
+        const mins = parseInt(input.value);
+        if (!mins || mins < 1 || mins > 100) return ui.toast("请输入 1-100");
+        
+        if (this.sleepTimerId) clearTimeout(this.sleepTimerId);
+        if (this.sleepInterval) clearInterval(this.sleepInterval);
+
+        const endTime = Date.now() + mins * 60 * 1000;
+        
+        ui.toggleSleepModal(); 
+        const display = document.getElementById('sleep-display');
+        display.style.display = 'block';
+        
+        // V50: Show Minutes and Seconds
+        const updateDisplay = () => {
+            const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+            if (remaining <= 0) {
+                display.innerText = "";
+                display.style.display = "none";
+                clearInterval(this.sleepInterval);
+            } else {
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                display.innerText = `⏰ ${m}:${s.toString().padStart(2, '0')}`;
+            }
+        };
+        
+        updateDisplay(); // immediate
+        this.sleepInterval = setInterval(updateDisplay, 1000);
+
+        this.sleepTimerId = setTimeout(() => {
+            engine.stopAll();
+            ui.toast("💤 定时结束，停止播放");
+            display.style.display = 'none';
+            clearInterval(this.sleepInterval);
+        }, mins * 60 * 1000);
+        
+        ui.toast(`倒计时 ${mins} 分钟开始`);
+    },
     saveInput() {
         const d = { mp3: document.getElementById('url-audio').value, s1: document.getElementById('url-srt-1').value, s2: document.getElementById('url-srt-2').value, s3: document.getElementById('url-srt-3').value };
         localStorage.setItem(CONST.INPUTS, JSON.stringify(d));
     },
     addHistory(mp3, name) {
-        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
-        h = h.filter(i=>i.mp3!==mp3);
+        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); h = h.filter(i=>i.mp3!==mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS));
         h.unshift({name: name||mp3.split('/').pop(), mp3, ...d});
-        if(h.length>10) h.pop();
-        localStorage.setItem(CONST.HIST, JSON.stringify(h));
-        ui.renderHistory();
+        if(h.length>10) h.pop(); localStorage.setItem(CONST.HIST, JSON.stringify(h)); ui.renderHistory();
     },
     fillHistory(i) {
         if(i==="") return;
-        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
-        const item = h[i];
+        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); const item = h[i];
         if(item) {
             document.getElementById('url-audio').value = item.mp3;
             document.getElementById('url-srt-1').value = item.s1||'';
@@ -499,100 +716,86 @@ const app = {
         }
     },
     async loadFromUrl() {
-        this.saveInput();
-        const mp3 = this.fixUrl(document.getElementById('url-audio').value.trim());
-        const s1 = this.fixUrl(document.getElementById('url-srt-1').value.trim());
-        const s2 = this.fixUrl(document.getElementById('url-srt-2').value.trim());
-        const s3 = this.fixUrl(document.getElementById('url-srt-3').value.trim());
-        if(!mp3) return ui.toast("请输入MP3链接");
+        state.segments = []; ui.renderEditor(); this.saveInput();
+        const mp3 = net.fixUrl(document.getElementById('url-audio').value.trim());
+        const s1 = net.fixUrl(document.getElementById('url-srt-1').value.trim());
+        const s2 = net.fixUrl(document.getElementById('url-srt-2').value.trim());
+        const s3 = net.fixUrl(document.getElementById('url-srt-3').value.trim());
+        if(!mp3) return ui.toast("请输入 MP3 链接");
         
-        const btn = document.getElementById('btn-load-url'); const spin = document.getElementById('url-spinner');
+        const btn = document.getElementById('btn-load-url'); 
+        const spin = document.getElementById('url-spinner');
         btn.disabled=true; spin.style.display='inline-block';
-        
+
         try {
-            ui.toast("下载音频中...");
-            let audioBlob = null;
-            if (mp3.includes('aliyuncs.com')) { try { const r = await fetch(mp3); if (r.ok) audioBlob = await r.blob(); } catch(e) {} }
-            if (!audioBlob) { for(const p of CONST.PROXY) { try { const r=await fetch(p+encodeURIComponent(mp3)); if(r.ok){ audioBlob=await r.blob(); break; } } catch(e){} } }
-            if(!audioBlob) { try { const r=await fetch(mp3); if(r.ok) audioBlob=await r.blob(); } catch(e){} }
-            if(!audioBlob) throw new Error("音频下载失败");
+            ui.toast("正在下载音频...");
+            const audioBlob = await net.fetchBlobSmart(mp3);
             document.getElementById('main-audio').src = URL.createObjectURL(audioBlob);
-
-            const loadTxt = async (u) => {
-                if(!u) return null;
-                for(const p of CONST.PROXY) { try { const r=await fetch(p+encodeURIComponent(u)); if(r.ok) return await r.text(); } catch(e){} }
-                try { const r=await fetch(u); if(r.ok) return await r.text(); } catch(e){}
-                return null;
-            };
-
+            
+            ui.toast("✅ 音频下载成功! 正在获取字幕...");
+            const loadTxt = async (u) => u ? await net.fetchTextSmart(u) : null;
             const [t1, t2, t3] = await Promise.all([loadTxt(s1), loadTxt(s2), loadTxt(s3)]);
-            if(t1) {
-                state.segments = parseSRT(t1);
-                if(t2) this.mergeSub(parseSRT(t2), 'text2');
-                if(t3) this.mergeSub(parseSRT(t3), 'text3');
-                ui.toast("字幕加载成功");
+            
+            // V50: Timeline Logic - Use ANY available subtitle as timeline base
+            if (t1 || t2 || t3) {
+                if (t1) {
+                    // Scenario A: Sub 1 exists (Standard)
+                    state.segments = parseSRT(t1);
+                    if (t2) this.mergeSub(parseSRT(t2), 'text2');
+                    if (t3) this.mergeSub(parseSRT(t3), 'text3');
+                } else if (t2) {
+                    // Scenario B: No Sub 1, but Sub 2 exists. Use Sub 2 as timeline base.
+                    // Important: parseSRT puts text in 'text', we need to move it to 'text2'
+                    state.segments = parseSRT(t2).map(s => ({start: s.start, end: s.end, text2: s.text}));
+                    if (t3) this.mergeSub(parseSRT(t3), 'text3');
+                } else {
+                    // Scenario C: Only Sub 3 exists. Use Sub 3 as timeline base.
+                    state.segments = parseSRT(t3).map(s => ({start: s.start, end: s.end, text3: s.text}));
+                }
             } else {
-                ui.toast("分析波形中...");
+                // No subtitles at all -> auto silence detection
+                ui.toast("正在进行静音断句 (无字幕模式)...");
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 const ab = await audioBlob.arrayBuffer();
                 const ctx = new (window.AudioContext||window.webkitAudioContext)();
-                const decoded = await ctx.decodeAudioData(ab);
-                state.audioBuffer = decoded;
-                state.segments = detectSilence(decoded, 0.02);
-                if(!state.segments.length) state.segments=[{start:0,end:decoded.duration,text:"(自动断句失败)"}];
-                ui.toast(`自动生成 ${state.segments.length} 句`);
+                state.audioBuffer = await ctx.decodeAudioData(ab);
+                state.segments = detectSilence(state.audioBuffer, 0.02);
+                if(!state.segments.length) state.segments=[{start:0,end:state.audioBuffer.duration,text:"(自动断句失败)"}];
             }
-            this.addHistory(mp3);
-            ui.renderEditor(); ui.updateAudioStatus(); this.switchView('practice');
-        } catch(e) { console.error(e); ui.toast("加载失败: "+e.message); }
-        finally { btn.disabled=false; spin.style.display='none'; }
-    },
-    fixUrl(u) {
-        if(!u) return '';
-        if(u.includes('gitee.com') && (u.includes('/edit/') || u.includes('/blob/'))) return u.replace(/\/edit\/|\/blob\//, '/raw/');
-        if(u.includes('github.com') && u.includes('/blob/')) return u.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
-        return u;
+
+            this.addHistory(mp3); ui.renderEditor(); ui.updateAudioStatus(); ui.toast("✅ 全部就绪，正在跳转...");
+            app.switchView('practice');
+        } catch(e) { console.error(e); ui.setLoadBtnText("加载失败: "+e.message); }
+        finally { btn.disabled=false; spin.style.display='none'; setTimeout(()=>ui.setLoadBtnText("default"), 3000); }
     },
     mergeSub(newS, k) { state.segments.forEach(b => { const m = newS.find(n => (n.start>=b.start && n.start<b.end)); if(m) b[k]=m.text; }); },
     switchView(v) {
         engine.stopAll();
         if(v==='practice' && !state.segments.length) return ui.toast("请先加载内容");
-        document.getElementById('editor-view').className = v==='editor'?'container':'container hidden';
-        document.getElementById('practice-view').className = v==='practice'?'container hidden';
-        if(v==='practice') document.getElementById('practice-view').className = 'container practice-view-container'; 
+        document.getElementById('editor-view').style.display = v==='editor' ? 'block' : 'none';
+        const pView = document.getElementById('practice-view');
+        pView.style.display = v==='practice' ? 'flex' : 'none';
+        if (v==='practice') pView.classList.add('active'); 
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
         if(v==='practice') this.loadItem(state.currIndex, false);
     },
     loadItem(i, play) {
         if(i<0 || i>=state.segments.length) return;
-        state.currIndex = i; engine.stopAll();
-        ui.updatePractice(i); this.save();
+        state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
         if(play) engine.playOnce();
     },
-    next() { 
-        if(state.currIndex < state.segments.length-1) {
-            state.userBlurState = true; 
-            this.loadItem(state.currIndex+1, true); 
-        }
-    },
-    prev() { 
-        if(state.currIndex > 0) {
-            state.userBlurState = true; 
-            this.loadItem(state.currIndex-1, true); 
-        }
-    },
+    next() { if(state.currIndex < state.segments.length-1) { state.userBlurState = true; this.loadItem(state.currIndex+1, true); } },
+    prev() { if(state.currIndex > 0) { state.userBlurState = true; this.loadItem(state.currIndex-1, true); } },
     jumpTo(v) { this.loadItem(parseInt(v), true); },
     updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
-    delSegment(i) { state.segments.splice(i,1); ui.renderEditor(); },
+    delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
     splitSeg(i) {
         const t = document.getElementById('main-audio').currentTime;
         if(t > state.segments[i].start && t < state.segments[i].end) {
-            const old = state.segments[i];
-            const newSeg = { start:t, end:old.end, text:"" };
-            if(old.text2!==undefined) newSeg.text2="";
-            if(old.text3!==undefined) newSeg.text3="";
-            state.segments.splice(i+1, 0, newSeg);
-            state.segments[i].end = t;
-            ui.renderEditor();
+            const old = state.segments[i]; const newSeg = { start:t, end:old.end, text:"" };
+            if(old.text2!==undefined) newSeg.text2=""; if(old.text3!==undefined) newSeg.text3="";
+            state.segments.splice(i+1, 0, newSeg); state.segments[i].end = t; ui.renderEditor();
         } else ui.toast("请在试听时暂停于拆分点");
     },
     mergeSeg(i) {
@@ -601,17 +804,14 @@ const app = {
             state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
             if(state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
             if(state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
-            state.segments.splice(i+1, 1);
-            ui.renderEditor();
+            state.segments.splice(i+1, 1); ui.renderEditor();
         }
     },
     addNewRow() { 
         const last=state.segments[state.segments.length-1]||{end:0}; 
         const newObj = {start:last.end,end:last.end+2,text:""};
-        if(last.text2 !== undefined) newObj.text2 = "";
-        if(last.text3 !== undefined) newObj.text3 = "";
-        state.segments.push(newObj); 
-        ui.renderEditor(); 
+        if(last.text2 !== undefined) newObj.text2 = ""; if(last.text3 !== undefined) newObj.text3 = "";
+        state.segments.push(newObj); ui.renderEditor(); 
     },
     applyReAnalyze() {
         if(!state.audioBuffer) return ui.toast("需先成功加载音频数据");
@@ -635,6 +835,7 @@ const app = {
     loadProject(el) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const d=JSON.parse(e.target.result); state.segments=d.segments||d; state.currIndex=d.idx||0; ui.renderEditor(); ui.updateAudioStatus(); ui.toast("工程加载成功"); }; r.readAsText(f); },
     importSub(el, k) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n, k===1?'text2':'text3'); ui.renderEditor(); }; r.readAsText(f); }
 };
+document.getElementById('project-file').addEventListener('change', e=>app.loadProject(e.target));
 
 const recorder = {
     rec: null, chunks: [], stream: null, isRec: false,
@@ -644,44 +845,35 @@ const recorder = {
             engine.stopAll();
             try {
                 this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
-                this.rec = new MediaRecorder(this.stream);
-                this.chunks = [];
+                this.rec = new MediaRecorder(this.stream); this.chunks = [];
                 this.rec.ondataavailable = e => this.chunks.push(e.data);
                 this.rec.onstop = () => { if(this.stream) this.stream.getTracks().forEach(t=>t.stop()); if(!this.forceStop) this.playCmp(); };
                 this.rec.start(); this.isRec = true; btn.classList.add('recording'); btn.innerText="⏹ 停止录音";
             } catch(e) { alert("无麦克风权限"); }
         } else { this.stop(false); }
     },
-    stop(force) {
-        if(this.isRec) { this.forceStop = force; this.rec.stop(); this.isRec = false; }
-        document.getElementById('btn-record').classList.remove('recording');
-        document.getElementById('btn-record').innerText="🎤 按下开始录音";
-    },
+    stop(force) { if(this.isRec) { this.forceStop = force; this.rec.stop(); this.isRec = false; } document.getElementById('btn-record').classList.remove('recording'); document.getElementById('btn-record').innerText="🎤 按下开始录音"; },
     playCmp() {
-        const s = state.segments[state.currIndex];
-        const a = document.getElementById('main-audio'); const r = document.getElementById('record-audio');
+        const s = state.segments[state.currIndex]; const a = document.getElementById('main-audio'); const r = document.getElementById('record-audio');
         const b = new Blob(this.chunks, {type:'audio/mp3'}); r.src = URL.createObjectURL(b);
-        ui.toast("👂 原音"); a.currentTime = s.start; a.play();
+        ui.toast("🎧 原音"); a.currentTime = s.start; a.play();
         const timer = setInterval(() => {
             if(a.currentTime >= s.end) {
                 a.pause(); clearInterval(timer);
                 setTimeout(() => {
-                    ui.toast("🗣 录音"); r.currentTime = 0; r.play();
-                    r.onended = () => document.getElementById('btn-record').classList.remove('playing');
+                    ui.toast("👤 录音"); r.currentTime = 0; r.play();
+                    r.onended = () => { document.getElementById('btn-record').classList.remove('playing'); ui.toast("播放完毕"); };
                     document.getElementById('btn-record').classList.add('playing');
                 }, 500);
             }
         }, 30);
     }
 };
-
-document.getElementById('audio-file').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) document.getElementById('main-audio').src=URL.createObjectURL(f); ui.updateAudioStatus(); });
-
+document.getElementById('audio-file').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) { document.getElementById('main-audio').src=URL.createObjectURL(f); ui.updateAudioStatus(); } });
 function fmtTime(s, srt=false) { const d=new Date(0); d.setMilliseconds(s*1000); const str=d.toISOString().substr(11, 12); return srt ? str.replace('.', ',') : str.substr(3, 8); }
 function parseSRT(t) { const r=[]; const e=/(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s-->\s(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g; let m; while(m=e.exec(t)) r.push({start:pt(m[2]), end:pt(m[3]), text:m[4].trim()}); return r; }
 function pt(s){ s=s.replace(',','.'); const p=s.split(':'); return parseInt(p[0])*3600 + parseInt(p[1])*60 + parseFloat(p[2]); }
 function detectSilence(b,th){const d=b.getChannelData(0),sr=b.sampleRate,min=0.4*sr;let res=[],sp=false,st=0,sil=0;for(let i=0;i<d.length;i+=200){if(Math.abs(d[i])>th){if(!sp){sp=true;st=i;}sil=0;}else if(sp){if(!sil)sil=i;if(i-sil>min){const s=st/sr,e=sil/sr;if(e-s>0.3)res.push({start:s,end:e,text:""});sp=false;sil=0;}}}if(sp)res.push({start:st/sr,end:d.length/sr,text:""});return res;}
-
 ui.init();
 </script>
 </body>
