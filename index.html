@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V68 (单词Fix)</title>
+<title>影子跟读 Pro V69 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V68</div>
+<div class="nav-title">🎧 影子跟读 V69</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -324,126 +324,183 @@ const net = {
 
 
 const engine = {
-    // 会话令牌：每次播放+1，旧的定时器直接失效
+    blobUrl: null,
     playSessionId: 0,
     
-    mode: 'IDLE',
-    reqId: null,        // 动画帧 ID
-    targetEnd: 0,       // 目标结束时间
-    safetyTimer: null,  // 强制停止定时器
+    // --- V64 核心：意图锁 ---
+    // true = 正在处理加载/销毁/跳转，拒绝一切新指令
+    isPending: false, 
 
-    // --- 启动心跳检测 ---
+    mode: 'IDLE',
+    reqId: null,
+    targetEnd: 0,
+    
+    activeDisposable: null, 
+    disposableTimer: null,
+
     startTicker() {
         if (this.reqId) cancelAnimationFrame(this.reqId);
         this.tick();
     },
 
-    // --- 停止一切 ---
     stopAll(releaseMic = false) {
-        // 1. 销毁令牌
         this.playSessionId++; 
         this.mode = 'IDLE';
         
-        // 2. 清理定时器
-        if (this.reqId) cancelAnimationFrame(this.reqId);
-        if (this.safetyTimer) clearTimeout(this.safetyTimer);
-        
-        // 3. 物理停止
+        // 1. 物理停止长音频
         const a = document.getElementById('main-audio');
-        const r = document.getElementById('record-audio');
-        
         if (a) { 
             a.pause(); 
-            // 注意：iOS上不要频繁设置 currentTime=0，会让下一次 seek 变慢
             a.loop = false; 
         }
+        if (this.reqId) cancelAnimationFrame(this.reqId);
+
+        // 2. 物理销毁短音频
+        if (this.activeDisposable) {
+            this.activeDisposable.pause();
+            this.activeDisposable.src = ""; 
+            this.activeDisposable = null;
+        }
+        if (this.disposableTimer) clearTimeout(this.disposableTimer);
+
+        // 3. 其他清理
+        const r = document.getElementById('record-audio');
         if (r) r.pause();
         if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
+        
+        // 【关键】强制解锁，防止死锁
+        this.isPending = false;
         
         ui.resetButtons();
     },
 
-    // --- V66 核心播放入口 ---
+    // --- 播放总入口 ---
     async playRange(start, end, newMode) {
-        // 1. 停止旧操作，获取新令牌
-        this.stopAll();
-        const mySession = this.playSessionId;
-
-        const a = document.getElementById('main-audio');
-        if (!a.src) return ui.toast("音频未就绪");
-
-        this.mode = newMode;
-        this.targetEnd = end;
-        const duration = end - start;
+        // 【V64 护栏】如果引擎正在忙（比如上一个 play 还没返回），直接拒绝
+        // 这能保护 iOS 脆弱的音频通道不被塞爆
+        if (this.isPending) {
+            console.log("Engine busy, ignoring request");
+            return;
+        }
+        
+        // 上锁
+        this.isPending = true;
 
         try {
-            // 2. 【关键修复】元数据守卫
-            // 如果音频还没准备好 seek，必须等，否则 iOS 默认从 0 播
-            if (a.readyState < 1) {
-                ui.toast("缓冲中...");
-                a.load(); // 强制唤醒
-                await new Promise((resolve, reject) => {
-                    // 3秒超时防止死等
-                    const timer = setTimeout(() => reject(new Error("Timeout")), 3000);
-                    a.onloadedmetadata = () => {
-                        clearTimeout(timer);
-                        resolve();
-                    };
-                });
+            // 1. 停止旧的一切，生成新令牌
+            // 注意：stopAll 会重置 isPending 为 false，所以我们要手动保持 true
+            this.stopAll(); 
+            this.isPending = true; // 再次上锁，因为 stopAll 解锁了
+
+            const mySession = this.playSessionId;
+
+            if (!this.blobUrl) {
+                ui.toast("音频数据丢失，请重新加载");
+                return;
             }
 
-            // 3. 再次检查令牌（等待期间用户可能狂点下一句）
-            if (this.playSessionId !== mySession) return;
-
-            // 4. 执行跳转 (iOS 标准序列：Pause -> CurrentTime)
-            a.pause();
-            a.currentTime = start;
-
-            // 5. 播放并等待硬件响应
-            await a.play();
-
-            // 6. 再次检查令牌
-            if (this.playSessionId !== mySession) {
-                a.pause(); return;
-            }
-
-            // 7. 【双重保险启动】
+            this.mode = newMode;
+            const duration = end - start;
             
-            // 保险 A: 高频检测 (用于精准停止)
-            this.startTicker();
-
-            // 保险 B: 强制停止定时器 (防止检测失效导致一直播)
-            // 针对短音频特别重要。多给 0.3秒 缓冲。
-            if (newMode !== 'FULL_PLAY') {
-                this.safetyTimer = setTimeout(() => {
-                    // 只有令牌对得上，才执行停止
-                    if (this.playSessionId === mySession) {
-                        console.log("Safety timer triggered");
-                        this.finishPlayback();
-                    }
-                }, (duration + 0.3) * 1000);
+            // 2. 战略分流
+            if (duration < 2.0 && newMode !== 'FULL_PLAY') {
+                await this.playShortClip(start, duration, mySession);
+            } else {
+                await this.playLongClip(start, end, mySession);
             }
-
-            this.updateButtonUI(newMode);
 
         } catch (e) {
             console.error(e);
-            if (this.playSessionId === mySession) {
-                if (e.name === 'NotAllowedError') ui.toast("请点击播放按钮激活");
-            }
+            ui.toast("操作过快或出错");
+        } finally {
+            // 3. 【关键】无论成功失败，操作结束，解锁
+            // 稍微延迟一点点，给 iOS 喘息时间
+            setTimeout(() => { this.isPending = false; }, 50);
         }
     },
 
-    // --- 每一帧执行的检测逻辑 ---
+    // --- 分支 A: 短音频 ---
+    async playShortClip(start, duration, session) {
+        console.log(`[${session}] 短音频启动`);
+        
+        const audio = new Audio(this.blobUrl);
+        this.activeDisposable = audio;
+        audio.currentTime = start;
+        
+        try {
+            // 等待硬件真正开始播放
+            await audio.play();
+            
+            // 如果等待期间用户点了停止（Session 变了），立即自毁
+            if (this.playSessionId !== session) {
+                audio.pause(); audio.src = ""; return;
+            }
+
+            this.updateButtonUI(this.mode);
+
+            // 设置结束定时器
+            const playTime = (duration + 0.35) * 1000;
+            this.disposableTimer = setTimeout(() => {
+                if (this.playSessionId === session) {
+                    this.finishShortPlayback();
+                }
+            }, playTime);
+
+        } catch (e) {
+            if (e.name === 'NotAllowedError') ui.toast("请点击按钮播放");
+            throw e; // 抛出错误给 playRange 的 catch 处理
+        }
+    },
+
+    finishShortPlayback() {
+        // 销毁
+        if (this.activeDisposable) {
+            this.activeDisposable.pause();
+            this.activeDisposable = null;
+        }
+        
+        // 逻辑流转
+        if (this.mode === 'PLAY_ONCE') {
+            this.stopAll(); 
+        } 
+        else if (this.mode === 'LOOP_ONE') {
+            // 单句循环：必须等 isPending 解锁后才能触发下一次
+            // 因为 finishShortPlayback 是定时器触发的，此时 isPending 应该是 false
+            const seg = state.segments[state.currIndex];
+            if (seg) this.playRange(seg.start, seg.end, 'LOOP_ONE');
+        } 
+        else if (this.mode === 'LOOP_RANGE') {
+            this.triggerNextRange();
+        }
+    },
+
+    // --- 分支 B: 长音频 ---
+    async playLongClip(start, end, session) {
+        console.log(`[${session}] 长音频启动`);
+        const a = document.getElementById('main-audio');
+        this.targetEnd = end;
+
+        try {
+            a.currentTime = start;
+            await a.play();
+            
+            if (this.playSessionId !== session) return;
+
+            this.startTicker();
+            this.updateButtonUI(this.mode);
+        } catch (e) {
+            if (e.name === 'NotAllowedError') ui.toast("请点击按钮播放");
+            throw e;
+        }
+    },
+
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
-        
         const a = document.getElementById('main-audio');
         if (a.paused) return;
 
         const ct = a.currentTime;
 
-        // 全文播放：只更新高亮
         if (this.mode === 'FULL_PLAY') {
             const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
             if (activeIdx !== -1 && activeIdx !== state.currIndex) {
@@ -457,26 +514,21 @@ const engine = {
             return;
         }
 
-        // 单句/循环：检测结束
-        // 允许 0.05s 的提前量，利用人的听觉残留，防止最后一点杂音
-        if (ct >= this.targetEnd - 0.05) {
-            this.finishPlayback();
+        if (ct >= this.targetEnd) {
+            this.finishLongPlayback();
         }
     },
 
-    finishPlayback() {
+    finishLongPlayback() {
         const a = document.getElementById('main-audio');
+        a.pause();
         
         if (this.mode === 'PLAY_ONCE') {
-            a.pause();
             this.stopAll();
-        } 
-        else if (this.mode === 'LOOP_ONE') {
-            // 循环：重新触发 playRange (会生成新 SessionID)
+        } else if (this.mode === 'LOOP_ONE') {
             const seg = state.segments[state.currIndex];
-            if (seg) this.playRange(seg.start, seg.end, 'LOOP_ONE');
-        } 
-        else if (this.mode === 'LOOP_RANGE') {
+            this.playRange(seg.start, seg.end, 'LOOP_ONE');
+        } else if (this.mode === 'LOOP_RANGE') {
             this.triggerNextRange();
         }
     },
@@ -513,7 +565,6 @@ const engine = {
         }
     },
 
-    // --- 外部接口 ---
     playSegment(i) {
         if (!state.segments[i]) return;
         this.playRange(state.segments[i].start, state.segments[i].end, 'PLAY_ONCE');
@@ -546,14 +597,12 @@ const engine = {
         if (this.mode === 'FULL_PLAY') this.stopAll();
         else {
             if (!this.check()) return;
-            const a = document.getElementById('main-audio');
-            a.loop = false;
             this.playRange(0, 999999, 'FULL_PLAY');
         }
     },
     check() {
         if (!state.segments.length) { ui.toast("请先加载内容"); return false; }
-        if (!document.getElementById('main-audio').src) { ui.toast("音频未就绪"); return false; }
+        if (!this.blobUrl) { ui.toast("音频未就绪"); return false; }
         return true;
     }
 };
@@ -800,7 +849,6 @@ const app = {
         const text = (e.clipboardData || window.clipboardData).getData('text');
         if (!text) return;
         
-        // 【修正】恢复正确的正则匹配，OpenAI 之前的版本转义过度了
         if (text.match(/https?:\/\//g).length > 1 || text.includes('.mp3')) {
             e.preventDefault();
             document.getElementById('url-audio').value = '';
@@ -915,10 +963,13 @@ const app = {
         try {
             ui.toast("正在下载音频(请勿锁屏)...");
             const audioBlob = await net.fetchBlobSmart(mp3);
-            const a = document.getElementById('main-audio');
-            a.src = URL.createObjectURL(audioBlob);
+            const blobUrl = URL.createObjectURL(audioBlob);
             
-            // 【修正】简单的加载逻辑
+            // 保存 Blob URL
+            engine.blobUrl = blobUrl;
+            
+            const a = document.getElementById('main-audio');
+            a.src = blobUrl;
             a.preload = "auto";
             a.load();
 
@@ -972,9 +1023,7 @@ const app = {
     },
 
     switchView(v) {
-        // 切换页面时，如果是进入练习页，保留状态；离开则停止。
-        if (v !== 'practice') engine.stopAll();
-        
+        engine.stopAll();
         if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
 
         document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
@@ -994,8 +1043,11 @@ const app = {
     loadItem(i, playNow) {
         if (i < 0 || i >= state.segments.length) return;
         
-        // 【关键】用户手动切换时，直接 stopAll
-        if (playNow) engine.stopAll();
+        // 【V64 护栏】如果引擎在忙，不允许切换，防止 UI 和 Audio 不同步
+        if (playNow && engine.isPending) {
+            console.log("Input blocked: Engine busy");
+            return;
+        }
 
         state.currIndex = i;
         ui.updatePractice(i);
@@ -1003,10 +1055,7 @@ const app = {
 
         if (playNow) {
             const seg = state.segments[i];
-            // 小延迟确保 stopAll 生效，并且 DOM 刷新
-            setTimeout(() => {
-                engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
-            }, 0);
+            engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
         }
     },
 
