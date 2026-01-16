@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V51 (单词Fix)</title>
+<title>影子跟读 Pro V52 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V51</div>
+<div class="nav-title">🎧 影子跟读 V52</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -520,103 +520,210 @@ const engine = {
 
 const ui = {
     init() {
-        document.getElementById('url-audio').addEventListener('paste', (e) => app.handleSmartPaste(e));
-        
+        // 1. 原有的智能粘贴监听（保留）
+        const urlAudio = document.getElementById('url-audio');
+        if (urlAudio) {
+            urlAudio.addEventListener('paste', (e) => app.handleSmartPaste(e));
+            
+            // --- 【修改点】点击音频框 -> 清空所有 ---
+            urlAudio.addEventListener('focus', function() {
+                // 清空自己
+                this.value = '';
+                // 顺便把下面3个字幕也全部清空
+                document.getElementById('url-srt-1').value = '';
+                document.getElementById('url-srt-2').value = '';
+                document.getElementById('url-srt-3').value = '';
+            });
+        }
+
+        // --- 【修改点】点击字幕框 -> 只清空自己 ---
+        ['url-srt-1', 'url-srt-2', 'url-srt-3'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('focus', function() {
+                    this.value = '';
+                });
+            }
+        });
+
+        // 2. 原有的 Tab 切换逻辑（保留）
         const p = new URLSearchParams(location.search);
-        if(p.get('mp3')) {
+        if (p.get('mp3')) {
             document.getElementById('url-audio').value = p.get('mp3');
-            if(p.get('srt')) document.getElementById('url-srt-1').value = p.get('srt');
+            if (p.get('srt')) document.getElementById('url-srt-1').value = p.get('srt');
             setTimeout(() => app.loadFromUrl(), 500);
         } else {
             const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-            if(inputs.mp3) document.getElementById('url-audio').value = inputs.mp3;
-            if(inputs.s1) document.getElementById('url-srt-1').value = inputs.s1;
-            if(inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
-            if(inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
+            if (inputs.mp3) document.getElementById('url-audio').value = inputs.mp3;
+            if (inputs.s1) document.getElementById('url-srt-1').value = inputs.s1;
+            if (inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
+            if (inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
         }
         this.renderHistory();
         const d = localStorage.getItem(CONST.STORAGE);
-        if(d && JSON.parse(d).length) {
+
+        // 3. 原有的加载逻辑（保留）
+        if (d && JSON.parse(d).length) {
             state.segments = JSON.parse(d);
-            state.currIndex = parseInt(localStorage.getItem(CONST.INDEX)||0);
-            this.renderEditor(); this.updatePractice(state.currIndex);
+            state.currIndex = parseInt(localStorage.getItem(CONST.INDEX) || 0);
+            this.renderEditor();
+            this.updatePractice(state.currIndex);
             document.getElementById('restore-idx').innerText = state.currIndex + 1;
             document.getElementById('restore-bar').style.display = 'block';
         }
         this.updateAudioStatus();
     },
+    
+    // --- 下面的函数保持不变，复制刚才给你的即可，或者保留原样 ---
     renderHistory() {
-        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
+        const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
         const sel = document.getElementById('history-select');
         sel.innerHTML = '<option value="">▼ 选择历史记录...</option>';
-        h.forEach((item, i) => { const opt = document.createElement('option'); opt.value = i; opt.text = item.name; sel.appendChild(opt); });
+        h.forEach((item, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.text = item.name;
+            sel.appendChild(opt);
+        });
     },
+    
     setTab(t) {
-        document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', (t==='url' && i===0) || (t==='local' && i===1)));
-        document.getElementById('group-url').style.display = t==='url' ? 'block' : 'none';
-        document.getElementById('group-local').style.display = t==='local' ? 'block' : 'none';
+        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (t === 'url' && i === 0) || (t === 'local' && i === 1)));
+        document.getElementById('group-url').style.display = t === 'url' ? 'block' : 'none';
+        document.getElementById('group-local').style.display = t === 'local' ? 'block' : 'none';
     },
-    setLoadBtnText(t) { document.getElementById('btn-load-url').innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span> 🚀 极速加载' : t; },
-    updateThresh(v) { document.getElementById('threshold-val').innerText = v; },
-    toast(m) { const t=document.getElementById('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); },
+
+    setLoadBtnText(t) {
+        document.getElementById('btn-load-url').innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span>  极速加载' : t;
+    },
+
+    updateThresh(v) {
+        document.getElementById('threshold-val').innerText = v;
+    },
+
+    toast(m) {
+        const t = document.getElementById('toast');
+        t.innerText = m;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+    },
+
     updateAudioStatus() {
-        const m = document.getElementById('audio-status-msg'); const a = document.getElementById('main-audio');
-        if(a.src && a.src!==location.href) { m.className='audio-status ok'; m.style.display='block'; m.innerText="✅ 音频已就绪"; setTimeout(()=>m.style.display='none',3000); }
-        else { m.className='audio-status warn'; m.style.display='block'; m.innerText="⚠ 音频未就绪"; }
+        const m = document.getElementById('audio-status-msg');
+        const a = document.getElementById('main-audio');
+        if (a.src && a.src !== location.href) {
+            m.className = 'audio-status ok';
+            m.style.display = 'block';
+            m.innerText = " ✅ 音频已就绪";
+            setTimeout(() => m.style.display = 'none', 3000);
+        } else {
+            m.className = 'audio-status warn';
+            m.style.display = 'block';
+            m.innerText = " ⚠ 音频未就绪";
+        }
     },
+
     resetButtons() {
         document.getElementById('btn-play-once').classList.remove('active');
         document.getElementById('btn-loop').classList.remove('active');
-        const rangeBtn = document.getElementById('btn-range-play'); rangeBtn.classList.remove('active'); rangeBtn.innerText = "循环";
-        const fullBtn = document.getElementById('btn-full-play'); fullBtn.classList.remove('active'); fullBtn.innerText = "🎧 全文磨耳朵";
-        const recBtn = document.getElementById('btn-record'); recBtn.classList.remove('recording', 'playing'); recBtn.innerText = "🎤 按下开始录音";
+        const rangeBtn = document.getElementById('btn-range-play');
+        rangeBtn.classList.remove('active');
+        rangeBtn.innerText = "循环";
+        const fullBtn = document.getElementById('btn-full-play');
+        fullBtn.classList.remove('active');
+        fullBtn.innerText = "  全文磨耳朵";
+        const recBtn = document.getElementById('btn-record');
+        recBtn.classList.remove('recording', 'playing');
+        recBtn.innerText = "  按下开始录音";
     },
+
     renderEditor() {
-        const l = document.getElementById('editor-list'); l.innerHTML='';
+        const l = document.getElementById('editor-list');
+        l.innerHTML = '';
         document.getElementById('row-count').innerText = state.segments.length;
-        state.segments.forEach((s,i)=>{
-            const d = document.createElement('div'); d.className='sub-item';
+        state.segments.forEach((s, i) => {
+            const d = document.createElement('div');
+            d.className = 'sub-item';
             d.innerHTML = `
-            <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
-            ${s.text!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
-            ${s.text2!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
-            ${s.text3!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
-            <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🔗 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">✕ 删除</button></div>`;
+ <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+ ${s.text !== undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
+ ${s.text2 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
+ ${s.text3 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
+ <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})"> ▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})"> ✂ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})"> 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})"> ✕ 删除</button></div>`;
             l.appendChild(d);
         });
         document.getElementById('loop-start').max = state.segments.length;
         document.getElementById('loop-end').max = state.segments.length;
         document.getElementById('loop-end').value = state.segments.length;
-        const sel = document.getElementById('jump-select'); sel.innerHTML='';
-        state.segments.forEach((_,i)=>{ const o=document.createElement('option'); o.value=i; o.text=`第 ${i+1} 句`; sel.appendChild(o); });
+        
+        const sel = document.getElementById('jump-select');
+        sel.innerHTML = '';
+        state.segments.forEach((_, i) => {
+            const o = document.createElement('option');
+            o.value = i;
+            o.text = `第 ${i+1} 句`;
+            sel.appendChild(o);
+        });
         app.save();
     },
+
     updatePractice(idx) {
-        if(!state.segments[idx]) return;
-        const key = state.activeSub===1 ? 'text2' : (state.activeSub===2 ? 'text3' : 'text');
+        if (!state.segments[idx]) return;
+        const key = state.activeSub === 1 ? 'text2' : (state.activeSub === 2 ? 'text3' : 'text');
         const txt = document.getElementById('practice-text-display');
         const content = state.segments[idx][key] || "(无内容)";
         txt.innerText = content;
         this.fitText(txt);
-        if (state.userBlurState) { txt.classList.add("blur"); document.getElementById('text-toggle-btn').innerText = "👁 显示"; } 
-        else { txt.classList.remove("blur"); document.getElementById('text-toggle-btn').innerText = "🙈 隐藏"; }
+        if (state.userBlurState) {
+            txt.classList.add("blur");
+            document.getElementById('text-toggle-btn').innerText = "  显示";
+        } else {
+            txt.classList.remove("blur");
+            document.getElementById('text-toggle-btn').innerText = "  隐藏";
+        }
         if (content === "(无内容)") txt.className = "practice-text empty";
         document.getElementById('jump-select').value = idx;
-        if(!state.hasShownHint) {
-            const hint = document.getElementById('click-hint'); hint.classList.add('show');
-            setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
+        if (!state.hasShownHint) {
+            const hint = document.getElementById('click-hint');
+            hint.classList.add('show');
+            setTimeout(() => {
+                hint.classList.remove('show');
+                state.hasShownHint = true;
+            }, 3000);
         }
     },
+
     showHintManual() {
-        const hint = document.getElementById('click-hint'); hint.classList.add('show'); setTimeout(() => hint.classList.remove('show'), 3000);
+        const hint = document.getElementById('click-hint');
+        hint.classList.add('show');
+        setTimeout(() => hint.classList.remove('show'), 3000);
     },
+
     fitText(el) {
-        let size = 34; el.style.fontSize = size + 'px';
-        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
+        let size = 34;
+        el.style.fontSize = size + 'px';
+        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) {
+            size--;
+            el.style.fontSize = size + 'px';
+        }
     },
-    toggleTextBlur() { state.userBlurState = !state.userBlurState; ui.updatePractice(state.currIndex); ui.showHintManual(); },
-    switchSubTab(i) { state.activeSub = i; document.querySelectorAll('.sub-btn').forEach((b,k)=>b.classList.toggle('active',k===i)); ui.updatePractice(state.currIndex); },
-    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
+
+    toggleTextBlur() {
+        state.userBlurState = !state.userBlurState;
+        ui.updatePractice(state.currIndex);
+        ui.showHintManual();
+    },
+
+    switchSubTab(i) {
+        state.activeSub = i;
+        document.querySelectorAll('.sub-btn').forEach((b, k) => b.classList.toggle('active', k === i));
+        ui.updatePractice(state.currIndex);
+    },
+
+    toggleDrawer() {
+        document.getElementById('drawer-overlay').classList.toggle('open');
+    },
+
     toggleSleepModal() {
         const popup = document.getElementById('sleep-popup');
         popup.classList.toggle('show');
