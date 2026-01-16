@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V66 (单词Fix)</title>
+<title>影子跟读 Pro V67 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V66</div>
+<div class="nav-title">🎧 影子跟读 V67</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -344,8 +344,8 @@ const engine = {
         if (a) {
             a.pause();
             a.loop = false;
-            a.ontimeupdate = null; // 移除监听
-            a.onseeked = null;
+            a.ontimeupdate = null; // 移除 ontimeupdate 监听
+            a.onseeked = null;     // 移除 onseeked 监听
         }
         
         if (r) r.pause();
@@ -354,7 +354,7 @@ const engine = {
         ui.resetButtons();
     },
 
-    // --- V66 核心播放逻辑 ---
+    // --- 核心播放逻辑 ---
     async playRange(start, end, newMode) {
         // 1. 停止旧的一切，生成新令牌
         this.stopAll();
@@ -375,12 +375,23 @@ const engine = {
             a.currentTime = targetTime;
             
             // 给一个小小的缓冲期让 iOS 反应
-            while (Math.abs(a.currentTime - targetTime) > 0.1 && attempt < 5) {
+            while (Math.abs(a.currentTime - targetTime) > 0.1 && attempt < 10) {
                 // 如果时间没变，再设一次
                 a.currentTime = targetTime;
                 attempt++;
-                // 极短的异步等待，不阻塞主线程
-                await new Promise(r => setTimeout(r, 20));
+                // 更长的异步等待，让 iOS 有更充分的反应时间
+                await new Promise(r => setTimeout(r, 50));
+            }
+            
+            // 如果经过多次尝试后时间依然没跳转到目标，则再用 seeked 事件确认
+            if (Math.abs(a.currentTime - targetTime) > 0.1) {
+                await new Promise(r => {
+                    a.onseeked = () => {
+                        a.onseeked = null;
+                        r();
+                    };
+                    a.currentTime = targetTime;
+                });
             }
 
             // 3. 再次检查令牌（防止等待时用户切歌）
@@ -764,19 +775,19 @@ const app = {
         const text = (e.clipboardData || window.clipboardData).getData('text');
         if (!text) return;
         
-        if (text.match(/https?:\/\//g).length > 1 || text.includes('.mp3')) {
+        if (text.match(/https?:\\/\\//g).length > 1 || text.includes('.mp3')) {
             e.preventDefault();
             document.getElementById('url-audio').value = '';
             document.getElementById('url-srt-1').value = '';
             document.getElementById('url-srt-2').value = '';
             document.getElementById('url-srt-3').value = '';
 
-            const mp3Match = text.match(/https?:\/\/[^\s"']+\.mp3/i);
+            const mp3Match = text.match(/https?:\\/\\/[^\s"']+\\.mp3/i);
             if (mp3Match) document.getElementById('url-audio').value = mp3Match[0];
 
-            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i);
-            const srtEngChs = text.match(/https?:\/\/[^\s"']+\.engchs\.srt/i);
-            const srtChs = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.chs\.srt/i);
+            const srtEng = text.match(/https?:\\/\\/[^\s"']+(?<!engchs)\\.eng\\.srt/i);
+            const srtEngChs = text.match(/https?:\\/\\/[^\s"']+\\.engchs\\.srt/i);
+            const srtChs = text.match(/https?:\\/\\/[^\s"']+(?<!engchs)\\.chs\\.srt/i);
 
             if (srtEng) document.getElementById('url-srt-1').value = srtEng[0];
             if (srtEngChs) document.getElementById('url-srt-2').value = srtEngChs[0];
@@ -885,7 +896,9 @@ const app = {
             a.src = blobUrl;
             a.preload = "auto";
             a.load();
-
+            // 等待元数据加载完成，确保 audio 可以正确 seek
+            await new Promise(r => a.addEventListener('loadedmetadata', r, {once: true}));
+            
             ui.toast("✅ 音频下载成功! 正在获取字幕...");
 
             const loadTxt = async (u) => u ? await net.fetchTextSmart(u) : null;
@@ -1081,7 +1094,7 @@ const app = {
         
         let c = "";
         state.segments.forEach((s, i) => {
-            c += `${i + 1}\n${fmtTime(s.start, 1)} --> ${fmtTime(s.end, 1)}\n${s[key] || ''}\n\n`;
+            c += `${i + 1}\\n${fmtTime(s.start, 1)} --> ${fmtTime(s.end, 1)}\\n${s[key] || ''}\\n\\n`;
         });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([c], { type: 'text/plain' }));
