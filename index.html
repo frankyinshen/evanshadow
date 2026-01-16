@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V54 (单词Fix)</title>
+<title>影子跟读 Pro V55 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V54</div>
+<div class="nav-title">🎧 影子跟读 V55</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -294,13 +294,17 @@ const net = {
 };
 
 const engine = {
-    mode: 'IDLE',
+    // --- 核心状态机 ---
+    // 'IDLE': 空闲/停止
+    // 'SEEKING': 正在跳转（此时忽略所有时间判断，防止 iOS 读到旧时间）
+    // 'PLAYING': 正常播放（此时才检测是否结束）
+    internalState: 'IDLE', 
+    mode: 'IDLE', // 业务模式: PLAY_ONCE, LOOP_ONE, etc.
+    
     reqId: null,
-    // 【核心机制】iOS 专用：时间窗口过滤器
-    // 用来忽略跳转瞬间产生的“幽灵时间”
-    ignoreTicksUntil: 0, 
-    // 缓存当前正在播放的目标区间，避免每帧去 state 里查
-    targetRange: null, 
+    targetStart: 0,
+    targetEnd: 0,
+    seekTimeout: null, // 强行解除死锁的定时器
 
     startTicker() {
         if (this.reqId) cancelAnimationFrame(this.reqId);
@@ -308,189 +312,194 @@ const engine = {
     },
 
     stopAll(releaseMic = false) {
+        this.internalState = 'IDLE';
         this.mode = 'IDLE';
-        this.targetRange = null;
         
         const a = document.getElementById('main-audio');
         const r = document.getElementById('record-audio');
         
-        // iOS 必须显式暂停，不能依赖逻辑结束
         if (a) { a.pause(); a.loop = false; }
         if (r) r.pause();
 
         if (this.reqId) cancelAnimationFrame(this.reqId);
+        if (this.seekTimeout) clearTimeout(this.seekTimeout);
         if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
         
-        // UI 归位
         ui.resetButtons();
     },
 
-    // 核心跳转函数：所有播放请求必须经过这里
-    async performSeekAndPlay(startTime, endTime) {
+    // --- 统一播放核心 (所有播放请求都走这里) ---
+    playRange(start, end, newMode) {
+        // 1. 停止当前逻辑，但保留 Audio 对象以便复用
+        if (this.reqId) cancelAnimationFrame(this.reqId);
+        if (this.seekTimeout) clearTimeout(this.seekTimeout);
+        
         const a = document.getElementById('main-audio');
         if (!a.src) return ui.toast("音频未就绪");
 
-        // 1. 设定“无视期”：未来 400ms 内的心跳检测全部作废
-        // 这给 iOS 足够的时间去缓冲和更新时间轴
-        this.ignoreTicksUntil = Date.now() + 400;
+        // 2. 设置目标参数
+        this.mode = newMode;
+        this.targetStart = start;
+        this.targetEnd = end;
         
-        // 2. 锁定目标区间
-        this.targetRange = { start: startTime, end: endTime };
-
-        try {
-            a.currentTime = startTime;
-            // 3. 强力启动：使用 await 确保 Promise 完成，防止连续点击报错
-            await a.play(); 
-            this.startTicker();
-        } catch (e) {
-            console.warn("Play interrupted or blocked:", e);
-            // 即使报错（如用户手速太快），也要尝试恢复状态，不要卡死
-            if (this.mode !== 'IDLE') this.startTicker();
+        // 3. 进入 [SEEKING] 状态：此时程序“闭眼”，不判断结束
+        this.internalState = 'SEEKING';
+        
+        // 4. 执行跳转和播放
+        a.currentTime = start;
+        const p = a.play();
+        if (p !== undefined) {
+            p.catch(e => {
+                console.error("Playback prevented:", e);
+                // iOS 只有用户点击才能触发。如果报错，提示用户。
+                if (e.name === 'NotAllowedError') ui.toast("请点击播放按钮激活");
+            });
         }
+
+        // 5. 设置超时保护：如果 1秒后 iOS 还没把时间变过来，强行切入播放状态，防止死锁
+        this.seekTimeout = setTimeout(() => {
+            if (this.internalState === 'SEEKING') {
+                this.internalState = 'PLAYING';
+            }
+        }, 1000);
+
+        // 6. 启动心跳检测
+        this.startTicker();
+        this.updateButtonUI(newMode);
     },
 
+    // --- 心跳检测 (每秒 60 次) ---
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
-
-        // 1. 如果处于“无视期”，直接跳过，防止误判
-        if (Date.now() < this.ignoreTicksUntil) return;
-
+        
         const a = document.getElementById('main-audio');
-        if (a.paused) return; // 暂停时不处理
+        if (a.paused) return; 
 
         const ct = a.currentTime;
 
-        // --- 模式逻辑 ---
-
-        if (this.mode === 'PLAY_ONCE') {
-            if (!this.targetRange) return;
-            // 【关键判定】iOS 修正：
-            // 只有当当前时间 大于等于 结束时间，且 大于 开始时间（防止回跳时读到旧的0:00）时才停止
-            if (ct >= this.targetRange.end && ct > this.targetRange.start) {
-                a.pause();
-                this.mode = 'IDLE';
-                ui.resetButtons();
+        // 【状态 1】跳转中
+        if (this.internalState === 'SEEKING') {
+            // 只有当 时间轴 真的跳到了 目标点附近 (误差 0.5s 内)，才认为跳转成功
+            // 这行代码完美屏蔽了 iOS 跳转瞬间的“幽灵时间”
+            if (Math.abs(ct - this.targetStart) < 0.5) {
+                this.internalState = 'PLAYING';
             }
-        } 
-        else if (this.mode === 'LOOP_ONE') {
-            if (!this.targetRange) return;
-            if (ct >= this.targetRange.end) {
-                // 循环时，再次设立 200ms 的无视期，防止跳回起点时的闪烁
-                this.ignoreTicksUntil = Date.now() + 200;
-                a.currentTime = this.targetRange.start;
-                a.play().catch(()=>{});
-            }
+            return; // 只要还在跳转，绝对不检查是否结束！
         }
-        else if (this.mode === 'LOOP_RANGE') {
-            const seg = state.segments[state.currIndex];
-            // 范围循环也必须基于当前段的结束时间判断
-            if (seg && ct >= seg.end) {
-                const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
-                const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
-                
-                let nextIdx = state.currIndex + 1;
-                if (nextIdx > endLimit || nextIdx >= state.segments.length) {
-                    nextIdx = Math.max(0, startLimit);
+
+        // 【状态 2】播放中
+        if (this.internalState === 'PLAYING') {
+            
+            // A. 全文播放模式的高亮更新 (独立逻辑)
+            if (this.mode === 'FULL_PLAY') {
+                const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
+                if (activeIdx !== -1 && activeIdx !== state.currIndex) {
+                    state.currIndex = activeIdx;
+                    ui.updatePractice(activeIdx);
                 }
-                
-                // 切换到下一句
-                this.triggerNextItem(nextIdx);
+                // 全文播放自然结束
+                if (a.ended) { 
+                    a.currentTime = 0; a.play(); 
+                    state.currIndex = 0; ui.updatePractice(0); 
+                }
+                return; // 全文播放不检查 targetEnd
             }
-        }
-        else if (this.mode === 'FULL_PLAY') {
-            // 全文播放逻辑：找到当前时间落入的区间
-            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
-            
-            // 只有当确切进入某一句子时才更新 UI
-            if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                state.currIndex = activeIdx;
-                ui.updatePractice(activeIdx);
-            }
-            
-            // 播放结束复位
-            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.1)) {
-                a.currentTime = 0;
-                a.play(); // 循环全文
-                state.currIndex = 0;
-                ui.updatePractice(0);
+
+            // B. 单句/循环模式的结束检查
+            // 给予 0.1s 缓冲，防止单词太短被跳过
+            if (ct >= this.targetEnd - 0.1) {
+                if (this.mode === 'PLAY_ONCE') {
+                    a.pause();
+                    this.stopAll();
+                } 
+                else if (this.mode === 'LOOP_ONE') {
+                    // 立即重新触发跳转逻辑，实现无缝循环
+                    this.playRange(this.targetStart, this.targetEnd, 'LOOP_ONE');
+                } 
+                else if (this.mode === 'LOOP_RANGE') {
+                    this.nextRangeItem(); // 切下一句
+                }
             }
         }
     },
 
-    // 内部辅助：范围循环或自动跳转时使用
-    triggerNextItem(idx) {
-        state.currIndex = idx;
-        ui.updatePractice(idx);
-        const nextSeg = state.segments[idx];
-        if (nextSeg) {
-            this.performSeekAndPlay(nextSeg.start, nextSeg.end);
+    nextRangeItem() {
+        const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
+        const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
+        
+        let nextIdx = state.currIndex + 1;
+        if (nextIdx > endLimit || nextIdx >= state.segments.length) {
+            nextIdx = Math.max(0, startLimit);
+        }
+        
+        state.currIndex = nextIdx;
+        ui.updatePractice(nextIdx);
+        
+        const seg = state.segments[nextIdx];
+        this.playRange(seg.start, seg.end, 'LOOP_RANGE');
+    },
+
+    updateButtonUI(m) {
+        // 先清除所有高亮，再根据模式添加
+        ui.resetButtons(); // 这个函数里会移除 active 类
+        if (m === 'PLAY_ONCE') document.getElementById('btn-play-once').classList.add('active');
+        if (m === 'LOOP_ONE') document.getElementById('btn-loop').classList.add('active');
+        if (m === 'LOOP_RANGE') {
+            const b = document.getElementById('btn-range-play');
+            b.classList.add('active');
+            b.innerText = "⏸";
+        }
+        if (m === 'FULL_PLAY') {
+            const b = document.getElementById('btn-full-play');
+            b.classList.add('active');
+            b.innerText = " ⏸ 停止";
         }
     },
 
-    // --- 按钮响应 ---
+    // --- 按钮点击入口 ---
+    
+    playSegment(i) {
+        // 编辑模式试听
+        if (!state.segments[i]) return;
+        this.playRange(state.segments[i].start, state.segments[i].end, 'PLAY_ONCE');
+    },
 
     playOnce() {
-        this.stopAll();
         if (!this.check()) return;
-        this.mode = 'PLAY_ONCE';
-        document.getElementById('btn-play-once').classList.add('active');
-        
         const seg = state.segments[state.currIndex];
-        this.performSeekAndPlay(seg.start, seg.end);
+        this.playRange(seg.start, seg.end, 'PLAY_ONCE');
     },
 
     toggleLoop() {
         if (this.mode === 'LOOP_ONE') this.stopAll();
         else {
-            this.stopAll();
             if (!this.check()) return;
-            this.mode = 'LOOP_ONE';
-            document.getElementById('btn-loop').classList.add('active');
-            
             const seg = state.segments[state.currIndex];
-            this.performSeekAndPlay(seg.start, seg.end);
+            this.playRange(seg.start, seg.end, 'LOOP_ONE');
         }
     },
 
     toggleRangeLoop() {
         if (this.mode === 'LOOP_RANGE') this.stopAll();
         else {
-            this.stopAll();
             if (!state.segments.length) return ui.toast("无内容");
-            
-            // 获取起始点
             const start = Math.max(0, parseInt(document.getElementById('loop-start').value) - 1);
             state.currIndex = start;
             ui.updatePractice(start);
-            
-            this.mode = 'LOOP_RANGE';
-            const btn = document.getElementById('btn-range-play');
-            btn.classList.add('active');
-            btn.innerText = "⏸"; // 暂停图标
-            
             const seg = state.segments[start];
-            this.performSeekAndPlay(seg.start, seg.end);
+            this.playRange(seg.start, seg.end, 'LOOP_RANGE');
         }
     },
 
     toggleFullPlay() {
         if (this.mode === 'FULL_PLAY') this.stopAll();
         else {
-            this.stopAll();
             if (!this.check()) return;
             const a = document.getElementById('main-audio');
-            
-            a.currentTime = 0;
-            state.currIndex = 0;
-            ui.updatePractice(0);
-            a.loop = false;
-            
-            this.mode = 'FULL_PLAY';
-            const btn = document.getElementById('btn-full-play');
-            btn.classList.add('active');
-            btn.innerText = " ⏸ 停止";
-            
-            a.play().then(() => this.startTicker());
+            // 全文播放特殊处理：不设终点，只设起点
+            a.loop = false; 
+            // 这里的 playRange 参数 end 设为无限大，因为我们靠 tick 里的特殊逻辑处理
+            this.playRange(0, 999999, 'FULL_PLAY'); 
         }
     },
 
@@ -733,7 +742,6 @@ const app = {
         
         if (text.match(/https?:\/\//g).length > 1 || text.includes('.mp3')) {
             e.preventDefault();
-            
             document.getElementById('url-audio').value = '';
             document.getElementById('url-srt-1').value = '';
             document.getElementById('url-srt-2').value = '';
@@ -742,7 +750,7 @@ const app = {
             const mp3Match = text.match(/https?:\/\/[^\s"']+\.mp3/i);
             if (mp3Match) document.getElementById('url-audio').value = mp3Match[0];
 
-            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i); 
+            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i);
             const srtEngChs = text.match(/https?:\/\/[^\s"']+\.engchs\.srt/i);
             const srtChs = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.chs\.srt/i);
 
@@ -754,24 +762,22 @@ const app = {
             ui.toast("📋 智能粘贴：链接已分配");
         }
     },
-    // V50: Sleep Timer with MM:SS
+
     sleepTimerId: null,
     sleepInterval: null,
     startSleepTimer() {
         const input = document.getElementById('sleep-input');
         const mins = parseInt(input.value);
         if (!mins || mins < 1 || mins > 100) return ui.toast("请输入 1-100");
-        
+
         if (this.sleepTimerId) clearTimeout(this.sleepTimerId);
         if (this.sleepInterval) clearInterval(this.sleepInterval);
-
-        const endTime = Date.now() + mins * 60 * 1000;
         
-        ui.toggleSleepModal(); 
+        const endTime = Date.now() + mins * 60 * 1000;
+        ui.toggleSleepModal();
         const display = document.getElementById('sleep-display');
         display.style.display = 'block';
-        
-        // V50: Show Minutes and Seconds
+
         const updateDisplay = () => {
             const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
             if (remaining <= 0) {
@@ -784,159 +790,297 @@ const app = {
                 display.innerText = `⏰ ${m}:${s.toString().padStart(2, '0')}`;
             }
         };
-        
-        updateDisplay(); // immediate
+        updateDisplay();
         this.sleepInterval = setInterval(updateDisplay, 1000);
-
         this.sleepTimerId = setTimeout(() => {
             engine.stopAll();
             ui.toast("💤 定时结束，停止播放");
             display.style.display = 'none';
             clearInterval(this.sleepInterval);
         }, mins * 60 * 1000);
-        
         ui.toast(`倒计时 ${mins} 分钟开始`);
     },
+
     saveInput() {
-        const d = { mp3: document.getElementById('url-audio').value, s1: document.getElementById('url-srt-1').value, s2: document.getElementById('url-srt-2').value, s3: document.getElementById('url-srt-3').value };
+        const d = { 
+            mp3: document.getElementById('url-audio').value,
+            s1: document.getElementById('url-srt-1').value,
+            s2: document.getElementById('url-srt-2').value,
+            s3: document.getElementById('url-srt-3').value 
+        };
         localStorage.setItem(CONST.INPUTS, JSON.stringify(d));
     },
+
     addHistory(mp3, name) {
-        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); h = h.filter(i=>i.mp3!==mp3);
+        let h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
+        h = h.filter(i => i.mp3 !== mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS));
-        h.unshift({name: name||mp3.split('/').pop(), mp3, ...d});
-        if(h.length>10) h.pop(); localStorage.setItem(CONST.HIST, JSON.stringify(h)); ui.renderHistory();
+        h.unshift({ name: name || mp3.split('/').pop(), mp3, ...d });
+        if (h.length > 10) h.pop();
+        localStorage.setItem(CONST.HIST, JSON.stringify(h));
+        ui.renderHistory();
     },
+
     fillHistory(i) {
-        if(i==="") return;
-        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); const item = h[i];
-        if(item) {
+        if (i === "") return;
+        const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
+        const item = h[i];
+        if (item) {
             document.getElementById('url-audio').value = item.mp3;
-            document.getElementById('url-srt-1').value = item.s1||'';
-            document.getElementById('url-srt-2').value = item.s2||'';
-            document.getElementById('url-srt-3').value = item.s3||'';
+            document.getElementById('url-srt-1').value = item.s1 || '';
+            document.getElementById('url-srt-2').value = item.s2 || '';
+            document.getElementById('url-srt-3').value = item.s3 || '';
             this.saveInput();
         }
     },
+
     async loadFromUrl() {
-        state.segments = []; ui.renderEditor(); this.saveInput();
+        state.segments = [];
+        ui.renderEditor();
+        this.saveInput();
+        
         const mp3 = net.fixUrl(document.getElementById('url-audio').value.trim());
         const s1 = net.fixUrl(document.getElementById('url-srt-1').value.trim());
         const s2 = net.fixUrl(document.getElementById('url-srt-2').value.trim());
         const s3 = net.fixUrl(document.getElementById('url-srt-3').value.trim());
-        if(!mp3) return ui.toast("请输入 MP3 链接");
-        
-        const btn = document.getElementById('btn-load-url'); 
+
+        if (!mp3) return ui.toast("请输入 MP3 链接");
+
+        const btn = document.getElementById('btn-load-url');
         const spin = document.getElementById('url-spinner');
-        btn.disabled=true; spin.style.display='inline-block';
+        btn.disabled = true;
+        spin.style.display = 'inline-block';
 
         try {
             ui.toast("正在下载音频...");
             const audioBlob = await net.fetchBlobSmart(mp3);
             document.getElementById('main-audio').src = URL.createObjectURL(audioBlob);
-            
             ui.toast("✅ 音频下载成功! 正在获取字幕...");
+
             const loadTxt = async (u) => u ? await net.fetchTextSmart(u) : null;
             const [t1, t2, t3] = await Promise.all([loadTxt(s1), loadTxt(s2), loadTxt(s3)]);
-            
-            // V50: Timeline Logic - Use ANY available subtitle as timeline base
+
             if (t1 || t2 || t3) {
                 if (t1) {
-                    // Scenario A: Sub 1 exists (Standard)
                     state.segments = parseSRT(t1);
                     if (t2) this.mergeSub(parseSRT(t2), 'text2');
                     if (t3) this.mergeSub(parseSRT(t3), 'text3');
                 } else if (t2) {
-                    // Scenario B: No Sub 1, but Sub 2 exists. Use Sub 2 as timeline base.
-                    // Important: parseSRT puts text in 'text', we need to move it to 'text2'
-                    state.segments = parseSRT(t2).map(s => ({start: s.start, end: s.end, text2: s.text}));
+                    state.segments = parseSRT(t2).map(s => ({ start: s.start, end: s.end, text2: s.text }));
                     if (t3) this.mergeSub(parseSRT(t3), 'text3');
                 } else {
-                    // Scenario C: Only Sub 3 exists. Use Sub 3 as timeline base.
-                    state.segments = parseSRT(t3).map(s => ({start: s.start, end: s.end, text3: s.text}));
+                    state.segments = parseSRT(t3).map(s => ({ start: s.start, end: s.end, text3: s.text }));
                 }
             } else {
-                // No subtitles at all -> auto silence detection
                 ui.toast("正在进行静音断句 (无字幕模式)...");
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
+                await new Promise(r => setTimeout(r, 50));
                 const ab = await audioBlob.arrayBuffer();
-                const ctx = new (window.AudioContext||window.webkitAudioContext)();
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 state.audioBuffer = await ctx.decodeAudioData(ab);
                 state.segments = detectSilence(state.audioBuffer, 0.02);
-                if(!state.segments.length) state.segments=[{start:0,end:state.audioBuffer.duration,text:"(自动断句失败)"}];
+                if (!state.segments.length) state.segments = [{ start: 0, end: state.audioBuffer.duration, text: "(自动断句失败)" }];
             }
 
-            this.addHistory(mp3); ui.renderEditor(); ui.updateAudioStatus(); ui.toast("✅ 全部就绪，正在跳转...");
+            this.addHistory(mp3);
+            ui.renderEditor();
+            ui.updateAudioStatus();
+            ui.toast("✅ 全部就绪，正在跳转...");
             app.switchView('practice');
-        } catch(e) { console.error(e); ui.setLoadBtnText("加载失败: "+e.message); }
-        finally { btn.disabled=false; spin.style.display='none'; setTimeout(()=>ui.setLoadBtnText("default"), 3000); }
-    },
-    mergeSub(newS, k) { state.segments.forEach(b => { const m = newS.find(n => (n.start>=b.start && n.start<b.end)); if(m) b[k]=m.text; }); },
-    switchView(v) {
-        engine.stopAll();
-        if(v==='practice' && !state.segments.length) return ui.toast("请先加载内容");
-        document.getElementById('editor-view').style.display = v==='editor' ? 'block' : 'none';
-        const pView = document.getElementById('practice-view');
-        pView.style.display = v==='practice' ? 'flex' : 'none';
-        if (v==='practice') pView.classList.add('active'); 
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
-        if(v==='practice') this.loadItem(state.currIndex, false);
-    },
-    loadItem(i, play) {
-        if(i<0 || i>=state.segments.length) return;
-        state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
-        if(play) engine.playOnce();
-    },
-    next() { if(state.currIndex < state.segments.length-1) { state.userBlurState = true; this.loadItem(state.currIndex+1, true); } },
-    prev() { if(state.currIndex > 0) { state.userBlurState = true; this.loadItem(state.currIndex-1, true); } },
-    jumpTo(v) { this.loadItem(parseInt(v), true); },
-    updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
-    delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
-    splitSeg(i) {
-        const t = document.getElementById('main-audio').currentTime;
-        if(t > state.segments[i].start && t < state.segments[i].end) {
-            const old = state.segments[i]; const newSeg = { start:t, end:old.end, text:"" };
-            if(old.text2!==undefined) newSeg.text2=""; if(old.text3!==undefined) newSeg.text3="";
-            state.segments.splice(i+1, 0, newSeg); state.segments[i].end = t; ui.renderEditor();
-        } else ui.toast("请在试听时暂停于拆分点");
-    },
-    mergeSeg(i) {
-        if(i < state.segments.length-1) {
-            state.segments[i].end = state.segments[i+1].end;
-            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
-            if(state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
-            if(state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
-            state.segments.splice(i+1, 1); ui.renderEditor();
+
+        } catch (e) {
+            console.error(e);
+            ui.setLoadBtnText("加载失败: " + e.message);
+        } finally {
+            btn.disabled = false;
+            spin.style.display = 'none';
+            setTimeout(() => ui.setLoadBtnText("default"), 3000);
         }
     },
-    addNewRow() { 
-        const last=state.segments[state.segments.length-1]||{end:0}; 
-        const newObj = {start:last.end,end:last.end+2,text:""};
-        if(last.text2 !== undefined) newObj.text2 = ""; if(last.text3 !== undefined) newObj.text3 = "";
-        state.segments.push(newObj); ui.renderEditor(); 
+
+    mergeSub(newS, k) {
+        state.segments.forEach(b => {
+            const m = newS.find(n => (n.start >= b.start && n.start < b.end));
+            if (m) b[k] = m.text;
+        });
     },
+
+    switchView(v) {
+        engine.stopAll();
+        if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
+
+        document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
+        const pView = document.getElementById('practice-view');
+        pView.style.display = v === 'practice' ? 'flex' : 'none';
+        if (v === 'practice') pView.classList.add('active');
+
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
+        
+        if (v === 'practice') {
+            state.currIndex = Math.min(state.currIndex, state.segments.length - 1);
+            ui.updatePractice(state.currIndex);
+        }
+    },
+
+    // 【修改点】loadItem 现在直接调用 engine.playRange
+    loadItem(i, playNow) {
+        if (i < 0 || i >= state.segments.length) return;
+        
+        state.currIndex = i;
+        ui.updatePractice(i);
+        app.save(); 
+
+        if (playNow) {
+            const seg = state.segments[i];
+            // 强制触发播放单句逻辑
+            engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
+        }
+    },
+
+    next() {
+        if (state.currIndex < state.segments.length - 1) {
+            state.userBlurState = true;
+            this.loadItem(state.currIndex + 1, true);
+        } else {
+            ui.toast("已经是最后一句");
+        }
+    },
+
+    prev() {
+        if (state.currIndex > 0) {
+            state.userBlurState = true;
+            this.loadItem(state.currIndex - 1, true);
+        } else {
+            ui.toast("已经是第一句");
+        }
+    },
+
+    jumpTo(v) {
+        this.loadItem(parseInt(v), true);
+    },
+
+    updateSeg(i, k, v) {
+        if (k.startsWith('text')) state.segments[i][k] = v;
+        else state.segments[i][k] = parseFloat(v);
+        this.save();
+    },
+
+    delSeg(i) {
+        state.segments.splice(i, 1);
+        ui.renderEditor();
+    },
+
+    splitSeg(i) {
+        const t = document.getElementById('main-audio').currentTime;
+        if (t > state.segments[i].start && t < state.segments[i].end) {
+            const old = state.segments[i];
+            const newSeg = { start: t, end: old.end, text: "" };
+            if (old.text2 !== undefined) newSeg.text2 = "";
+            if (old.text3 !== undefined) newSeg.text3 = "";
+            state.segments.splice(i + 1, 0, newSeg);
+            state.segments[i].end = t;
+            ui.renderEditor();
+        } else ui.toast("请在试听时暂停于拆分点");
+    },
+
+    mergeSeg(i) {
+        if (i < state.segments.length - 1) {
+            state.segments[i].end = state.segments[i + 1].end;
+            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i + 1].text || "")).trim();
+            if (state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i + 1].text2 || "");
+            if (state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i + 1].text3 || "");
+            state.segments.splice(i + 1, 1);
+            ui.renderEditor();
+        }
+    },
+
+    addNewRow() {
+        const last = state.segments[state.segments.length - 1] || { end: 0 };
+        const newObj = { start: last.end, end: last.end + 2, text: "" };
+        if (last.text2 !== undefined) newObj.text2 = "";
+        if (last.text3 !== undefined) newObj.text3 = "";
+        state.segments.push(newObj);
+        ui.renderEditor();
+    },
+
     applyReAnalyze() {
-        if(!state.audioBuffer) return ui.toast("需先成功加载音频数据");
+        if (!state.audioBuffer) return ui.toast("需先成功加载音频数据");
         const val = parseFloat(document.getElementById('threshold-range').value);
         state.segments = detectSilence(state.audioBuffer, val);
-        ui.renderEditor(); ui.toast("重新分析完成");
+        ui.renderEditor();
+        ui.toast("重新分析完成");
     },
-    save() { localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments)); localStorage.setItem(CONST.INDEX, state.currIndex); },
+
+    save() {
+        localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
+        localStorage.setItem(CONST.INDEX, state.currIndex);
+    },
+
     restoreProgress() {
-        const d = localStorage.getItem(CONST.STORAGE); const i = localStorage.getItem(CONST.INDEX);
-        if(d) { state.segments=JSON.parse(d); state.currIndex=parseInt(i)||0; ui.renderEditor(); document.getElementById('restore-bar').style.display='none'; ui.updateAudioStatus(); ui.toast("进度已恢复"); }
+        const d = localStorage.getItem(CONST.STORAGE);
+        const i = localStorage.getItem(CONST.INDEX);
+        if (d) {
+            state.segments = JSON.parse(d);
+            state.currIndex = parseInt(i) || 0;
+            ui.renderEditor();
+            document.getElementById('restore-bar').style.display = 'none';
+            ui.updateAudioStatus();
+            ui.toast("进度已恢复");
+        }
     },
-    exportProject() { const b=new Blob([JSON.stringify({segments:state.segments, idx:state.currIndex})]); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow.json'; a.click(); },
+
+    exportProject() {
+        const b = new Blob([JSON.stringify({ segments: state.segments, idx: state.currIndex })]);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = 'shadow.json';
+        a.click();
+    },
+
     exportSRT(slot) {
-        if(!state.segments.length) return ui.toast("无数据");
-        let key = 'text'; if(slot===2) key='text2'; if(slot===3) key='text3';
-        if(!state.segments.some(s=>s[key])) return ui.toast(`字幕${slot}无内容`);
-        let c=""; state.segments.forEach((s,i)=>{ c+=`${i+1}\n${fmtTime(s.start,1)} --> ${fmtTime(s.end,1)}\n${s[key]||''}\n\n`; }); 
-        const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click(); 
+        if (!state.segments.length) return ui.toast("无数据");
+        let key = 'text';
+        if (slot === 2) key = 'text2';
+        if (slot === 3) key = 'text3';
+        
+        if (!state.segments.some(s => s[key])) return ui.toast(`字幕${slot}无内容`);
+        
+        let c = "";
+        state.segments.forEach((s, i) => {
+            c += `${i + 1}\n${fmtTime(s.start, 1)} --> ${fmtTime(s.end, 1)}\n${s[key] || ''}\n\n`;
+        });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([c], { type: 'text/plain' }));
+        a.download = `sub_${slot}.srt`;
+        a.click();
     },
-    loadProject(el) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const d=JSON.parse(e.target.result); state.segments=d.segments||d; state.currIndex=d.idx||0; ui.renderEditor(); ui.updateAudioStatus(); ui.toast("工程加载成功"); }; r.readAsText(f); },
-    importSub(el, k) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n, k===1?'text2':'text3'); ui.renderEditor(); }; r.readAsText(f); }
+
+    loadProject(el) {
+        const f = el.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = e => {
+            const d = JSON.parse(e.target.result);
+            state.segments = d.segments || d;
+            state.currIndex = d.idx || 0;
+            ui.renderEditor();
+            ui.updateAudioStatus();
+            ui.toast("工程加载成功");
+        };
+        r.readAsText(f);
+    },
+
+    importSub(el, k) {
+        const f = el.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = e => {
+            const n = parseSRT(e.target.result);
+            if (k === 0) state.segments = n;
+            else app.mergeSub(n, k === 1 ? 'text2' : 'text3');
+            ui.renderEditor();
+        };
+        r.readAsText(f);
+    }
 };
 
 
