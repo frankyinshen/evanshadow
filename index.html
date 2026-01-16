@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V59 (单词Fix)</title>
+<title>影子跟读 Pro V60 (单词Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V59</div>
+<div class="nav-title">🎧 影子跟读 V60</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -281,8 +281,8 @@ const net = {
         return url;
     },
 
-    // 简单的带超时 Fetch
-    fetchWithTimeout(url, timeout = 20000) { // 改为 20秒 超时
+    // 基础 Fetch 封装，带超时
+    fetchWithTimeout(url, timeout) {
         return Promise.race([
             fetch(url),
             new Promise((_, reject) => 
@@ -292,25 +292,26 @@ const net = {
     },
 
     async fetchCommon(url, type) {
-        // 1. 优先尝试直连 (给予 20秒 宽限期)
-        ui.setLoadBtnText("正在直连下载...");
+        // 1. 直连尝试：给予 30秒 的超长宽限期
+        // 对于 iPad + 动态DNS，DNS解析和SSL握手可能就需要几秒
+        ui.setLoadBtnText("正在直连下载(耐心等待)...");
         try {
-            const res = await this.fetchWithTimeout(url, 20000);
+            const res = await this.fetchWithTimeout(url, 30000); 
             if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
             throw new Error("直连响应错误");
         } catch (e) { 
-            console.warn("直连失败，尝试代理:", e); 
+            console.warn("直连失败，准备切换代理:", e); 
         }
 
-        // 2. 只有直连失败才尝试代理
-        ui.setLoadBtnText("直连失败，尝试代理...");
+        // 2. 代理尝试
+        ui.setLoadBtnText("直连超时，尝试代理...");
         for (const proxy of CONST.PROXY) {
             try {
                 const res = await this.fetchWithTimeout(proxy + encodeURIComponent(url), 10000);
                 if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
             } catch (e) {}
         }
-        throw new Error("所有线路下载失败，请检查网络");
+        throw new Error("下载失败。请检查链接是否有效，或网络是否通畅。");
     },
     
     async fetchBlobSmart(url) { return this.fetchCommon(url, 'blob'); },
@@ -325,35 +326,30 @@ const net = {
 
 
 const engine = {
-    // --- 核心 ---
-    // 每次点击播放都会 +1。tick 循环必须验证这个值，不对就自杀。
-    playToken: 0,
-    
-    // 忽略时间戳：在跳转后的几百毫秒内，无视时间检查，防止 iOS 报旧时间
-    ignoreTimeUntil: 0,
+    playToken: 0,      // 唯一令牌，防止操作冲突
+    mode: 'IDLE',      // 当前模式
+    reqId: null,       // 动画帧ID
+    targetEnd: 0,      // 目标结束时间
+    stopTimer: null,   // 短音频专用定时器
 
-    mode: 'IDLE',
-    reqId: null,
-    
-    // 目标结束时间
-    stopTime: 0,
-
+    // 开始心跳（仅用于长音频）
     startTicker() {
         if (this.reqId) cancelAnimationFrame(this.reqId);
         this.tick();
     },
 
+    // 停止一切
     stopAll(releaseMic = false) {
-        // 1. 销毁当前令牌：所有正在运行的逻辑立即失效
-        this.playToken++; 
+        this.playToken++; // 销毁令牌，作废旧操作
         this.mode = 'IDLE';
         
         const a = document.getElementById('main-audio');
         const r = document.getElementById('record-audio');
         
+        // 清理定时器和动画帧
         if (this.reqId) cancelAnimationFrame(this.reqId);
+        if (this.stopTimer) clearTimeout(this.stopTimer);
         
-        // 2. 安全暂停
         if (a) { a.pause(); a.loop = false; }
         if (r) r.pause();
         if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
@@ -361,88 +357,75 @@ const engine = {
         ui.resetButtons();
     },
 
-    // --- 统一播放入口 (V59) ---
+    // --- 核心播放逻辑 (策略分流) ---
     async playRange(start, end, newMode) {
         // 1. 生成新令牌
         const myToken = ++this.playToken;
         
         // 2. 清理旧环境
         if (this.reqId) cancelAnimationFrame(this.reqId);
+        if (this.stopTimer) clearTimeout(this.stopTimer);
+
         const a = document.getElementById('main-audio');
-        
         if (!a.src) return ui.toast("音频未就绪");
 
         this.mode = newMode;
-        this.stopTime = end;
-
-        // 3. 针对短音频的特殊处理
-        // iOS 上，如果刚 seek 完就立刻读 currentTime，经常读到旧的。
-        // 我们设置 400ms 的“致盲期”，期间只播放，不检查结束。
-        this.ignoreTimeUntil = Date.now() + 400;
+        this.targetEnd = end;
+        
+        const duration = end - start;
+        // 【关键策略】: 小于 2.0 秒算短音频
+        const isShortClip = duration < 2.0; 
 
         try {
-            // 4. iOS 核心操作序列：设置时间 -> 播放
-            // 很多 iPad 需要先 play 再设置时间，或者反过来，这里采用最通用的兼容写法
+            // 3. 无论长短，先暂停再seek，这是iOS铁律
+            a.pause();
             a.currentTime = start;
-            
-            const p = a.play();
-            if (p !== undefined) {
-                await p; // 等待 Promise 解决，防止报错
-            }
 
-            // 5. 再次检查令牌：如果 await 期间用户又点了别的，停止执行
+            // 4. 发起播放
+            const p = a.play();
+            if (p !== undefined) await p;
+
+            // 5. 再次校验令牌 (防止 await 期间用户狂点)
             if (this.playToken !== myToken) return;
 
-            // 6. 启动检测
-            this.startTicker();
+            // --- 分流处理 ---
+            
+            if (newMode === 'FULL_PLAY') {
+                // 场景 A: 全文播放 -> 必须用 Tick 检测高亮
+                this.startTicker();
+            } 
+            else if (isShortClip) {
+                // 场景 B: 短单词 -> 盲播模式 (Fire & Forget)
+                // iOS 更新 currentTime 太慢，我们不看它，直接定个闹钟关掉
+                // 【关键优化】多给 0.5秒 安全垫，宁可多听一点空白，不能截断发音
+                const safetyPadding = 0.5; 
+                console.log(`短音频模式: 播放 ${duration}s + 缓冲 ${safetyPadding}s`);
+                
+                this.stopTimer = setTimeout(() => {
+                    if (this.playToken === myToken) {
+                        this.finishPlayback();
+                    }
+                }, (duration + safetyPadding) * 1000);
+            } 
+            else {
+                // 场景 C: 长句子 -> 精准检测模式
+                // 句子很长，iOS有足够时间同步 currentTime，用 Tick 更准
+                console.log("长音频模式: 启动精准检测");
+                this.startTicker();
+            }
+
             this.updateButtonUI(newMode);
 
         } catch (e) {
             console.error(e);
-            if (this.playToken === myToken) { // 只有当前操作报错才提示
+            if (this.playToken === myToken) {
                 if (e.name === 'NotAllowedError') ui.toast("请点击播放按钮激活");
-                else ui.toast("播放出错，请重试");
             }
         }
     },
 
-    // --- 心跳检测 (只认令牌) ---
-    tick() {
-        this.reqId = requestAnimationFrame(() => this.tick());
-        
-        const a = document.getElementById('main-audio');
-        if (a.paused) return;
-
-        // 1. 这里的 this.mode 是全局的，如果被 stopAll 重置了，立即退出
-        if (this.mode === 'IDLE') return;
-
-        // 2. 忽略时间回弹期
-        if (Date.now() < this.ignoreTimeUntil) return;
-
-        const ct = a.currentTime;
-
-        // --- 全文播放逻辑 ---
-        if (this.mode === 'FULL_PLAY') {
-            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
-            if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                state.currIndex = activeIdx;
-                ui.updatePractice(activeIdx);
-            }
-            if (a.ended) { // 物理结束
-                a.currentTime = 0; a.play(); 
-                state.currIndex = 0; ui.updatePractice(0);
-            }
-            return;
-        }
-
-        // --- 单句/循环逻辑 ---
-        // 只有当前时间 确实超过了 结束时间 才停止
-        if (ct >= this.stopTime) {
-            this.handleEnd();
-        }
-    },
-
-    handleEnd() {
+    // --- 结束处理 ---
+    finishPlayback() {
         const a = document.getElementById('main-audio');
         
         if (this.mode === 'PLAY_ONCE') {
@@ -450,13 +433,40 @@ const engine = {
             this.stopAll();
         } 
         else if (this.mode === 'LOOP_ONE') {
-            // 循环：利用 playRange 重新触发（生成新令牌，重置时间）
-            // 找到当前句子的 start
+            // 单句循环：获取当前句子的参数重新触发
             const seg = state.segments[state.currIndex];
             if (seg) this.playRange(seg.start, seg.end, 'LOOP_ONE');
         } 
         else if (this.mode === 'LOOP_RANGE') {
             this.triggerNextRange();
+        }
+    },
+
+    // --- 长音频/全文播放的心跳检测 ---
+    tick() {
+        this.reqId = requestAnimationFrame(() => this.tick());
+        const a = document.getElementById('main-audio');
+        if (a.paused) return;
+
+        const ct = a.currentTime;
+
+        // 全文播放：只负责更新高亮，不负责停
+        if (this.mode === 'FULL_PLAY') {
+            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
+            if (activeIdx !== -1 && activeIdx !== state.currIndex) {
+                state.currIndex = activeIdx;
+                ui.updatePractice(activeIdx);
+            }
+            if (a.ended) { 
+                a.currentTime = 0; a.play(); 
+                state.currIndex = 0; ui.updatePractice(0); 
+            }
+            return;
+        }
+
+        // 长音频模式：检测结束时间
+        if (ct >= this.targetEnd) {
+            this.finishPlayback();
         }
     },
 
@@ -492,7 +502,6 @@ const engine = {
         }
     },
 
-    // --- 外部接口 ---
     playSegment(i) {
         if (!state.segments[i]) return;
         this.playRange(state.segments[i].start, state.segments[i].end, 'PLAY_ONCE');
@@ -527,8 +536,7 @@ const engine = {
             if (!this.check()) return;
             const a = document.getElementById('main-audio');
             a.loop = false;
-            // 全文播放：特殊处理，结束时间无限大
-            this.playRange(0, 999999, 'FULL_PLAY');
+            this.playRange(0, 9999999, 'FULL_PLAY');
         }
     },
     check() {
@@ -896,14 +904,14 @@ const app = {
         spin.style.display = 'inline-block';
 
         try {
-            ui.toast("正在下载音频...");
+            ui.toast("正在下载音频(请勿锁屏)...");
             const audioBlob = await net.fetchBlobSmart(mp3);
-            
-            // 【关键】音频就绪处理
             const a = document.getElementById('main-audio');
             a.src = URL.createObjectURL(audioBlob);
+            
+            // 【V59】预加载配置
             a.preload = "auto";
-            a.load();
+            a.load(); 
 
             ui.toast("✅ 音频下载成功! 正在获取字幕...");
 
@@ -922,7 +930,7 @@ const app = {
                     state.segments = parseSRT(t3).map(s => ({ start: s.start, end: s.end, text3: s.text }));
                 }
             } else {
-                ui.toast("正在进行静音断句 (无字幕模式)...");
+                ui.toast("无字幕模式，正在进行静音断句...");
                 await new Promise(r => setTimeout(r, 50));
                 const ab = await audioBlob.arrayBuffer();
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -955,7 +963,10 @@ const app = {
     },
 
     switchView(v) {
-        engine.stopAll();
+        // 切换视图时，只有退出练习模式才停止。
+        // 进入练习模式保留状态，方便连续操作。
+        if (v !== 'practice') engine.stopAll();
+        
         if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
 
         document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
@@ -971,7 +982,7 @@ const app = {
         }
     },
 
-    // --- 统一播放入口 ---
+    // 统一的跳转加载逻辑
     loadItem(i, playNow) {
         if (i < 0 || i >= state.segments.length) return;
         
@@ -980,8 +991,8 @@ const app = {
         app.save(); 
 
         if (playNow) {
-            // 直接调用 engine.playRange (会自动生成新令牌)
             const seg = state.segments[i];
+            // 只要用户点击，就强制播放单句（这是最符合直觉的）
             engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
         }
     },
