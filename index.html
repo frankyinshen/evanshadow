@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V69 (单词Fix)</title>
+<title>影子跟读 Pro V50 (Timeline Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -131,7 +131,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
  发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复
 </div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V69</div>
+<div class="nav-title">🎧 影子跟读 V50</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -266,583 +266,195 @@ PROXY: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='] };
 const state = { segments: [], currIndex: 0, activeSub: 0, audioBuffer: null, userBlurState: true, hasShownHint: false };
 let hintTimer = null;
 
-
-
-
-
 const net = {
     fixUrl(url) {
         if (!url) return '';
         url = url.trim();
-        if (url.includes('gitee.com') && (url.includes('/edit/') || url.includes('/blob/'))) 
-            return url.replace(/\/edit\/|\/blob\//, '/raw/');
-        if (url.includes('github.com') && url.includes('/blob/')) 
-            return url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
+        if (url.includes('gitee.com') && (url.includes('/edit/') || url.includes('/blob/'))) return url.replace(/\/edit\/|\/blob\//, '/raw/');
+        if (url.includes('github.com') && url.includes('/blob/')) return url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
         return url;
     },
-
-    fetchWithTimeout(url, timeout) {
-        return Promise.race([
-            fetch(url),
-            new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('请求超时')), timeout)
-            )
-        ]);
-    },
-
     async fetchCommon(url, type) {
-        // 直连尝试：30秒超时
-        ui.setLoadBtnText("正在直连下载(耐心等待)...");
+        ui.setLoadBtnText("尝试直连下载...");
         try {
-            const res = await this.fetchWithTimeout(url, 30000); 
+            const res = await fetch(url);
             if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
-            throw new Error("直连响应错误");
-        } catch (e) { 
-            console.warn("直连失败，准备切换代理:", e); 
-        }
-
-        // 代理尝试：10秒超时
-        ui.setLoadBtnText("直连超时，尝试代理...");
+        } catch (e) { console.warn("直连失败，尝试代理", e); }
+        ui.setLoadBtnText("直连失败，尝试代理...");
         for (const proxy of CONST.PROXY) {
             try {
-                const res = await this.fetchWithTimeout(proxy + encodeURIComponent(url), 10000);
+                const res = await fetch(proxy + encodeURIComponent(url));
                 if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
             } catch (e) {}
         }
-        throw new Error("下载失败。请检查链接是否有效，或网络是否通畅。");
+        throw new Error("下载失败 (请检查链接或网络)");
     },
-    
     async fetchBlobSmart(url) { return this.fetchCommon(url, 'blob'); },
     async fetchTextSmart(url) { return this.fetchCommon(url, 'text'); }
 };
 
-
-
-
-
-
-
-
 const engine = {
-    blobUrl: null,
-    playSessionId: 0,
-    
-    // --- V64 核心：意图锁 ---
-    // true = 正在处理加载/销毁/跳转，拒绝一切新指令
-    isPending: false, 
-
-    mode: 'IDLE',
-    reqId: null,
-    targetEnd: 0,
-    
-    activeDisposable: null, 
-    disposableTimer: null,
-
-    startTicker() {
-        if (this.reqId) cancelAnimationFrame(this.reqId);
-        this.tick();
-    },
-
+    mode: 'IDLE', reqId: null, editorTimer: null, isWaiting: false, waitTimer: null,
+    startTicker() { if(this.reqId) cancelAnimationFrame(this.reqId); this.tick(); },
     stopAll(releaseMic = false) {
-        this.playSessionId++; 
-        this.mode = 'IDLE';
-        
-        // 1. 物理停止长音频
+        this.mode = 'IDLE'; this.isWaiting = false; if(this.waitTimer) clearTimeout(this.waitTimer);
         const a = document.getElementById('main-audio');
-        if (a) { 
-            a.pause(); 
-            a.loop = false; 
-        }
-        if (this.reqId) cancelAnimationFrame(this.reqId);
-
-        // 2. 物理销毁短音频
-        if (this.activeDisposable) {
-            this.activeDisposable.pause();
-            this.activeDisposable.src = ""; 
-            this.activeDisposable = null;
-        }
-        if (this.disposableTimer) clearTimeout(this.disposableTimer);
-
-        // 3. 其他清理
         const r = document.getElementById('record-audio');
-        if (r) r.pause();
-        if (typeof recorder !== 'undefined') recorder.stop(releaseMic);
-        
-        // 【关键】强制解锁，防止死锁
-        this.isPending = false;
-        
-        ui.resetButtons();
+        a.pause(); r.pause(); a.loop = false;
+        if(this.reqId) cancelAnimationFrame(this.reqId);
+        clearTimeout(this.editorTimer);
+        recorder.stop(releaseMic); ui.resetButtons();
     },
-
-    // --- 播放总入口 ---
-    async playRange(start, end, newMode) {
-        // 【V64 护栏】如果引擎正在忙（比如上一个 play 还没返回），直接拒绝
-        // 这能保护 iOS 脆弱的音频通道不被塞爆
-        if (this.isPending) {
-            console.log("Engine busy, ignoring request");
-            return;
-        }
-        
-        // 上锁
-        this.isPending = true;
-
-        try {
-            // 1. 停止旧的一切，生成新令牌
-            // 注意：stopAll 会重置 isPending 为 false，所以我们要手动保持 true
-            this.stopAll(); 
-            this.isPending = true; // 再次上锁，因为 stopAll 解锁了
-
-            const mySession = this.playSessionId;
-
-            if (!this.blobUrl) {
-                ui.toast("音频数据丢失，请重新加载");
-                return;
-            }
-
-            this.mode = newMode;
-            const duration = end - start;
-            
-            // 2. 战略分流
-            if (duration < 2.0 && newMode !== 'FULL_PLAY') {
-                await this.playShortClip(start, duration, mySession);
-            } else {
-                await this.playLongClip(start, end, mySession);
-            }
-
-        } catch (e) {
-            console.error(e);
-            ui.toast("操作过快或出错");
-        } finally {
-            // 3. 【关键】无论成功失败，操作结束，解锁
-            // 稍微延迟一点点，给 iOS 喘息时间
-            setTimeout(() => { this.isPending = false; }, 50);
-        }
+    playSegment(i) {
+        this.stopAll(); const s = state.segments[i]; const a = document.getElementById('main-audio');
+        if(!a.src) return ui.toast("音频未就绪");
+        a.currentTime = s.start; a.play();
+        this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start) * 1000);
     },
-
-    // --- 分支 A: 短音频 ---
-    async playShortClip(start, duration, session) {
-        console.log(`[${session}] 短音频启动`);
-        
-        const audio = new Audio(this.blobUrl);
-        this.activeDisposable = audio;
-        audio.currentTime = start;
-        
-        try {
-            // 等待硬件真正开始播放
-            await audio.play();
-            
-            // 如果等待期间用户点了停止（Session 变了），立即自毁
-            if (this.playSessionId !== session) {
-                audio.pause(); audio.src = ""; return;
-            }
-
-            this.updateButtonUI(this.mode);
-
-            // 设置结束定时器
-            const playTime = (duration + 0.35) * 1000;
-            this.disposableTimer = setTimeout(() => {
-                if (this.playSessionId === session) {
-                    this.finishShortPlayback();
-                }
-            }, playTime);
-
-        } catch (e) {
-            if (e.name === 'NotAllowedError') ui.toast("请点击按钮播放");
-            throw e; // 抛出错误给 playRange 的 catch 处理
-        }
-    },
-
-    finishShortPlayback() {
-        // 销毁
-        if (this.activeDisposable) {
-            this.activeDisposable.pause();
-            this.activeDisposable = null;
-        }
-        
-        // 逻辑流转
-        if (this.mode === 'PLAY_ONCE') {
-            this.stopAll(); 
-        } 
-        else if (this.mode === 'LOOP_ONE') {
-            // 单句循环：必须等 isPending 解锁后才能触发下一次
-            // 因为 finishShortPlayback 是定时器触发的，此时 isPending 应该是 false
-            const seg = state.segments[state.currIndex];
-            if (seg) this.playRange(seg.start, seg.end, 'LOOP_ONE');
-        } 
-        else if (this.mode === 'LOOP_RANGE') {
-            this.triggerNextRange();
-        }
-    },
-
-    // --- 分支 B: 长音频 ---
-    async playLongClip(start, end, session) {
-        console.log(`[${session}] 长音频启动`);
-        const a = document.getElementById('main-audio');
-        this.targetEnd = end;
-
-        try {
-            a.currentTime = start;
-            await a.play();
-            
-            if (this.playSessionId !== session) return;
-
-            this.startTicker();
-            this.updateButtonUI(this.mode);
-        } catch (e) {
-            if (e.name === 'NotAllowedError') ui.toast("请点击按钮播放");
-            throw e;
-        }
-    },
-
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
         const a = document.getElementById('main-audio');
-        if (a.paused) return;
-
+        if(a.paused) return;
         const ct = a.currentTime;
-
-        if (this.mode === 'FULL_PLAY') {
-            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
-            if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                state.currIndex = activeIdx;
-                ui.updatePractice(activeIdx);
-            }
-            if (a.ended) { 
-                a.currentTime = 0; a.play(); 
-                state.currIndex = 0; ui.updatePractice(0); 
-            }
-            return;
-        }
-
-        if (ct >= this.targetEnd) {
-            this.finishLongPlayback();
-        }
-    },
-
-    finishLongPlayback() {
-        const a = document.getElementById('main-audio');
-        a.pause();
-        
         if (this.mode === 'PLAY_ONCE') {
-            this.stopAll();
+            const seg = state.segments[state.currIndex];
+            if (seg && ct >= seg.end) { a.pause(); this.mode = 'IDLE'; ui.resetButtons(); }
         } else if (this.mode === 'LOOP_ONE') {
+            if(this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            this.playRange(seg.start, seg.end, 'LOOP_ONE');
+            if (seg && ct >= seg.end) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
         } else if (this.mode === 'LOOP_RANGE') {
-            this.triggerNextRange();
-        }
-    },
-
-    triggerNextRange() {
-        const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
-        const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
-        
-        let nextIdx = state.currIndex + 1;
-        if (nextIdx > endLimit || nextIdx >= state.segments.length) {
-            nextIdx = Math.max(0, startLimit);
-        }
-        
-        state.currIndex = nextIdx;
-        ui.updatePractice(nextIdx);
-        
-        const seg = state.segments[nextIdx];
-        this.playRange(seg.start, seg.end, 'LOOP_RANGE');
-    },
-
-    updateButtonUI(m) {
-        ui.resetButtons();
-        if (m === 'PLAY_ONCE') document.getElementById('btn-play-once').classList.add('active');
-        if (m === 'LOOP_ONE') document.getElementById('btn-loop').classList.add('active');
-        if (m === 'LOOP_RANGE') {
-            const b = document.getElementById('btn-range-play');
-            b.classList.add('active');
-            b.innerText = "⏸";
-        }
-        if (m === 'FULL_PLAY') {
-            const b = document.getElementById('btn-full-play');
-            b.classList.add('active');
-            b.innerText = " ⏸ 停止";
-        }
-    },
-
-    playSegment(i) {
-        if (!state.segments[i]) return;
-        this.playRange(state.segments[i].start, state.segments[i].end, 'PLAY_ONCE');
-    },
-    playOnce() {
-        if (!this.check()) return;
-        const seg = state.segments[state.currIndex];
-        this.playRange(seg.start, seg.end, 'PLAY_ONCE');
-    },
-    toggleLoop() {
-        if (this.mode === 'LOOP_ONE') this.stopAll();
-        else {
-            if (!this.check()) return;
+            if(this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            this.playRange(seg.start, seg.end, 'LOOP_ONE');
+            const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
+            const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
+            if (seg && ct >= seg.end) {
+                let nextIdx = state.currIndex + 1;
+                if (nextIdx > endLimit || nextIdx >= state.segments.length) nextIdx = Math.max(0, startLimit);
+                this.startWait(() => { state.currIndex = nextIdx; a.currentTime = state.segments[nextIdx].start; ui.updatePractice(nextIdx); a.play(); });
+            }
+        } else if (this.mode === 'FULL_PLAY') {
+            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
+            if (activeIdx !== -1 && activeIdx !== state.currIndex) { state.currIndex = activeIdx; ui.updatePractice(activeIdx); }
+            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.2)) { a.currentTime = 0; a.play(); state.currIndex = 0; ui.updatePractice(0); }
         }
     },
-    toggleRangeLoop() {
-        if (this.mode === 'LOOP_RANGE') this.stopAll();
-        else {
-            if (!state.segments.length) return ui.toast("无内容");
-            const start = Math.max(0, parseInt(document.getElementById('loop-start').value) - 1);
-            state.currIndex = start;
-            ui.updatePractice(start);
-            const seg = state.segments[start];
-            this.playRange(seg.start, seg.end, 'LOOP_RANGE');
-        }
+    startWait(cb) {
+        this.isWaiting = true; const a = document.getElementById('main-audio'); a.pause();
+        this.waitTimer = setTimeout(() => { if(this.mode==='IDLE')return; this.isWaiting = false; cb(); }, 1500);
     },
-    toggleFullPlay() {
-        if (this.mode === 'FULL_PLAY') this.stopAll();
-        else {
-            if (!this.check()) return;
-            this.playRange(0, 999999, 'FULL_PLAY');
-        }
-    },
-    check() {
-        if (!state.segments.length) { ui.toast("请先加载内容"); return false; }
-        if (!this.blobUrl) { ui.toast("音频未就绪"); return false; }
-        return true;
-    }
+    playOnce() { this.stopAll(); if(!this.check()) return; this.mode = 'PLAY_ONCE'; document.getElementById('btn-play-once').classList.add('active'); this.startPlay(); },
+    toggleLoop() { if(this.mode === 'LOOP_ONE') this.stopAll(); else { this.stopAll(); if(!this.check()) return; this.mode = 'LOOP_ONE'; document.getElementById('btn-loop').classList.add('active'); this.startPlay(); } },
+    toggleRangeLoop() { if(this.mode === 'LOOP_RANGE') this.stopAll(); else { this.stopAll(); if(!state.segments.length) return ui.toast("无内容"); const start = Math.max(0, parseInt(document.getElementById('loop-start').value)-1); state.currIndex = start; ui.updatePractice(start); this.mode = 'LOOP_RANGE'; document.getElementById('btn-range-play').classList.add('active'); document.getElementById('btn-range-play').innerText = "⏸"; this.startPlay(); } },
+    toggleFullPlay() { if(this.mode === 'FULL_PLAY') this.stopAll(); else { this.stopAll(); if(!this.check()) return; const a = document.getElementById('main-audio'); a.currentTime = 0; state.currIndex = 0; ui.updatePractice(0); a.loop = true; a.play().then(()=>{ this.mode = 'FULL_PLAY'; document.getElementById('btn-full-play').classList.add('active'); document.getElementById('btn-full-play').innerText = "⏸ 停止"; this.startTicker(); }); } },
+    startPlay() { const seg = state.segments[state.currIndex]; const a = document.getElementById('main-audio'); a.currentTime = seg.start; a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); }); },
+    check() { if(!state.segments.length) { ui.toast("请先加载内容"); return false; } if(!document.getElementById('main-audio').src) { ui.toast("音频未就绪"); return false; } return true; }
 };
-
-
-
-
-
 
 const ui = {
     init() {
-        // 将智能输入逻辑绑定到所有 URL 输入框
-        this.attachSmartInput('url-audio', true); // true 表示这是主音频框
-        this.attachSmartInput('url-srt-1', false);
-        this.attachSmartInput('url-srt-2', false);
-        this.attachSmartInput('url-srt-3', false);
-
-        // 恢复之前的状态
+        document.getElementById('url-audio').addEventListener('paste', (e) => app.handleSmartPaste(e));
+        
         const p = new URLSearchParams(location.search);
-        if (p.get('mp3')) {
+        if(p.get('mp3')) {
             document.getElementById('url-audio').value = p.get('mp3');
-            if (p.get('srt')) document.getElementById('url-srt-1').value = p.get('srt');
+            if(p.get('srt')) document.getElementById('url-srt-1').value = p.get('srt');
             setTimeout(() => app.loadFromUrl(), 500);
         } else {
             const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-            if (inputs.mp3) document.getElementById('url-audio').value = inputs.mp3;
-            if (inputs.s1) document.getElementById('url-srt-1').value = inputs.s1;
-            if (inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
-            if (inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
+            if(inputs.mp3) document.getElementById('url-audio').value = inputs.mp3;
+            if(inputs.s1) document.getElementById('url-srt-1').value = inputs.s1;
+            if(inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
+            if(inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
         }
-        
         this.renderHistory();
         const d = localStorage.getItem(CONST.STORAGE);
-
-        if (d && JSON.parse(d).length) {
+        if(d && JSON.parse(d).length) {
             state.segments = JSON.parse(d);
-            state.currIndex = parseInt(localStorage.getItem(CONST.INDEX) || 0);
-            this.renderEditor();
-            this.updatePractice(state.currIndex);
+            state.currIndex = parseInt(localStorage.getItem(CONST.INDEX)||0);
+            this.renderEditor(); this.updatePractice(state.currIndex);
             document.getElementById('restore-idx').innerText = state.currIndex + 1;
             document.getElementById('restore-bar').style.display = 'block';
         }
         this.updateAudioStatus();
     },
-
-    // 【新功能】封装的智能输入处理器
-    attachSmartInput(id, isMaster) {
-        const el = document.getElementById(id);
-        if (!el) return;
-
-        // 1. 监听粘贴事件 (处理智能识别)
-        el.addEventListener('paste', (e) => {
-            // 获取粘贴板文字
-            const text = (e.clipboardData || window.clipboardData).getData('text');
-            if (!text) return;
-
-            // 简单判断：如果包含 mp3 或者包含换行/多个链接，就尝试交给 app 处理
-            // 否则让浏览器执行默认的单行粘贴
-            if (text.includes('.mp3') || (text.match(/http/g) || []).length > 1) {
-                e.preventDefault(); // 阻止默认粘贴，由 app 全权接管
-                app.handleSmartPaste(e);
-            }
-            // 如果只是普通短链，什么都不做，让浏览器自然粘贴进去
-        });
-
-        // 2. 监听聚焦事件 (处理自动清空)
-        el.addEventListener('focus', function() {
-            // 为了防止和“点击粘贴”冲突，这里做一个微小的判断
-            // 如果是主音频框(isMaster)，清空所有；否则只清空自己
-            this.value = '';
-            if (isMaster) {
-                ['url-srt-1', 'url-srt-2', 'url-srt-3'].forEach(sid => {
-                    const sel = document.getElementById(sid);
-                    if (sel) sel.value = '';
-                });
-            }
-        });
-    },
-
     renderHistory() {
-        const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
+        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
         const sel = document.getElementById('history-select');
         sel.innerHTML = '<option value="">▼ 选择历史记录...</option>';
-        h.forEach((item, i) => {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.text = item.name;
-            sel.appendChild(opt);
-        });
+        h.forEach((item, i) => { const opt = document.createElement('option'); opt.value = i; opt.text = item.name; sel.appendChild(opt); });
     },
-    
     setTab(t) {
-        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (t === 'url' && i === 0) || (t === 'local' && i === 1)));
-        document.getElementById('group-url').style.display = t === 'url' ? 'block' : 'none';
-        document.getElementById('group-local').style.display = t === 'local' ? 'block' : 'none';
+        document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', (t==='url' && i===0) || (t==='local' && i===1)));
+        document.getElementById('group-url').style.display = t==='url' ? 'block' : 'none';
+        document.getElementById('group-local').style.display = t==='local' ? 'block' : 'none';
     },
-
-    setLoadBtnText(t) {
-        document.getElementById('btn-load-url').innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span>  极速加载' : t;
-    },
-
-    updateThresh(v) {
-        document.getElementById('threshold-val').innerText = v;
-    },
-
-    toast(m) {
-        const t = document.getElementById('toast');
-        t.innerText = m;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2000);
-    },
-
+    setLoadBtnText(t) { document.getElementById('btn-load-url').innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span> 🚀 极速加载' : t; },
+    updateThresh(v) { document.getElementById('threshold-val').innerText = v; },
+    toast(m) { const t=document.getElementById('toast'); t.innerText=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); },
     updateAudioStatus() {
-        const m = document.getElementById('audio-status-msg');
-        const a = document.getElementById('main-audio');
-        if (a.src && a.src !== location.href) {
-            m.className = 'audio-status ok';
-            m.style.display = 'block';
-            m.innerText = " ✅ 音频已就绪";
-            setTimeout(() => m.style.display = 'none', 3000);
-        } else {
-            m.className = 'audio-status warn';
-            m.style.display = 'block';
-            m.innerText = " ⚠ 音频未就绪";
-        }
+        const m = document.getElementById('audio-status-msg'); const a = document.getElementById('main-audio');
+        if(a.src && a.src!==location.href) { m.className='audio-status ok'; m.style.display='block'; m.innerText="✅ 音频已就绪"; setTimeout(()=>m.style.display='none',3000); }
+        else { m.className='audio-status warn'; m.style.display='block'; m.innerText="⚠ 音频未就绪"; }
     },
-
     resetButtons() {
         document.getElementById('btn-play-once').classList.remove('active');
         document.getElementById('btn-loop').classList.remove('active');
-        const rangeBtn = document.getElementById('btn-range-play');
-        rangeBtn.classList.remove('active');
-        rangeBtn.innerText = "循环";
-        const fullBtn = document.getElementById('btn-full-play');
-        fullBtn.classList.remove('active');
-        fullBtn.innerText = "  全文磨耳朵";
-        const recBtn = document.getElementById('btn-record');
-        recBtn.classList.remove('recording', 'playing');
-        recBtn.innerText = "  按下开始录音";
+        const rangeBtn = document.getElementById('btn-range-play'); rangeBtn.classList.remove('active'); rangeBtn.innerText = "循环";
+        const fullBtn = document.getElementById('btn-full-play'); fullBtn.classList.remove('active'); fullBtn.innerText = "🎧 全文磨耳朵";
+        const recBtn = document.getElementById('btn-record'); recBtn.classList.remove('recording', 'playing'); recBtn.innerText = "🎤 按下开始录音";
     },
-
     renderEditor() {
-        const l = document.getElementById('editor-list');
-        l.innerHTML = '';
+        const l = document.getElementById('editor-list'); l.innerHTML='';
         document.getElementById('row-count').innerText = state.segments.length;
-        state.segments.forEach((s, i) => {
-            const d = document.createElement('div');
-            d.className = 'sub-item';
+        state.segments.forEach((s,i)=>{
+            const d = document.createElement('div'); d.className='sub-item';
             d.innerHTML = `
- <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
- ${s.text !== undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
- ${s.text2 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
- ${s.text3 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
- <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})"> ▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})"> ✂ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})"> 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})"> ✕ 删除</button></div>`;
+            <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+            ${s.text!==undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
+            ${s.text2!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
+            ${s.text3!==undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
+            <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🔗 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">✕ 删除</button></div>`;
             l.appendChild(d);
         });
         document.getElementById('loop-start').max = state.segments.length;
         document.getElementById('loop-end').max = state.segments.length;
         document.getElementById('loop-end').value = state.segments.length;
-        
-        const sel = document.getElementById('jump-select');
-        sel.innerHTML = '';
-        state.segments.forEach((_, i) => {
-            const o = document.createElement('option');
-            o.value = i;
-            o.text = `第 ${i+1} 句`;
-            sel.appendChild(o);
-        });
+        const sel = document.getElementById('jump-select'); sel.innerHTML='';
+        state.segments.forEach((_,i)=>{ const o=document.createElement('option'); o.value=i; o.text=`第 ${i+1} 句`; sel.appendChild(o); });
         app.save();
     },
-
     updatePractice(idx) {
-        if (!state.segments[idx]) return;
-        const key = state.activeSub === 1 ? 'text2' : (state.activeSub === 2 ? 'text3' : 'text');
+        if(!state.segments[idx]) return;
+        const key = state.activeSub===1 ? 'text2' : (state.activeSub===2 ? 'text3' : 'text');
         const txt = document.getElementById('practice-text-display');
         const content = state.segments[idx][key] || "(无内容)";
         txt.innerText = content;
         this.fitText(txt);
-        if (state.userBlurState) {
-            txt.classList.add("blur");
-            document.getElementById('text-toggle-btn').innerText = "  显示";
-        } else {
-            txt.classList.remove("blur");
-            document.getElementById('text-toggle-btn').innerText = "  隐藏";
-        }
+        if (state.userBlurState) { txt.classList.add("blur"); document.getElementById('text-toggle-btn').innerText = "👁 显示"; } 
+        else { txt.classList.remove("blur"); document.getElementById('text-toggle-btn').innerText = "🙈 隐藏"; }
         if (content === "(无内容)") txt.className = "practice-text empty";
         document.getElementById('jump-select').value = idx;
-        if (!state.hasShownHint) {
-            const hint = document.getElementById('click-hint');
-            hint.classList.add('show');
-            setTimeout(() => {
-                hint.classList.remove('show');
-                state.hasShownHint = true;
-            }, 3000);
+        if(!state.hasShownHint) {
+            const hint = document.getElementById('click-hint'); hint.classList.add('show');
+            setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
         }
     },
-
     showHintManual() {
-        const hint = document.getElementById('click-hint');
-        hint.classList.add('show');
-        setTimeout(() => hint.classList.remove('show'), 3000);
+        const hint = document.getElementById('click-hint'); hint.classList.add('show'); setTimeout(() => hint.classList.remove('show'), 3000);
     },
-
     fitText(el) {
-        let size = 34;
-        el.style.fontSize = size + 'px';
-        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) {
-            size--;
-            el.style.fontSize = size + 'px';
-        }
+        let size = 34; el.style.fontSize = size + 'px';
+        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
     },
-
-    toggleTextBlur() {
-        state.userBlurState = !state.userBlurState;
-        ui.updatePractice(state.currIndex);
-        ui.showHintManual();
-    },
-
-    switchSubTab(i) {
-        state.activeSub = i;
-        document.querySelectorAll('.sub-btn').forEach((b, k) => b.classList.toggle('active', k === i));
-        ui.updatePractice(state.currIndex);
-    },
-
-    toggleDrawer() {
-        document.getElementById('drawer-overlay').classList.toggle('open');
-    },
-
+    toggleTextBlur() { state.userBlurState = !state.userBlurState; ui.updatePractice(state.currIndex); ui.showHintManual(); },
+    switchSubTab(i) { state.activeSub = i; document.querySelectorAll('.sub-btn').forEach((b,k)=>b.classList.toggle('active',k===i)); ui.updatePractice(state.currIndex); },
+    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
     toggleSleepModal() {
         const popup = document.getElementById('sleep-popup');
         popup.classList.toggle('show');
     }
 };
-
-
-
-
-
-
-
 
 const app = {
     handleSmartPaste(e) {
@@ -851,6 +463,7 @@ const app = {
         
         if (text.match(/https?:\/\//g).length > 1 || text.includes('.mp3')) {
             e.preventDefault();
+            
             document.getElementById('url-audio').value = '';
             document.getElementById('url-srt-1').value = '';
             document.getElementById('url-srt-2').value = '';
@@ -859,7 +472,7 @@ const app = {
             const mp3Match = text.match(/https?:\/\/[^\s"']+\.mp3/i);
             if (mp3Match) document.getElementById('url-audio').value = mp3Match[0];
 
-            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i);
+            const srtEng = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.eng\.srt/i); 
             const srtEngChs = text.match(/https?:\/\/[^\s"']+\.engchs\.srt/i);
             const srtChs = text.match(/https?:\/\/[^\s"']+(?<!engchs)\.chs\.srt/i);
 
@@ -871,22 +484,24 @@ const app = {
             ui.toast("📋 智能粘贴：链接已分配");
         }
     },
-
+    // V50: Sleep Timer with MM:SS
     sleepTimerId: null,
     sleepInterval: null,
     startSleepTimer() {
         const input = document.getElementById('sleep-input');
         const mins = parseInt(input.value);
         if (!mins || mins < 1 || mins > 100) return ui.toast("请输入 1-100");
-
+        
         if (this.sleepTimerId) clearTimeout(this.sleepTimerId);
         if (this.sleepInterval) clearInterval(this.sleepInterval);
-        
+
         const endTime = Date.now() + mins * 60 * 1000;
-        ui.toggleSleepModal();
+        
+        ui.toggleSleepModal(); 
         const display = document.getElementById('sleep-display');
         display.style.display = 'block';
-
+        
+        // V50: Show Minutes and Seconds
         const updateDisplay = () => {
             const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
             if (remaining <= 0) {
@@ -899,321 +514,160 @@ const app = {
                 display.innerText = `⏰ ${m}:${s.toString().padStart(2, '0')}`;
             }
         };
-        updateDisplay();
+        
+        updateDisplay(); // immediate
         this.sleepInterval = setInterval(updateDisplay, 1000);
+
         this.sleepTimerId = setTimeout(() => {
             engine.stopAll();
             ui.toast("💤 定时结束，停止播放");
             display.style.display = 'none';
             clearInterval(this.sleepInterval);
         }, mins * 60 * 1000);
+        
         ui.toast(`倒计时 ${mins} 分钟开始`);
     },
-
     saveInput() {
-        const d = { 
-            mp3: document.getElementById('url-audio').value,
-            s1: document.getElementById('url-srt-1').value,
-            s2: document.getElementById('url-srt-2').value,
-            s3: document.getElementById('url-srt-3').value 
-        };
+        const d = { mp3: document.getElementById('url-audio').value, s1: document.getElementById('url-srt-1').value, s2: document.getElementById('url-srt-2').value, s3: document.getElementById('url-srt-3').value };
         localStorage.setItem(CONST.INPUTS, JSON.stringify(d));
     },
-
     addHistory(mp3, name) {
-        let h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
-        h = h.filter(i => i.mp3 !== mp3);
+        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); h = h.filter(i=>i.mp3!==mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS));
-        h.unshift({ name: name || mp3.split('/').pop(), mp3, ...d });
-        if (h.length > 10) h.pop();
-        localStorage.setItem(CONST.HIST, JSON.stringify(h));
-        ui.renderHistory();
+        h.unshift({name: name||mp3.split('/').pop(), mp3, ...d});
+        if(h.length>10) h.pop(); localStorage.setItem(CONST.HIST, JSON.stringify(h)); ui.renderHistory();
     },
-
     fillHistory(i) {
-        if (i === "") return;
-        const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
-        const item = h[i];
-        if (item) {
+        if(i==="") return;
+        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'); const item = h[i];
+        if(item) {
             document.getElementById('url-audio').value = item.mp3;
-            document.getElementById('url-srt-1').value = item.s1 || '';
-            document.getElementById('url-srt-2').value = item.s2 || '';
-            document.getElementById('url-srt-3').value = item.s3 || '';
+            document.getElementById('url-srt-1').value = item.s1||'';
+            document.getElementById('url-srt-2').value = item.s2||'';
+            document.getElementById('url-srt-3').value = item.s3||'';
             this.saveInput();
         }
     },
-
     async loadFromUrl() {
-        state.segments = [];
-        ui.renderEditor();
-        this.saveInput();
-        
+        state.segments = []; ui.renderEditor(); this.saveInput();
         const mp3 = net.fixUrl(document.getElementById('url-audio').value.trim());
         const s1 = net.fixUrl(document.getElementById('url-srt-1').value.trim());
         const s2 = net.fixUrl(document.getElementById('url-srt-2').value.trim());
         const s3 = net.fixUrl(document.getElementById('url-srt-3').value.trim());
-
-        if (!mp3) return ui.toast("请输入 MP3 链接");
-
-        const btn = document.getElementById('btn-load-url');
+        if(!mp3) return ui.toast("请输入 MP3 链接");
+        
+        const btn = document.getElementById('btn-load-url'); 
         const spin = document.getElementById('url-spinner');
-        btn.disabled = true;
-        spin.style.display = 'inline-block';
+        btn.disabled=true; spin.style.display='inline-block';
 
         try {
-            ui.toast("正在下载音频(请勿锁屏)...");
+            ui.toast("正在下载音频...");
             const audioBlob = await net.fetchBlobSmart(mp3);
-            const blobUrl = URL.createObjectURL(audioBlob);
+            document.getElementById('main-audio').src = URL.createObjectURL(audioBlob);
             
-            // 保存 Blob URL
-            engine.blobUrl = blobUrl;
-            
-            const a = document.getElementById('main-audio');
-            a.src = blobUrl;
-            a.preload = "auto";
-            a.load();
-
             ui.toast("✅ 音频下载成功! 正在获取字幕...");
-
             const loadTxt = async (u) => u ? await net.fetchTextSmart(u) : null;
             const [t1, t2, t3] = await Promise.all([loadTxt(s1), loadTxt(s2), loadTxt(s3)]);
-
+            
+            // V50: Timeline Logic - Use ANY available subtitle as timeline base
             if (t1 || t2 || t3) {
                 if (t1) {
+                    // Scenario A: Sub 1 exists (Standard)
                     state.segments = parseSRT(t1);
                     if (t2) this.mergeSub(parseSRT(t2), 'text2');
                     if (t3) this.mergeSub(parseSRT(t3), 'text3');
                 } else if (t2) {
-                    state.segments = parseSRT(t2).map(s => ({ start: s.start, end: s.end, text2: s.text }));
+                    // Scenario B: No Sub 1, but Sub 2 exists. Use Sub 2 as timeline base.
+                    // Important: parseSRT puts text in 'text', we need to move it to 'text2'
+                    state.segments = parseSRT(t2).map(s => ({start: s.start, end: s.end, text2: s.text}));
                     if (t3) this.mergeSub(parseSRT(t3), 'text3');
                 } else {
-                    state.segments = parseSRT(t3).map(s => ({ start: s.start, end: s.end, text3: s.text }));
+                    // Scenario C: Only Sub 3 exists. Use Sub 3 as timeline base.
+                    state.segments = parseSRT(t3).map(s => ({start: s.start, end: s.end, text3: s.text}));
                 }
             } else {
-                ui.toast("无字幕模式，正在进行静音断句...");
-                await new Promise(r => setTimeout(r, 50));
+                // No subtitles at all -> auto silence detection
+                ui.toast("正在进行静音断句 (无字幕模式)...");
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 const ab = await audioBlob.arrayBuffer();
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const ctx = new (window.AudioContext||window.webkitAudioContext)();
                 state.audioBuffer = await ctx.decodeAudioData(ab);
                 state.segments = detectSilence(state.audioBuffer, 0.02);
-                if (!state.segments.length) state.segments = [{ start: 0, end: state.audioBuffer.duration, text: "(自动断句失败)" }];
+                if(!state.segments.length) state.segments=[{start:0,end:state.audioBuffer.duration,text:"(自动断句失败)"}];
             }
 
-            this.addHistory(mp3);
-            ui.renderEditor();
-            ui.updateAudioStatus();
-            ui.toast("✅ 全部就绪，正在跳转...");
+            this.addHistory(mp3); ui.renderEditor(); ui.updateAudioStatus(); ui.toast("✅ 全部就绪，正在跳转...");
             app.switchView('practice');
-
-        } catch (e) {
-            console.error(e);
-            ui.setLoadBtnText("加载失败: " + e.message);
-        } finally {
-            btn.disabled = false;
-            spin.style.display = 'none';
-            setTimeout(() => ui.setLoadBtnText("default"), 3000);
-        }
+        } catch(e) { console.error(e); ui.setLoadBtnText("加载失败: "+e.message); }
+        finally { btn.disabled=false; spin.style.display='none'; setTimeout(()=>ui.setLoadBtnText("default"), 3000); }
     },
-
-    mergeSub(newS, k) {
-        state.segments.forEach(b => {
-            const m = newS.find(n => (n.start >= b.start && n.start < b.end));
-            if (m) b[k] = m.text;
-        });
-    },
-
+    mergeSub(newS, k) { state.segments.forEach(b => { const m = newS.find(n => (n.start>=b.start && n.start<b.end)); if(m) b[k]=m.text; }); },
     switchView(v) {
         engine.stopAll();
-        if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
-
-        document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
+        if(v==='practice' && !state.segments.length) return ui.toast("请先加载内容");
+        document.getElementById('editor-view').style.display = v==='editor' ? 'block' : 'none';
         const pView = document.getElementById('practice-view');
-        pView.style.display = v === 'practice' ? 'flex' : 'none';
-        if (v === 'practice') pView.classList.add('active');
-
+        pView.style.display = v==='practice' ? 'flex' : 'none';
+        if (v==='practice') pView.classList.add('active'); 
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
-        
-        if (v === 'practice') {
-            state.currIndex = Math.min(state.currIndex, state.segments.length - 1);
-            ui.updatePractice(state.currIndex);
-        }
+        if(v==='practice') this.loadItem(state.currIndex, false);
     },
-
-    // --- 统一播放入口 ---
-    loadItem(i, playNow) {
-        if (i < 0 || i >= state.segments.length) return;
-        
-        // 【V64 护栏】如果引擎在忙，不允许切换，防止 UI 和 Audio 不同步
-        if (playNow && engine.isPending) {
-            console.log("Input blocked: Engine busy");
-            return;
-        }
-
-        state.currIndex = i;
-        ui.updatePractice(i);
-        app.save(); 
-
-        if (playNow) {
-            const seg = state.segments[i];
-            engine.playRange(seg.start, seg.end, 'PLAY_ONCE');
-        }
+    loadItem(i, play) {
+        if(i<0 || i>=state.segments.length) return;
+        state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
+        if(play) engine.playOnce();
     },
-
-    next() {
-        if (state.currIndex < state.segments.length - 1) {
-            state.userBlurState = true;
-            this.loadItem(state.currIndex + 1, true);
-        } else {
-            ui.toast("已经是最后一句");
-        }
-    },
-
-    prev() {
-        if (state.currIndex > 0) {
-            state.userBlurState = true;
-            this.loadItem(state.currIndex - 1, true);
-        } else {
-            ui.toast("已经是第一句");
-        }
-    },
-
-    jumpTo(v) {
-        this.loadItem(parseInt(v), true);
-    },
-
-    updateSeg(i, k, v) {
-        if (k.startsWith('text')) state.segments[i][k] = v;
-        else state.segments[i][k] = parseFloat(v);
-        this.save();
-    },
-
-    delSeg(i) {
-        state.segments.splice(i, 1);
-        ui.renderEditor();
-    },
-
+    next() { if(state.currIndex < state.segments.length-1) { state.userBlurState = true; this.loadItem(state.currIndex+1, true); } },
+    prev() { if(state.currIndex > 0) { state.userBlurState = true; this.loadItem(state.currIndex-1, true); } },
+    jumpTo(v) { this.loadItem(parseInt(v), true); },
+    updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
+    delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
     splitSeg(i) {
         const t = document.getElementById('main-audio').currentTime;
-        if (t > state.segments[i].start && t < state.segments[i].end) {
-            const old = state.segments[i];
-            const newSeg = { start: t, end: old.end, text: "" };
-            if (old.text2 !== undefined) newSeg.text2 = "";
-            if (old.text3 !== undefined) newSeg.text3 = "";
-            state.segments.splice(i + 1, 0, newSeg);
-            state.segments[i].end = t;
-            ui.renderEditor();
+        if(t > state.segments[i].start && t < state.segments[i].end) {
+            const old = state.segments[i]; const newSeg = { start:t, end:old.end, text:"" };
+            if(old.text2!==undefined) newSeg.text2=""; if(old.text3!==undefined) newSeg.text3="";
+            state.segments.splice(i+1, 0, newSeg); state.segments[i].end = t; ui.renderEditor();
         } else ui.toast("请在试听时暂停于拆分点");
     },
-
     mergeSeg(i) {
-        if (i < state.segments.length - 1) {
-            state.segments[i].end = state.segments[i + 1].end;
-            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i + 1].text || "")).trim();
-            if (state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i + 1].text2 || "");
-            if (state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i + 1].text3 || "");
-            state.segments.splice(i + 1, 1);
-            ui.renderEditor();
+        if(i < state.segments.length-1) {
+            state.segments[i].end = state.segments[i+1].end;
+            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
+            if(state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
+            if(state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
+            state.segments.splice(i+1, 1); ui.renderEditor();
         }
     },
-
-    addNewRow() {
-        const last = state.segments[state.segments.length - 1] || { end: 0 };
-        const newObj = { start: last.end, end: last.end + 2, text: "" };
-        if (last.text2 !== undefined) newObj.text2 = "";
-        if (last.text3 !== undefined) newObj.text3 = "";
-        state.segments.push(newObj);
-        ui.renderEditor();
+    addNewRow() { 
+        const last=state.segments[state.segments.length-1]||{end:0}; 
+        const newObj = {start:last.end,end:last.end+2,text:""};
+        if(last.text2 !== undefined) newObj.text2 = ""; if(last.text3 !== undefined) newObj.text3 = "";
+        state.segments.push(newObj); ui.renderEditor(); 
     },
-
     applyReAnalyze() {
-        if (!state.audioBuffer) return ui.toast("需先成功加载音频数据");
+        if(!state.audioBuffer) return ui.toast("需先成功加载音频数据");
         const val = parseFloat(document.getElementById('threshold-range').value);
         state.segments = detectSilence(state.audioBuffer, val);
-        ui.renderEditor();
-        ui.toast("重新分析完成");
+        ui.renderEditor(); ui.toast("重新分析完成");
     },
-
-    save() {
-        localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
-        localStorage.setItem(CONST.INDEX, state.currIndex);
-    },
-
+    save() { localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments)); localStorage.setItem(CONST.INDEX, state.currIndex); },
     restoreProgress() {
-        const d = localStorage.getItem(CONST.STORAGE);
-        const i = localStorage.getItem(CONST.INDEX);
-        if (d) {
-            state.segments = JSON.parse(d);
-            state.currIndex = parseInt(i) || 0;
-            ui.renderEditor();
-            document.getElementById('restore-bar').style.display = 'none';
-            ui.updateAudioStatus();
-            ui.toast("进度已恢复");
-        }
+        const d = localStorage.getItem(CONST.STORAGE); const i = localStorage.getItem(CONST.INDEX);
+        if(d) { state.segments=JSON.parse(d); state.currIndex=parseInt(i)||0; ui.renderEditor(); document.getElementById('restore-bar').style.display='none'; ui.updateAudioStatus(); ui.toast("进度已恢复"); }
     },
-
-    exportProject() {
-        const b = new Blob([JSON.stringify({ segments: state.segments, idx: state.currIndex })]);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'shadow.json';
-        a.click();
-    },
-
+    exportProject() { const b=new Blob([JSON.stringify({segments:state.segments, idx:state.currIndex})]); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow.json'; a.click(); },
     exportSRT(slot) {
-        if (!state.segments.length) return ui.toast("无数据");
-        let key = 'text';
-        if (slot === 2) key = 'text2';
-        if (slot === 3) key = 'text3';
-        
-        if (!state.segments.some(s => s[key])) return ui.toast(`字幕${slot}无内容`);
-        
-        let c = "";
-        state.segments.forEach((s, i) => {
-            c += `${i + 1}\n${fmtTime(s.start, 1)} --> ${fmtTime(s.end, 1)}\n${s[key] || ''}\n\n`;
-        });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([c], { type: 'text/plain' }));
-        a.download = `sub_${slot}.srt`;
-        a.click();
+        if(!state.segments.length) return ui.toast("无数据");
+        let key = 'text'; if(slot===2) key='text2'; if(slot===3) key='text3';
+        if(!state.segments.some(s=>s[key])) return ui.toast(`字幕${slot}无内容`);
+        let c=""; state.segments.forEach((s,i)=>{ c+=`${i+1}\n${fmtTime(s.start,1)} --> ${fmtTime(s.end,1)}\n${s[key]||''}\n\n`; }); 
+        const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click(); 
     },
-
-    loadProject(el) {
-        const f = el.files[0];
-        if (!f) return;
-        const r = new FileReader();
-        r.onload = e => {
-            const d = JSON.parse(e.target.result);
-            state.segments = d.segments || d;
-            state.currIndex = d.idx || 0;
-            ui.renderEditor();
-            ui.updateAudioStatus();
-            ui.toast("工程加载成功");
-        };
-        r.readAsText(f);
-    },
-
-    importSub(el, k) {
-        const f = el.files[0];
-        if (!f) return;
-        const r = new FileReader();
-        r.onload = e => {
-            const n = parseSRT(e.target.result);
-            if (k === 0) state.segments = n;
-            else app.mergeSub(n, k === 1 ? 'text2' : 'text3');
-            ui.renderEditor();
-        };
-        r.readAsText(f);
-    }
+    loadProject(el) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const d=JSON.parse(e.target.result); state.segments=d.segments||d; state.currIndex=d.idx||0; ui.renderEditor(); ui.updateAudioStatus(); ui.toast("工程加载成功"); }; r.readAsText(f); },
+    importSub(el, k) { const f=el.files[0]; if(!f)return; const r=new FileReader(); r.onload=e=>{ const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n, k===1?'text2':'text3'); ui.renderEditor(); }; r.readAsText(f); }
 };
-
-
-
-
-
-
-
-
-
 document.getElementById('project-file').addEventListener('change', e=>app.loadProject(e.target));
 
 const recorder = {
