@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V50.2 (Timeline Fix)</title>
+<title>影子跟读 Pro V50.3 (Timeline Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -114,7 +114,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 <body>
 <div id="restore-bar" class="restore-bar" onclick="app.restoreProgress()">发现上次进度 (第<span id="restore-idx">1</span>句)，点击恢复</div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读 V50.2</div>
+<div class="nav-title">🎧 影子跟读 V50.3</div>
 <div class="mode-switch">
 <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
 <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -439,72 +439,92 @@ const app = {
     },
 
     // 修改：智能粘贴逻辑（增强兼容性）
+    
+
+
+// 修改：智能粘贴逻辑（增强兼容性，支持带空格的 URL）
     handleSmartPaste(e) {
         // 获取剪贴板内容
         const text = (e.clipboardData || window.clipboardData).getData('text');
         if (!text) return;
 
-        // 检测是否包含 http 链接或 .mp3
-        if (text.match(/https?:\/\//g) || text.includes('.mp3')) {
-            e.preventDefault(); // 阻止浏览器默认粘贴，完全由代码接管
+        // 简单检测是否包含 http 或 mp3 关键词
+        if (!text.match(/https?:\/\//) && !text.includes('.mp3')) return;
 
-            // 1. 先清空（以防用户是在没有点击的情况下直接粘贴）
-            this.clearInputs();
+        e.preventDefault(); // 阻止浏览器默认粘贴
+        
+        // 1. 先清空
+        this.clearInputs();
 
-            // 2. 提取并填充 MP3 链接
-            const mp3Match = text.match(/https?:\/\/[^\s"']+\.mp3/i);
-            if (mp3Match) {
-                document.getElementById('url-audio').value = mp3Match[0];
+        // 2. 预处理：按“行”分割，而不是按“空格”分割
+        // 这样可以保留 URL 中间的空格
+        const lines = text.split(/[\r\n]+/).map(line => line.trim()).filter(line => line);
+
+        let mp3Url = '';
+        const srtFiles = [];
+
+        // 3. 遍历每一行进行分类
+        lines.forEach(line => {
+            // 判断是否为 MP3 (忽略大小写)
+            if (line.match(/\.mp3$/i)) {
+                mp3Url = line;
+            } 
+            // 判断是否为字幕 (srt 或 txt)
+            else if (line.match(/\.(srt|txt)$/i)) {
+                srtFiles.push(line);
             }
+        });
 
-            // 3. 提取所有字幕链接 (.srt 或 .txt)
-            // 使用更通用的逻辑，兼容所有设备
-            const tokens = text.split(/[\s\n]+/); // 按空格或换行切割
-            const srtFiles = tokens.filter(t => t.match(/^https?:\/\/.*\.(srt|txt)$/i));
-
-            let s1 = '', s2 = '', s3 = '';
-
-            if (srtFiles.length === 1) {
-                // 情况A：只有一个字幕 -> 放入字幕 1
-                s1 = srtFiles[0];
-            } else if (srtFiles.length > 1) {
-                // 情况B：多个字幕 -> 按文件名特征分配
-                // 辅助函数：判断是否包含特定关键词
-                const has = (url, key) => url.toLowerCase().includes(key);
-
-                // 优先找双语 (EngChs) -> 字幕 2
-                const fEngChs = srtFiles.find(u => has(u, 'engchs'));
-                
-                // 找中文 (Chs)，且不是双语 -> 字幕 3
-                const fChs = srtFiles.find(u => has(u, 'chs') && !has(u, 'engchs'));
-                
-                // 找英文 (Eng)，且不是双语 -> 字幕 1
-                // 注意：有些文件名可能叫 english.srt，这里只要不含 engchs 且含 eng 即可
-                const fEng = srtFiles.find(u => has(u, 'eng') && !has(u, 'engchs'));
-
-                if (fEng) s1 = fEng;
-                if (fEngChs) s2 = fEngChs;
-                if (fChs) s3 = fChs;
-                
-                // 兜底：如果没匹配到标准命名，按顺序填入剩余的
-                if (!s1 && !s2 && !s3) {
-                     if(srtFiles[0]) s1 = srtFiles[0];
-                     if(srtFiles[1]) s2 = srtFiles[1];
-                     if(srtFiles[2]) s3 = srtFiles[2];
-                }
-            }
-            // 情况C：无字幕 -> 保持空白
-
-            // 4. 填充到输入框
-            document.getElementById('url-srt-1').value = s1;
-            document.getElementById('url-srt-2').value = s2;
-            document.getElementById('url-srt-3').value = s3;
-
-            // 5. 保存并提示
-            this.saveInput();
-            ui.toast("📋 链接已智能分配");
+        // 4. 填充 MP3
+        if (mp3Url) {
+            document.getElementById('url-audio').value = mp3Url;
         }
+
+        // 5. 智能分配字幕 (保留原有逻辑)
+        let s1 = '', s2 = '', s3 = '';
+        
+        if (srtFiles.length === 1) {
+            // 只有一个字幕，默认给字幕1
+            s1 = srtFiles[0];
+        } else if (srtFiles.length > 1) {
+            // 辅助函数
+            const has = (url, key) => url.toLowerCase().includes(key);
+
+            // 优先找双语 (EngChs) -> 字幕 2
+            const fEngChs = srtFiles.find(u => has(u, 'engchs'));
+            
+            // 找中文 (Chs)，且不是双语 -> 字幕 3
+            const fChs = srtFiles.find(u => has(u, 'chs') && !has(u, 'engchs'));
+            
+            // 找英文 (Eng)，且不是双语 -> 字幕 1
+            // 你的链接包含 .eng.srt，会被这里捕获
+            const fEng = srtFiles.find(u => has(u, 'eng') && !has(u, 'engchs'));
+
+            if (fEng) s1 = fEng;
+            if (fEngChs) s2 = fEngChs;
+            if (fChs) s3 = fChs;
+
+            // 兜底：如果按规则没分配完，按顺序填入空的格子
+            const remaining = srtFiles.filter(u => u !== s1 && u !== s2 && u !== s3);
+            if (!s1 && remaining.length > 0) s1 = remaining.shift();
+            if (!s2 && remaining.length > 0) s2 = remaining.shift();
+            if (!s3 && remaining.length > 0) s3 = remaining.shift();
+        }
+
+        // 6. 填充字幕输入框
+        document.getElementById('url-srt-1').value = s1;
+        document.getElementById('url-srt-2').value = s2;
+        document.getElementById('url-srt-3').value = s3;
+
+        // 7. 保存并提示
+        this.saveInput();
+        ui.toast("📋 链接已智能分配");
     },
+
+
+
+
+
  sleepTimerId: null, sleepInterval: null,
  startSleepTimer() {
  const input = document.getElementById('sleep-input'); const mins = parseInt(input.value);
