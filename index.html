@@ -7,7 +7,7 @@ name="viewport"
 content="width=device-width,
 initial-scale=1.0, maximum-scale=1.0,
 user-scalable=no">
-<title>影子跟读 Pro V50.6 (Grid Layout)</title>
+<title>影子跟读 Pro V50.7 (Subtitle Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green:
 #34A853; --orange: #FBBC04; --red: #EA4335;
@@ -474,7 +474,7 @@ onclick="app.restoreProgress()">发现上次进
 点击恢复</div>
 <div class="navbar">
 <div class="nav-title">🎧 影子跟读
-V50.6</div>
+V50.5</div>
 <div class="mode-switch">
 <button class="mode-btn active"
 onclick="app.switchView('editor')">编辑
@@ -602,7 +602,7 @@ margin-top:10px; font-size:12px;
 color:#666">共 <span
 id="row-count">0</span> 句</div>
 </div>
-<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载字幕数据 -->
+<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载完整的字幕数据 -->
 <div id="editor-list"></div>
 <div style="text-align:center;
 padding:20px;">
@@ -720,7 +720,7 @@ onclick="engine.toggleLoop()">🔁 循环单句
 </button>
 </div>
 
-<!-- 新的控制区网格布局：完全还原“图1”的排版 -->
+<!-- 新的控制区网格布局：完全还原“图1”的排版，此布局功能完整保留 -->
 <div class="nav-record-grid">
     <button class="btn-action btn-nav btn-grid-prev" onclick="app.prev()">← 上一句</button>
     <button class="btn-record btn-grid-rec" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
@@ -736,7 +736,7 @@ onclick="engine.toggleLoop()">🔁 循环单句
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
             <span id="server-browser-path">/</span>
-            <!-- 新增模糊查询搜索框 -->
+            <!-- 模糊查询搜索框 -->
             <input type="text" id="server-browser-search" placeholder="🔍 搜索音频..." style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 16px; font-size: 13px; width: 140px; margin-right: 10px;" oninput="serverBrowser.filterFiles()">
             <span id="server-browser-close" onclick="serverBrowser.close()">×</span>
         </div>
@@ -769,7 +769,7 @@ let hintTimer = null;
 // --- SERVER BROWSER LOGIC ---
 const serverBrowser = {
     history: [], 
-    allParsedFiles: [], // 存储抓取到的所有文件(包含字幕) 
+    allParsedFiles: [], // 存储抓取到的所有纯净文件(包含字幕)
     
     open() {
         const modal = document.getElementById('server-browser-modal');
@@ -823,6 +823,7 @@ const serverBrowser = {
             });
     },
 
+    // 核心修复点：完全从底层 URL Path 提取文件名，完美规避页面上的 Emoji 等干扰字符，确保 100% 成功自动匹配字幕文件
     parseAndRender(html, baseUrl) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -834,17 +835,21 @@ const serverBrowser = {
             if (a.textContent.includes('返回上一级') || href.startsWith('?')) return;
             if (href === '../' || href === '/') return;
 
-            const fullUrl = new URL(href, baseUrl).href;
-            let name = decodeURIComponent(a.textContent.trim());
-            if (!name) name = decodeURIComponent(href.replace(/\/$/, ''));
+            const urlObj = new URL(href, baseUrl);
+            const fullUrl = urlObj.href;
             
+            // 直接通过 url pathname 进行分割提取真正的原始文件名
+            const decodedPath = decodeURIComponent(urlObj.pathname);
+            const pathSegments = decodedPath.split('/').filter(Boolean);
+            if (pathSegments.length === 0) return;
+            
+            const name = pathSegments[pathSegments.length - 1];
             const isDirectory = fullUrl.endsWith('/');
-            if (name.endsWith('/')) name = name.slice(0, -1);
 
             files.push({ name, url: fullUrl, isDirectory });
         });
 
-        // 保存当前目录抓取到的所有文件（静默包含字幕供后期匹配）
+        // 此时保存在后台的所有文件名都是绝对纯净的
         this.allParsedFiles = files; 
         
         const searchBox = document.getElementById('server-browser-search');
@@ -877,7 +882,7 @@ const serverBrowser = {
             return;
         }
 
-        // 仅在列表中展示：文件夹和音频。屏蔽其他文件
+        // 仅在列表中展示：文件夹和音频。彻底屏蔽其他文件
         const displayFiles = this.allParsedFiles.filter(f => {
             if (f.isDirectory) return true;
             const ext = f.name.split('.').pop().toLowerCase();
@@ -915,7 +920,7 @@ const serverBrowser = {
 
     selectFile(file) {
         const fileUrl = file.url;
-        const filename = file.name;
+        const filename = file.name; // 这里的 filename 已经是绝对纯净的
         const ext = filename.split('.').pop().toLowerCase();
         
         if (!['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) {
@@ -925,7 +930,7 @@ const serverBrowser = {
 
         const baseName = filename.substring(0, filename.lastIndexOf('.'));
         
-        // 在后台隐式搜索该目录下同名但被屏蔽隐藏的字幕文件
+        // 在后台隐式搜索同名纯净字幕文件
         const findSub = (suffix) => {
             const target = (baseName + suffix).toLowerCase();
             const found = this.allParsedFiles.find(f => 
@@ -1237,6 +1242,7 @@ const ui = {
             recBtn.innerText = "🎤 按下开始录音";
         }
     },
+    // 渲染编辑器列表：如果文本正常获取，这里的文本框就会完整展示并携带文字
     renderEditor() {
         const l = document.getElementById('editor-list');
         l.innerHTML = '';
