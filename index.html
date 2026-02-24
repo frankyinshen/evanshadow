@@ -7,7 +7,7 @@ name="viewport"
 content="width=device-width,
 initial-scale=1.0, maximum-scale=1.0,
 user-scalable=no">
-<title>影子跟读 Pro V50.8 (Ultimate Grid & Subs)</title>
+<title>影子跟读 Pro V50.99 (Grid Layout & SRT Fix)</title>
 <style>
 :root { --primary: #1A73E8; --green:
 #34A853; --orange: #FBBC04; --red: #EA4335;
@@ -172,9 +172,6 @@ font-size: 13px; font-weight: bold; cursor:
 pointer; white-space: nowrap; }
 .btn-range-play.active { background:
 #E37400; animation: pulse 2s infinite; }
-.row-dual { display: grid;
-grid-template-columns: 1fr 1fr; gap: 8px;
-height: 44px; }
 .btn-action { border: none; border-radius:
 10px; font-size: 14px; font-weight: 600;
 cursor: pointer; display: flex;
@@ -205,21 +202,46 @@ var(--green); }
 .btn-nav { background: #F1F3F4; color:
 #3C4043; }
 
-/* 完美复刻图一网格布局：左3列，右2列对齐 */
-.nav-record-grid {
+
+
+
+/* ======================================================= */
+/* 核心布局改造：Grid Layout - 左侧3等分，右侧2等分 */
+/* ======================================================= */
+.control-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(6, 1fr);
-    gap: 8px;
-    height: 160px; /* 控制整个按钮群的高度 */
-    margin-top: 8px;
+    grid-template-columns: 1fr 1.2fr;
+    /* 将原本的3行44px改为6小行，每行17px (17*2+10=44，完美保持左侧高度不变) */
+    grid-template-rows: repeat(6, 17px); 
+    gap: 10px;
+    margin-top: 5px;
 }
-.btn-grid-loop { grid-column: 1; grid-row: 1 / span 2; border-radius: 10px; }
-.btn-grid-prev { grid-column: 1; grid-row: 3 / span 2; border-radius: 10px; }
-.btn-grid-rec  { grid-column: 1; grid-row: 5 / span 2; height: 100% !important; border-radius: 10px !important; margin: 0 !important; font-size: 14px !important;}
-.btn-grid-play { grid-column: 2; grid-row: 1 / span 3; font-size: 16px !important; border-radius: 10px; }
-.btn-grid-next { grid-column: 2; grid-row: 4 / span 3; font-size: 18px !important; font-weight: 700 !important; background: #E8F0FE !important; color: var(--primary) !important; border-radius: 10px; }
-/* ------------------------------------- */
+
+/* --- 左侧3个按钮：每个跨2行 --- */
+#btn-loop { grid-row: 1 / 3; grid-column: 1; width: 100%; height: 100%; }
+.btn-prev-grid { grid-row: 3 / 5; grid-column: 1; width: 100%; height: 100%; }
+#btn-record { grid-row: 5 / 7; grid-column: 1; width: 100%; height: 100%; border-radius: 10px; }
+
+/* --- 右侧2个按钮：每个跨3行（完美平分高度） --- */
+#btn-play-once { 
+    grid-row: 1 / 4; 
+    grid-column: 2; 
+    width: 100%; height: 100%; 
+    font-size: 16px; /* 稍微调大点字号以适应变高的按钮 */
+}
+.btn-next-grid {
+    grid-row: 4 / 7; 
+    grid-column: 2;
+    width: 100%; height: 100%; 
+    font-size: 18px; font-weight: 700;
+    background: #FFF; border: 1px solid #E0E0E0;
+}
+/* ======================================================= */
+
+
+
+
+
 
 /* 编辑页列表 */
 .sub-item { background: #fff; padding:
@@ -460,7 +482,7 @@ onclick="app.restoreProgress()">发现上次进
 点击恢复</div>
 <div class="navbar">
 <div class="nav-title">🎧 影子跟读
-V50.6</div>
+V50.99</div>
 <div class="mode-switch">
 <button class="mode-btn active"
 onclick="app.switchView('editor')">编辑
@@ -567,7 +589,11 @@ onclick="app.exportSRT(2)">↓ 导出字幕
 onclick="app.exportSRT(3)">↓ 导出字幕
 3</button>
 </div>
-</div>
+
+<!-- ============================================== -->
+<!-- 核心修复处：原先这里错误地多了一个 </div> 导致提前关闭了 card！修复以保证编辑器容器结构完整 -->
+<!-- ============================================== -->
+
 <div class="slider-row">
 <span style="font-size:13px;
 font-weight:600; color:#555">🔪 断句灵敏度:
@@ -587,16 +613,19 @@ onclick="app.applyReAnalyze()">执行
 margin-top:10px; font-size:12px;
 color:#666">共 <span
 id="row-count">0</span> 句</div>
-</div>
-<!-- 这里的 editor-list 会被完美渲染为您图二需要的多行字幕编辑框 -->
+</div> <!-- 正确在此闭合 .card 容器 -->
+<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载完整的字幕数据 -->
 <div id="editor-list"></div>
-<div style="text-align:center; padding:20px;">
+<div style="text-align:center;
+padding:20px;">
 <button class="btn-file"
-style="display:inline-flex; width:auto; border:1px dashed #ccc;"
+style="display:inline-flex; width:auto;
+border:1px dashed #ccc;"
 onclick="app.addNewRow()">+ 添加空行
 </button>
 </div>
-</div>
+</div> <!-- 正常在此闭合 #editor-view 页面容器 -->
+
 <div id="practice-view">
 <div class="practice-card">
 <div id="drawer-overlay"
@@ -619,7 +648,7 @@ onclick="ui.toggleDrawer()">关闭</button>
 <div class="practice-header">
 <div style="display:flex; align-items:center;">
     <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
-    <!-- 永显永隐锁定按钮区 (保留不变) -->
+    <!-- 永显永隐锁定按钮区 -->
     <div style="display:flex; gap: 5px; margin-left: 5px; z-index: 10;">
         <button id="btn-perm-show" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermShow()">永显</button>
         <button id="btn-perm-hide" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermHide()">永隐</button>
@@ -697,22 +726,26 @@ onclick="engine.toggleRangeLoop()">循环
 <!-- ============================================== -->
 <!-- 100% 精确复刻图一的 CSS Grid 六宫格交互排版   -->
 <!-- ============================================== -->
-<div class="nav-record-grid">
-    <!-- 左侧列：占两行 -->
-    <button class="btn-action btn-orange btn-grid-loop" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
-    <button class="btn-action btn-nav btn-grid-prev" onclick="app.prev()">← 上一句</button>
-    <button class="btn-record btn-grid-rec" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+<div class="control-grid">
+    <!-- Row 1 Left -->
+    <button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
+    <!-- Row 1 Right -->
+    <button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
     
-    <!-- 右侧列：占三行 (拉大点击面积防误触) -->
-    <button class="btn-action btn-blue btn-grid-play" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
-    <button class="btn-action btn-nav btn-grid-next" onclick="app.next()">下一句 →</button>
+    <!-- Row 2 Left -->
+    <button class="btn-action btn-nav btn-prev-grid" onclick="app.prev()">← 上一句</button>
+    <!-- Row 2 Right (Spanning 2 Rows) -->
+    <button class="btn-action btn-nav btn-next-grid" onclick="app.next()">下一句 →</button>
+    
+    <!-- Row 3 Left -->
+    <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
 </div>
 <!-- ============================================== -->
 
 </div>
 </div>
 </div>
-<!-- SERVER BROWSER MODAL (保留极简只显MP3+模糊搜索) -->
+<!-- SERVER BROWSER MODAL -->
 <div id="server-browser-modal" onclick="serverBrowser.close()">
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
@@ -750,7 +783,7 @@ let hintTimer = null;
 // --- SERVER BROWSER LOGIC ---
 const serverBrowser = {
     history: [], 
-    allParsedFiles: [], // 存储抓取到的所有纯净文件(包含字幕)
+    allParsedFiles: [],
     
     open() {
         const modal = document.getElementById('server-browser-modal');
@@ -1780,14 +1813,11 @@ function fmtTime(s, srt = false) {
     return srt ? str.replace('.', ',') : str.substr(0, 8);
 }
 
-// =====================================================================
-// 核心修复点：全面过滤 SRT 文本中的 "\r"，彻底消灭任何因换行符导致的编辑器列表空白Bug
-// 保证只要服务器有字幕文件，就必定 100% 像图二一样在断句灵敏度下方生成带内容的编辑框
-// =====================================================================
+// 核心修复：完全使用 V50.3 的原生 SRT 解析逻辑，不进行任何额外的换行符清洗，
+// 确保与 V50.3 的行为 100% 一致。
 function parseSRT(t) {
     const r = [];
-    t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n'); // 暴力干掉回车符
-    const e = /(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g;
+    const e = /(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s-->\s(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g;
     let m;
     while (m = e.exec(t)) r.push({
         start: pt(m[2]),
@@ -1796,7 +1826,6 @@ function parseSRT(t) {
     });
     return r;
 }
-// =====================================================================
 
 function pt(s) {
     s = s.replace(',', '.');
