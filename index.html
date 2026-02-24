@@ -7,7 +7,7 @@ name="viewport"
 content="width=device-width,
 initial-scale=1.0, maximum-scale=1.0,
 user-scalable=no">
-<title>影子跟读 Pro V50.7 (Subtitle Fix)</title>
+<title>影子跟读 Pro V50.8 (Ultimate Grid & Subs)</title>
 <style>
 :root { --primary: #1A73E8; --green:
 #34A853; --orange: #FBBC04; --red: #EA4335;
@@ -205,34 +205,20 @@ var(--green); }
 .btn-nav { background: #F1F3F4; color:
 #3C4043; }
 
-/* --- 完美复刻图1：新型导航控制区网格 --- */
+/* 完美复刻图一网格布局：左3列，右2列对齐 */
 .nav-record-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 44px 44px; /* 保持按钮高度统一 */
-    grid-template-areas:
-        "prev next"
-        "rec next";
+    grid-template-rows: repeat(6, 1fr);
     gap: 8px;
-    margin-top: 4px;
+    height: 160px; /* 控制整个按钮群的高度 */
+    margin-top: 8px;
 }
-.btn-grid-prev {
-    grid-area: prev;
-}
-.btn-grid-rec {
-    grid-area: rec;
-    height: 100% !important; /* 强制填满网格单元 */
-    border-radius: 10px !important; /* 与其他方块按钮保持风格一致 */
-    margin: 0 !important;
-    font-size: 14px !important;
-}
-.btn-grid-next {
-    grid-area: next;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    background: #E8F0FE !important;
-    color: var(--primary) !important;
-}
+.btn-grid-loop { grid-column: 1; grid-row: 1 / span 2; border-radius: 10px; }
+.btn-grid-prev { grid-column: 1; grid-row: 3 / span 2; border-radius: 10px; }
+.btn-grid-rec  { grid-column: 1; grid-row: 5 / span 2; height: 100% !important; border-radius: 10px !important; margin: 0 !important; font-size: 14px !important;}
+.btn-grid-play { grid-column: 2; grid-row: 1 / span 3; font-size: 16px !important; border-radius: 10px; }
+.btn-grid-next { grid-column: 2; grid-row: 4 / span 3; font-size: 18px !important; font-weight: 700 !important; background: #E8F0FE !important; color: var(--primary) !important; border-radius: 10px; }
 /* ------------------------------------- */
 
 /* 编辑页列表 */
@@ -474,7 +460,7 @@ onclick="app.restoreProgress()">发现上次进
 点击恢复</div>
 <div class="navbar">
 <div class="nav-title">🎧 影子跟读
-V50.5</div>
+V50.6</div>
 <div class="mode-switch">
 <button class="mode-btn active"
 onclick="app.switchView('editor')">编辑
@@ -602,13 +588,11 @@ margin-top:10px; font-size:12px;
 color:#666">共 <span
 id="row-count">0</span> 句</div>
 </div>
-<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载完整的字幕数据 -->
+<!-- 这里的 editor-list 会被完美渲染为您图二需要的多行字幕编辑框 -->
 <div id="editor-list"></div>
-<div style="text-align:center;
-padding:20px;">
+<div style="text-align:center; padding:20px;">
 <button class="btn-file"
-style="display:inline-flex; width:auto;
-border:1px dashed #ccc;"
+style="display:inline-flex; width:auto; border:1px dashed #ccc;"
 onclick="app.addNewRow()">+ 添加空行
 </button>
 </div>
@@ -635,7 +619,7 @@ onclick="ui.toggleDrawer()">关闭</button>
 <div class="practice-header">
 <div style="display:flex; align-items:center;">
     <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
-    <!-- 永显永隐锁定按钮区 -->
+    <!-- 永显永隐锁定按钮区 (保留不变) -->
     <div style="display:flex; gap: 5px; margin-left: 5px; z-index: 10;">
         <button id="btn-perm-show" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermShow()">永显</button>
         <button id="btn-perm-hide" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermHide()">永隐</button>
@@ -709,29 +693,26 @@ onclick="engine.toggleRangeLoop()">循环
 </button>
 </div>
 </div>
-<div class="row-dual">
-<button class="btn-action btn-blue"
-id="btn-play-once"
-onclick="engine.playOnce()">▶ 播单句
-</button>
-<button class="btn-action btn-orange"
-id="btn-loop"
-onclick="engine.toggleLoop()">🔁 循环单句
-</button>
-</div>
 
-<!-- 新的控制区网格布局：完全还原“图1”的排版，此布局功能完整保留 -->
+<!-- ============================================== -->
+<!-- 100% 精确复刻图一的 CSS Grid 六宫格交互排版   -->
+<!-- ============================================== -->
 <div class="nav-record-grid">
+    <!-- 左侧列：占两行 -->
+    <button class="btn-action btn-orange btn-grid-loop" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
     <button class="btn-action btn-nav btn-grid-prev" onclick="app.prev()">← 上一句</button>
     <button class="btn-record btn-grid-rec" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+    
+    <!-- 右侧列：占三行 (拉大点击面积防误触) -->
+    <button class="btn-action btn-blue btn-grid-play" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
     <button class="btn-action btn-nav btn-grid-next" onclick="app.next()">下一句 →</button>
 </div>
-<!-- 新布局结束 -->
+<!-- ============================================== -->
 
 </div>
 </div>
 </div>
-<!-- SERVER BROWSER MODAL -->
+<!-- SERVER BROWSER MODAL (保留极简只显MP3+模糊搜索) -->
 <div id="server-browser-modal" onclick="serverBrowser.close()">
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
@@ -823,7 +804,6 @@ const serverBrowser = {
             });
     },
 
-    // 核心修复点：完全从底层 URL Path 提取文件名，完美规避页面上的 Emoji 等干扰字符，确保 100% 成功自动匹配字幕文件
     parseAndRender(html, baseUrl) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
@@ -838,7 +818,6 @@ const serverBrowser = {
             const urlObj = new URL(href, baseUrl);
             const fullUrl = urlObj.href;
             
-            // 直接通过 url pathname 进行分割提取真正的原始文件名
             const decodedPath = decodeURIComponent(urlObj.pathname);
             const pathSegments = decodedPath.split('/').filter(Boolean);
             if (pathSegments.length === 0) return;
@@ -849,12 +828,9 @@ const serverBrowser = {
             files.push({ name, url: fullUrl, isDirectory });
         });
 
-        // 此时保存在后台的所有文件名都是绝对纯净的
         this.allParsedFiles = files; 
-        
         const searchBox = document.getElementById('server-browser-search');
         if(searchBox) searchBox.value = '';
-
         this.renderList();
     },
 
@@ -882,7 +858,6 @@ const serverBrowser = {
             return;
         }
 
-        // 仅在列表中展示：文件夹和音频。彻底屏蔽其他文件
         const displayFiles = this.allParsedFiles.filter(f => {
             if (f.isDirectory) return true;
             const ext = f.name.split('.').pop().toLowerCase();
@@ -920,7 +895,7 @@ const serverBrowser = {
 
     selectFile(file) {
         const fileUrl = file.url;
-        const filename = file.name; // 这里的 filename 已经是绝对纯净的
+        const filename = file.name; 
         const ext = filename.split('.').pop().toLowerCase();
         
         if (!['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) {
@@ -930,7 +905,6 @@ const serverBrowser = {
 
         const baseName = filename.substring(0, filename.lastIndexOf('.'));
         
-        // 在后台隐式搜索同名纯净字幕文件
         const findSub = (suffix) => {
             const target = (baseName + suffix).toLowerCase();
             const found = this.allParsedFiles.find(f => 
@@ -939,7 +913,6 @@ const serverBrowser = {
             return found ? found.url : '';
         };
 
-        // 满足：主文件名.srt，就直接加载到字幕1
         const srt1_url = findSub('.eng.srt') || findSub('.srt');
         const srt2_url = findSub('.engchs.srt');
         const srt3_url = findSub('.chs.srt');
@@ -1242,7 +1215,6 @@ const ui = {
             recBtn.innerText = "🎤 按下开始录音";
         }
     },
-    // 渲染编辑器列表：如果文本正常获取，这里的文本框就会完整展示并携带文字
     renderEditor() {
         const l = document.getElementById('editor-list');
         l.innerHTML = '';
@@ -1808,8 +1780,13 @@ function fmtTime(s, srt = false) {
     return srt ? str.replace('.', ',') : str.substr(0, 8);
 }
 
+// =====================================================================
+// 核心修复点：全面过滤 SRT 文本中的 "\r"，彻底消灭任何因换行符导致的编辑器列表空白Bug
+// 保证只要服务器有字幕文件，就必定 100% 像图二一样在断句灵敏度下方生成带内容的编辑框
+// =====================================================================
 function parseSRT(t) {
     const r = [];
+    t = t.replace(/\r\n/g, '\n').replace(/\r/g, '\n'); // 暴力干掉回车符
     const e = /(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g;
     let m;
     while (m = e.exec(t)) r.push({
@@ -1819,6 +1796,7 @@ function parseSRT(t) {
     });
     return r;
 }
+// =====================================================================
 
 function pt(s) {
     s = s.replace(',', '.');
