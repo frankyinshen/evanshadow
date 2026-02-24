@@ -7,7 +7,7 @@ name="viewport"
 content="width=device-width,
 initial-scale=1.0, maximum-scale=1.0,
 user-scalable=no">
-<title>影子跟读 Pro V50.5 (Ultimate Enhancements)</title>
+<title>影子跟读 Pro V50.6 (Grid Layout)</title>
 <style>
 :root { --primary: #1A73E8; --green:
 #34A853; --orange: #FBBC04; --red: #EA4335;
@@ -204,6 +204,37 @@ border-color: var(--green); color:
 var(--green); }
 .btn-nav { background: #F1F3F4; color:
 #3C4043; }
+
+/* --- 完美复刻图1：新型导航控制区网格 --- */
+.nav-record-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 44px 44px; /* 保持按钮高度统一 */
+    grid-template-areas:
+        "prev next"
+        "rec next";
+    gap: 8px;
+    margin-top: 4px;
+}
+.btn-grid-prev {
+    grid-area: prev;
+}
+.btn-grid-rec {
+    grid-area: rec;
+    height: 100% !important; /* 强制填满网格单元 */
+    border-radius: 10px !important; /* 与其他方块按钮保持风格一致 */
+    margin: 0 !important;
+    font-size: 14px !important;
+}
+.btn-grid-next {
+    grid-area: next;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    background: #E8F0FE !important;
+    color: var(--primary) !important;
+}
+/* ------------------------------------- */
+
 /* 编辑页列表 */
 .sub-item { background: #fff; padding:
 16px; border: 1px solid #E0E0E0;
@@ -443,7 +474,7 @@ onclick="app.restoreProgress()">发现上次进
 点击恢复</div>
 <div class="navbar">
 <div class="nav-title">🎧 影子跟读
-V50.5</div>
+V50.6</div>
 <div class="mode-switch">
 <button class="mode-btn active"
 onclick="app.switchView('editor')">编辑
@@ -571,6 +602,7 @@ margin-top:10px; font-size:12px;
 color:#666">共 <span
 id="row-count">0</span> 句</div>
 </div>
+<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载字幕数据 -->
 <div id="editor-list"></div>
 <div style="text-align:center;
 padding:20px;">
@@ -687,17 +719,15 @@ id="btn-loop"
 onclick="engine.toggleLoop()">🔁 循环单句
 </button>
 </div>
-<!-- “上一句”/“下一句” 提到前面，并放大“下一句” -->
-<div class="row-dual" style="grid-template-columns: 1fr 2fr; height: 56px; margin-bottom: 4px;">
-<button class="btn-action btn-nav"
-onclick="app.prev()">← 上一句</button>
-<button class="btn-action btn-nav"
-onclick="app.next()" style="font-size: 18px; font-weight: 700; background: #E8F0FE; color: var(--primary);">下一句 →</button>
+
+<!-- 新的控制区网格布局：完全还原“图1”的排版 -->
+<div class="nav-record-grid">
+    <button class="btn-action btn-nav btn-grid-prev" onclick="app.prev()">← 上一句</button>
+    <button class="btn-record btn-grid-rec" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+    <button class="btn-action btn-nav btn-grid-next" onclick="app.next()">下一句 →</button>
 </div>
-<!-- 录音按钮移动到最底部 -->
-<button class="btn-record" id="btn-record"
-onclick="recorder.toggle()" style="margin-top: 4px;">🎤 按下开始录音
-</button>
+<!-- 新布局结束 -->
+
 </div>
 </div>
 </div>
@@ -904,7 +934,7 @@ const serverBrowser = {
             return found ? found.url : '';
         };
 
-        // 如果是 .srt 也优先算入字幕1
+        // 满足：主文件名.srt，就直接加载到字幕1
         const srt1_url = findSub('.eng.srt') || findSub('.srt');
         const srt2_url = findSub('.engchs.srt');
         const srt3_url = findSub('.chs.srt');
@@ -1202,8 +1232,10 @@ const ui = {
         fullBtn.classList.remove('active');
         fullBtn.innerText = "🎧 全文磨耳朵";
         const recBtn = document.getElementById('btn-record');
-        recBtn.classList.remove('recording', 'playing');
-        recBtn.innerText = "🎤 按下开始录音";
+        if(recBtn) {
+            recBtn.classList.remove('recording', 'playing');
+            recBtn.innerText = "🎤 按下开始录音";
+        }
     },
     renderEditor() {
         const l = document.getElementById('editor-list');
@@ -1700,8 +1732,10 @@ const recorder = {
                 };
                 this.rec.start();
                 this.isRec = true;
-                btn.classList.add('recording');
-                btn.innerText = "■ 停止录音";
+                if(btn) {
+                    btn.classList.add('recording');
+                    btn.innerText = "■ 停止录音";
+                }
             } catch (e) {
                 alert("无麦克风权限");
             }
@@ -1715,8 +1749,11 @@ const recorder = {
             this.rec.stop();
             this.isRec = false;
         }
-        document.getElementById('btn-record').classList.remove('recording');
-        document.getElementById('btn-record').innerText = "🎤 按下开始录音";
+        const btn = document.getElementById('btn-record');
+        if(btn) {
+            btn.classList.remove('recording');
+            btn.innerText = "🎤 按下开始录音";
+        }
     },
     playCmp() {
         const s = state.segments[state.currIndex];
@@ -1738,10 +1775,12 @@ const recorder = {
                     r.currentTime = 0;
                     r.play();
                     r.onended = () => {
-                        document.getElementById('btn-record').classList.remove('playing');
+                        const btn = document.getElementById('btn-record');
+                        if(btn) btn.classList.remove('playing');
                         ui.toast("播放完毕");
                     };
-                    document.getElementById('btn-record').classList.add('playing');
+                    const btn = document.getElementById('btn-record');
+                    if(btn) btn.classList.add('playing');
                 }, 500);
             }
         }, 30);
