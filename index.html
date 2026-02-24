@@ -7,7 +7,7 @@ name="viewport"
 content="width=device-width,
 initial-scale=1.0, maximum-scale=1.0,
 user-scalable=no">
-<title>影子跟读 Pro V50.4 (Server Browser Fix)</title>
+<title>影子跟读 Pro V50.5 (Ultimate Enhancements)</title>
 <style>
 :root { --primary: #1A73E8; --green:
 #34A853; --orange: #FBBC04; --red: #EA4335;
@@ -345,7 +345,7 @@ center; width: max-content; max-width: 80%;
 font-size: 14px; display: none; cursor:
 pointer; border-bottom: 1px solid #FEEFC3;
 font-weight: 500; }
-/* --- START: NEW STYLES FOR SERVER BROWSER --- */
+/* --- START: STYLES FOR SERVER BROWSER --- */
 #server-browser-modal {
     position: fixed;
     top: 0;
@@ -354,7 +354,7 @@ font-weight: 500; }
     height: 100%;
     background: rgba(0,0,0,0.5);
     z-index: 1000;
-    display: none; /* Hidden by default */
+    display: none;
     justify-content: center;
     align-items: center;
 }
@@ -386,6 +386,8 @@ font-weight: 500; }
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+    margin-right: 10px;
 }
 #server-browser-close {
     font-size: 24px;
@@ -427,7 +429,7 @@ font-weight: 500; }
     word-break: break-all;
     flex: 1;
 }
-/* --- END: NEW STYLES FOR SERVER BROWSER --- */
+/* --- END: STYLES FOR SERVER BROWSER --- */
 @keyframes pulse { 0% { opacity: 1; } 50% {
 opacity: 0.8; } 100% { opacity: 1; } }
 @keyframes spin { to { transform:
@@ -441,7 +443,7 @@ onclick="app.restoreProgress()">发现上次进
 点击恢复</div>
 <div class="navbar">
 <div class="nav-title">🎧 影子跟读
-V50.4</div>
+V50.5</div>
 <div class="mode-switch">
 <button class="mode-btn active"
 onclick="app.switchView('editor')">编辑
@@ -474,12 +476,10 @@ class="history-select" style="width:100%"
 onchange="app.fillHistory(this.value)">
 <option value="">▼ 选择历史记录...</option>
 </select>
-<!-- START: MODIFICATION - Add browse button -->
 <div class="url-block" style="display: flex; gap: 10px; align-items: center;">
     <label class="url-label" style="margin: 0; flex-grow: 1;">♫ 音频链接 (点击清空, 智能粘贴多链接)</label>
     <button class="btn-mini" onclick="serverBrowser.open()">📂 浏览服务器...</button>
 </div>
-<!-- END: MODIFICATION -->
 <div class="url-block">
 <input type="text" class="url-input"
 id="url-audio" placeholder="在此粘贴组合链
@@ -491,7 +491,7 @@ onchange="app.saveInput()">
 <label class="url-label">📄 字幕链接(自动
 分配)</label>
 <input type="text" class="url-input"
-id="url-srt-1" placeholder="字幕 1 (Eng)"
+id="url-srt-1" placeholder="字幕 1 (Eng或主字幕)"
 onchange="app.saveInput()">
 <input type="text" class="url-input"
 style="margin-top:6px" id="url-srt-2"
@@ -601,8 +601,15 @@ onclick="ui.toggleDrawer()">关闭</button>
 </div>
 </div>
 <div class="practice-header">
-<div class="icon-btn"
-onclick="ui.toggleDrawer()">☰</div>
+<div style="display:flex; align-items:center;">
+    <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
+    <!-- 永显永隐锁定按钮区 -->
+    <div style="display:flex; gap: 5px; margin-left: 5px; z-index: 10;">
+        <button id="btn-perm-show" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermShow()">永显</button>
+        <button id="btn-perm-hide" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermHide()">永隐</button>
+    </div>
+</div>
+
 <div class="jump-select-wrapper">
 <select id="jump-select"
 class="jump-select"
@@ -680,32 +687,33 @@ id="btn-loop"
 onclick="engine.toggleLoop()">🔁 循环单句
 </button>
 </div>
-<button class="btn-record" id="btn-record"
-onclick="recorder.toggle()">🎤 按下开始录音
-</button>
-<div class="row-dual">
+<!-- “上一句”/“下一句” 提到前面，并放大“下一句” -->
+<div class="row-dual" style="grid-template-columns: 1fr 2fr; height: 56px; margin-bottom: 4px;">
 <button class="btn-action btn-nav"
 onclick="app.prev()">← 上一句</button>
 <button class="btn-action btn-nav"
-onclick="app.next()">下一句 →</button>
+onclick="app.next()" style="font-size: 18px; font-weight: 700; background: #E8F0FE; color: var(--primary);">下一句 →</button>
+</div>
+<!-- 录音按钮移动到最底部 -->
+<button class="btn-record" id="btn-record"
+onclick="recorder.toggle()" style="margin-top: 4px;">🎤 按下开始录音
+</button>
 </div>
 </div>
 </div>
-</div>
-</div>
-<!-- START: NEW HTML FOR SERVER BROWSER MODAL -->
+<!-- SERVER BROWSER MODAL -->
 <div id="server-browser-modal" onclick="serverBrowser.close()">
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
             <span id="server-browser-path">/</span>
+            <!-- 新增模糊查询搜索框 -->
+            <input type="text" id="server-browser-search" placeholder="🔍 搜索音频..." style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 16px; font-size: 13px; width: 140px; margin-right: 10px;" oninput="serverBrowser.filterFiles()">
             <span id="server-browser-close" onclick="serverBrowser.close()">×</span>
         </div>
         <div id="server-browser-list">
-            <!-- File list will be rendered here by JavaScript -->
         </div>
     </div>
 </div>
-<!-- END: NEW HTML -->
 
 <div id="toast" class="toast">提示</div>
 <script>
@@ -715,7 +723,6 @@ const CONST = {
     HIST: 'shadow_v50_hist',
     INPUTS: 'shadow_v50_inputs',
     PROXY: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='],
-    // UPDATED: Base URL set to the root domain as requested
     SERVER_BROWSER_BASE_URL: 'https://res.evanyin.dpdns.org/'
 };
 const state = {
@@ -724,19 +731,19 @@ const state = {
     activeSub: 0,
     audioBuffer: null,
     userBlurState: true,
-    hasShownHint: false
+    hasShownHint: false,
+    permBlurMode: 'none' // 'none', 'show', 'hide'
 };
 let hintTimer = null;
 
-// --- START: IMPROVED SERVER BROWSER LOGIC ---
+// --- SERVER BROWSER LOGIC ---
 const serverBrowser = {
     history: [], 
-    currentFiles: [], 
+    allParsedFiles: [], // 存储抓取到的所有文件(包含字幕) 
     
     open() {
         const modal = document.getElementById('server-browser-modal');
         modal.style.display = 'flex';
-        // Start at root
         this.history = [CONST.SERVER_BROWSER_BASE_URL];
         this.fetchAndRender(CONST.SERVER_BROWSER_BASE_URL);
     },
@@ -745,12 +752,13 @@ const serverBrowser = {
         const modal = document.getElementById('server-browser-modal');
         modal.style.display = 'none';
         document.getElementById('server-browser-list').innerHTML = '';
+        const searchBox = document.getElementById('server-browser-search');
+        if(searchBox) searchBox.value = '';
         this.history = [];
-        this.currentFiles = [];
+        this.allParsedFiles = [];
     },
 
     navigate(url) {
-        // Simple history push
         this.history.push(url);
         this.fetchAndRender(url);
     },
@@ -769,7 +777,6 @@ const serverBrowser = {
         
         listEl.innerHTML = '<div class="browser-item loading">正在加载...</div>';
         
-        // Pretty path display
         let displayPath = url.replace(CONST.SERVER_BROWSER_BASE_URL, '/');
         if (!displayPath.startsWith('/')) displayPath = '/' + displayPath;
         pathEl.textContent = displayPath;
@@ -787,41 +794,46 @@ const serverBrowser = {
     },
 
     parseAndRender(html, baseUrl) {
-        const listEl = document.getElementById('server-browser-list');
-        listEl.innerHTML = ''; 
-
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
-        
         const files = [];
-        // Iterate all links
+
         doc.querySelectorAll('a').forEach(a => {
             let href = a.getAttribute('href');
             if (!href) return;
-
-            // Handle Cloudflare/Nginx specific "Parent Directory" links or sorts
             if (a.textContent.includes('返回上一级') || href.startsWith('?')) return;
             if (href === '../' || href === '/') return;
 
-            // Construct full URL first
             const fullUrl = new URL(href, baseUrl).href;
-            
-            // Decode name to handle Chinese characters and spaces correctly
             let name = decodeURIComponent(a.textContent.trim());
-            // If name is empty, fallback to decoding the href
             if (!name) name = decodeURIComponent(href.replace(/\/$/, ''));
             
-            // Remove trailing slash for display, but keep track if it is a directory
-            // Most servers mark directory hrefs with a trailing slash
             const isDirectory = fullUrl.endsWith('/');
             if (name.endsWith('/')) name = name.slice(0, -1);
 
             files.push({ name, url: fullUrl, isDirectory });
         });
 
-        this.currentFiles = files; 
+        // 保存当前目录抓取到的所有文件（静默包含字幕供后期匹配）
+        this.allParsedFiles = files; 
         
-        // Render "Back" button if not at root
+        const searchBox = document.getElementById('server-browser-search');
+        if(searchBox) searchBox.value = '';
+
+        this.renderList();
+    },
+
+    filterFiles() {
+        this.renderList();
+    },
+
+    renderList() {
+        const listEl = document.getElementById('server-browser-list');
+        listEl.innerHTML = ''; 
+
+        const searchBox = document.getElementById('server-browser-search');
+        const query = searchBox ? searchBox.value.toLowerCase() : '';
+
         if (this.history.length > 1) {
              const backItem = document.createElement('div');
              backItem.className = 'browser-item';
@@ -830,38 +842,45 @@ const serverBrowser = {
              listEl.appendChild(backItem);
         }
 
-        if (files.length === 0) {
+        if (this.allParsedFiles.length === 0) {
             listEl.innerHTML += '<div class="browser-item loading">目录为空</div>';
             return;
         }
 
-        // Sort: Folders first
-        files.sort((a, b) => {
+        // 仅在列表中展示：文件夹和音频。屏蔽其他文件
+        const displayFiles = this.allParsedFiles.filter(f => {
+            if (f.isDirectory) return true;
+            const ext = f.name.split('.').pop().toLowerCase();
+            if (!['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) return false; 
+            return true;
+        }).filter(f => {
+            if (!query) return true;
+            return f.name.toLowerCase().includes(query);
+        });
+
+        displayFiles.sort((a, b) => {
             if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
             return a.name.localeCompare(b.name);
         });
 
-        files.forEach(file => {
+        if(displayFiles.length === 0 && query) {
+            listEl.innerHTML += '<div class="browser-item loading">没有找到匹配的音频</div>';
+        }
+
+        displayFiles.forEach(file => {
             const item = document.createElement('div');
             item.className = 'browser-item';
-            const icon = file.isDirectory ? '📁' : this.getFileIcon(file.name);
+            const icon = file.isDirectory ? '📁' : '🎵';
             item.innerHTML = `<span class="browser-item-icon">${icon}</span> <span class="browser-item-name">${file.name}</span>`;
             item.onclick = () => {
                 if (file.isDirectory) {
                     this.navigate(file.url);
                 } else {
-                    this.selectFile(file); // Pass the whole file object
+                    this.selectFile(file);
                 }
             };
             listEl.appendChild(item);
         });
-    },
-
-    getFileIcon(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        if (['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) return '🎵';
-        if (['srt', 'txt', 'vtt', 'ass'].includes(ext)) return '📄';
-        return '📎';
     },
 
     selectFile(file) {
@@ -874,29 +893,22 @@ const serverBrowser = {
             return;
         }
 
-        // Logic to find subtitles based on filename
-        // Strip extension from audio filename to get base
-        // e.g. "My Audio.mp3" -> "My Audio"
         const baseName = filename.substring(0, filename.lastIndexOf('.'));
         
-        console.log("Selected Audio:", filename, "Base:", baseName);
-
+        // 在后台隐式搜索该目录下同名但被屏蔽隐藏的字幕文件
         const findSub = (suffix) => {
-            // Case-insensitive match for "BaseName" + "Suffix"
-            // We search in currentFiles which we parsed earlier
             const target = (baseName + suffix).toLowerCase();
-            const found = this.currentFiles.find(f => 
+            const found = this.allParsedFiles.find(f => 
                 !f.isDirectory && f.name.toLowerCase() === target
             );
             return found ? found.url : '';
         };
 
-        const srt1_url = findSub('.eng.srt');
+        // 如果是 .srt 也优先算入字幕1
+        const srt1_url = findSub('.eng.srt') || findSub('.srt');
         const srt2_url = findSub('.engchs.srt');
         const srt3_url = findSub('.chs.srt');
         
-        console.log("Found Subs:", srt1_url, srt2_url, srt3_url);
-
         document.getElementById('url-audio').value = fileUrl;
         document.getElementById('url-srt-1').value = srt1_url;
         document.getElementById('url-srt-2').value = srt2_url;
@@ -911,7 +923,6 @@ const serverBrowser = {
         }, 500);
     }
 };
-// --- END: IMPROVED SERVER BROWSER LOGIC ---
 
 const net = {
     fixUrl(url) {
@@ -1136,6 +1147,7 @@ const ui = {
             document.getElementById('restore-bar').style.display = 'block';
         }
         this.updateAudioStatus();
+        this.updatePermButtons();
     },
     renderHistory() {
         const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
@@ -1229,6 +1241,7 @@ const ui = {
         const content = state.segments[idx][key] || "(无内容)";
         txt.innerText = content;
         this.fitText(txt);
+        
         const toggleBtn = document.getElementById('text-toggle-btn');
         if (state.userBlurState) {
             txt.classList.add("blur");
@@ -1237,6 +1250,7 @@ const ui = {
             txt.classList.remove("blur");
             toggleBtn.innerText = "🙈 隐藏";
         }
+        
         txt.className = content === "(无内容)" ? "practice-text empty" : "practice-text";
         if(state.userBlurState) txt.classList.add('blur');
         
@@ -1250,6 +1264,19 @@ const ui = {
             }, 3000);
         }
     },
+    updatePermButtons() {
+        const btnShow = document.getElementById('btn-perm-show');
+        const btnHide = document.getElementById('btn-perm-hide');
+        if(btnShow && btnHide) {
+            btnShow.style.background = state.permBlurMode === 'show' ? 'var(--primary)' : '#fff';
+            btnShow.style.color = state.permBlurMode === 'show' ? 'white' : '#5f6368';
+            btnShow.style.borderColor = state.permBlurMode === 'show' ? 'var(--primary)' : '#ddd';
+
+            btnHide.style.background = state.permBlurMode === 'hide' ? 'var(--primary)' : '#fff';
+            btnHide.style.color = state.permBlurMode === 'hide' ? 'white' : '#5f6368';
+            btnHide.style.borderColor = state.permBlurMode === 'hide' ? 'var(--primary)' : '#ddd';
+        }
+    },
     fitText(el) {
         let size = 34;
         el.style.fontSize = size + 'px';
@@ -1259,7 +1286,9 @@ const ui = {
         }
     },
     toggleTextBlur() {
+        state.permBlurMode = 'none'; // 取消永久锁定
         state.userBlurState = !state.userBlurState;
+        this.updatePermButtons();
         this.updatePractice(state.currIndex);
         this.showHintManual();
     },
@@ -1281,6 +1310,18 @@ const ui = {
     }
 };
 const app = {
+    setPermShow() {
+        state.permBlurMode = 'show';
+        state.userBlurState = false;
+        ui.updatePermButtons();
+        ui.updatePractice(state.currIndex);
+    },
+    setPermHide() {
+        state.permBlurMode = 'hide';
+        state.userBlurState = true;
+        ui.updatePermButtons();
+        ui.updatePractice(state.currIndex);
+    },
     clearInputs() {
         document.getElementById('url-audio').value = '';
         document.getElementById('url-srt-1').value = '';
@@ -1488,17 +1529,27 @@ const app = {
     },
     next() {
         if (state.currIndex < state.segments.length - 1) {
-            state.userBlurState = true;
+            if (state.permBlurMode === 'show') state.userBlurState = false;
+            else if (state.permBlurMode === 'hide') state.userBlurState = true;
+            else state.userBlurState = true;
+            
             this.loadItem(state.currIndex + 1, true);
         }
     },
     prev() {
         if (state.currIndex > 0) {
-            state.userBlurState = true;
+            if (state.permBlurMode === 'show') state.userBlurState = false;
+            else if (state.permBlurMode === 'hide') state.userBlurState = true;
+            else state.userBlurState = true;
+            
             this.loadItem(state.currIndex - 1, true);
         }
     },
     jumpTo(v) {
+        if (state.permBlurMode === 'show') state.userBlurState = false;
+        else if (state.permBlurMode === 'hide') state.userBlurState = true;
+        else state.userBlurState = true;
+        
         this.loadItem(parseInt(v), true);
     },
     updateSeg(i, k, v) {
