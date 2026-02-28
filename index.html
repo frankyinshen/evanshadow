@@ -2,764 +2,424 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta
-name="viewport"
-content="width=device-width,
-initial-scale=1.0, maximum-scale=1.0,
-user-scalable=no">
-<title>影子跟读 Pro V50.99 (Grid Layout & SRT Fix)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>影子跟读 Pro V66.0 (AI智能跟读)</title>
 <style>
-:root { --primary: #1A73E8; --green:
-#34A853; --orange: #FBBC04; --red: #EA4335;
---purple: #A142F4; --bg: #F8F9FA; --text:
-#202124; --border: #DADCE0; }
-*
-{ box-sizing: border-box;
--webkit-tap-highlight-color: transparent; }
-body { font-family: 'Google Sans', Roboto,
-sans-serif; margin: 0; padding: 0;
-background: var(--bg); color: var(--text);
-height: 100vh; height: 100dvh; display:
-flex; flex-direction: column; overflow:
-hidden; }
-.navbar { background: #fff; padding: 10px
-20px; display: flex; justify-content:
-space-between; align-items: center;
-box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-z-index: 100; flex-shrink: 0; height: 50px;
-}
-.nav-title { font-weight: 500; font-size:
-18px; color: var(--primary); }
-.mode-switch { background: #F1F3F4;
-padding: 3px; border-radius: 20px; }
-.mode-btn { border: none; background: none;
-padding: 6px 16px; font-weight: 700;
-border-radius: 18px; color: #5F6368;
-cursor: pointer; transition: 0.2s;
-font-size: 14px; }
-.mode-btn.active { background: #fff; color:
-var(--primary); box-shadow: 0 1px 2px
-rgba(0,0,0,0.1); }
-.view-container { flex: 1; width: 100%;
-position: relative; overflow: hidden; }
-/* 编辑页 */
-#editor-view { width: 100%; height: 100%;
-overflow-y: auto; padding: 16px; max-width:
-800px; margin: 0 auto; display: block; }
-/* 练习页 */
-#practice-view { width: 100%; height: 100%;
-padding: 0; display: none; flex-direction:
-column; align-items: center; }
+:root { --primary: #1A73E8; --green: #34A853; --orange: #FBBC04; --red: #EA4335; --purple: #A142F4; --ai: #00897B; --bg: #F8F9FA; --text: #202124; --border: #DADCE0; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.navbar { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; height: 50px; }
+.nav-title { font-weight: 500; font-size: 18px; color: var(--primary); }
+.mode-switch { background: #F1F3F4; padding: 3px; border-radius: 20px; }
+.mode-btn { border: none; background: none; padding: 6px 16px; font-weight: 700; border-radius: 18px; color: #5F6368; cursor: pointer; transition: 0.2s; font-size: 14px; }
+.mode-btn.active { background: #fff; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.view-container { flex: 1; width: 100%; position: relative; overflow: hidden; }
+#editor-view { width: 100%; height: 100%; overflow-y: auto; padding: 16px; max-width: 800px; margin: 0 auto; display: block; }
+#practice-view { width: 100%; height: 100%; padding: 0; display: none; flex-direction: column; align-items: center; }
 #practice-view.active { display: flex; }
-.card { background: #fff; border-radius:
-16px; padding: 20px; margin-bottom: 20px;
-box-shadow: 0 1px 3px rgba(60,64,67,0.15);
-border: 1px solid #eee; }
-.practice-card { background: #fff; width:
-100%; height: 100%; max-width: 800px;
-padding: 12px; display: flex;
-flex-direction: column; box-shadow: none;
-position: relative; }
-@media (min-width: 800px) { .practice-card
-{ height: 96%; margin-top: 2%;
-border-radius: 16px; box-shadow: 0 4px 12px
-rgba(0,0,0,0.1); padding: 24px; } }
+.card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(60,64,67,0.15); border: 1px solid #eee; }
+.practice-card { background: #fff; width: 100%; height: 100%; max-width: 800px; padding: 12px; display: flex; flex-direction: column; box-shadow: none; position: relative; }
+@media (min-width: 800px) { .practice-card { height: 96%; margin-top: 2%; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 24px; } }
+
 /* Header & Sleep Timer */
-.practice-header { display: flex;
-justify-content: space-between;
-align-items: center; margin-bottom: 8px;
-flex-shrink: 0; height: 40px; position:
-relative; z-index: 20; }
-.icon-btn { font-size: 24px; cursor:
-pointer; padding: 5px; color: #5F6368;
-z-index: 2; user-select: none; }
-.header-right-group { display: flex;
-align-items: center; gap: 10px; z-index: 2;
-}
-.sleep-wrapper { position: relative;
-display: flex; align-items: center; }
-.sleep-display { font-size: 13px; color:
-var(--orange); font-weight: bold;
-margin-left: 4px; display: none;
-font-family: monospace; }
-.sleep-popup { position: absolute; top:
-100%; right: 0; background: #fff; border:
-1px solid #eee; box-shadow: 0 2px 10px
-rgba(0,0,0,0.1); padding: 10px;
-border-radius: 8px; display: none; width:
-180px; z-index: 100; margin-top: 5px; }
+.practice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-shrink: 0; height: 40px; position: relative; z-index: 20; }
+.icon-btn { font-size: 24px; cursor: pointer; padding: 5px; color: #5F6368; z-index: 2; user-select: none; }
+.header-right-group { display: flex; align-items: center; gap: 10px; z-index: 2; }
+.sleep-wrapper { position: relative; display: flex; align-items: center; }
+.sleep-display { font-size: 13px; color: var(--orange); font-weight: bold; margin-left: 4px; display: none; font-family: monospace; }
+.sleep-popup { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; display: none; width: 180px; z-index: 100; margin-top: 5px; }
 .sleep-popup.show { display: block; }
-.text-toggle { font-size: 14px;
-font-weight: 600; color: var(--primary);
-cursor: pointer; padding: 5px; }
-.jump-select-wrapper { position: absolute;
-left: 50%; top: 50%; transform:
-translate(-50%, -50%); z-index: 1; width:
-100%; text-align: center; pointer-events:
-none; }
-.jump-select { font-size: 15px;
-font-weight: 600; background: #F1F3F4;
-border: none; padding: 6px 20px;
-border-radius: 20px; outline: none;
-text-align: center; pointer-events: auto; }
-.sub-switcher { display: flex; gap: 6px;
-justify-content: center; margin-bottom:
-5px; flex-shrink: 0; min-height: 28px; }
-.sub-btn { font-size: 12px; padding: 4px
-12px; border-radius: 12px; border: 1px
-solid var(--border); background: #fff;
-cursor: pointer; color: #5F6368;
-transition: 0.2s; }
-.sub-btn.active { background:
-var(--primary); color: white; border-color:
-var(--primary); }
-.practice-text-container { flex: 1;
-display: flex; flex-direction: column;
-align-items: center; justify-content:
-center; position: relative; cursor:
-pointer; margin: 5px 0 10px 0; background:
-#FAFAFA; border-radius: 12px; border: 1px
-dashed #E0E0E0; overflow: hidden;
-min-height: 0; }
-.practice-text { width: 100%; padding: 10px
-15px; line-height: 1.4; font-weight: 500;
-color: var(--text); text-align: center;
-font-size: 34px; white-space: pre-wrap;
-overflow-y: auto; max-height: 100%; }
-.practice-text.blur { filter: blur(10px);
-opacity: 0.3; overflow: hidden; }
-.click-hint { position: absolute; bottom:
-8px; left: 50%; transform:
-translateX(-50%); font-size: 11px; color:
-#999; background: rgba(255,255,255,0.8);
-padding: 2px 8px; border-radius: 10px;
-pointer-events: none; opacity: 0;
-transition: opacity 0.5s ease; }
+.text-toggle { font-size: 14px; font-weight: 600; color: var(--primary); cursor: pointer; padding: 5px; }
+.jump-select-wrapper { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; width: 100%; text-align: center; pointer-events: none; }
+.jump-select { font-size: 15px; font-weight: 600; background: #F1F3F4; border: none; padding: 6px 20px; border-radius: 20px; outline: none; text-align: center; pointer-events: auto; }
+.sub-switcher { display: flex; gap: 6px; justify-content: center; margin-bottom: 5px; flex-shrink: 0; min-height: 28px; }
+.sub-btn { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #5F6368; transition: 0.2s; }
+.sub-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.practice-text-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; margin: 5px 0 10px 0; background: #FAFAFA; border-radius: 12px; border: 1px dashed #E0E0E0; overflow: hidden; min-height: 0; }
+.practice-text { width: 100%; padding: 10px 15px; line-height: 1.4; font-weight: 500; color: var(--text); text-align: center; font-size: 34px; white-space: pre-wrap; overflow-y: auto; max-height: 100%; }
+.practice-text.blur { filter: blur(10px); opacity: 0.3; overflow: hidden; }
+.click-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #999; background: rgba(255,255,255,0.8); padding: 2px 8px; border-radius: 10px; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; }
 .click-hint.show { opacity: 1; }
-.control-area { flex-shrink: 0; display:
-flex; flex-direction: column; gap: 8px;
-margin-top: auto; padding-top: 8px;
-border-top: 1px solid #f5f5f5; }
-.row-mixed { display: grid;
-grid-template-columns: 2fr 3fr; gap: 8px;
-height: 44px; }
-.btn-full-play { width: 100%; height: 100%;
-background: var(--purple); color: white;
-border: none; border-radius: 10px;
-font-size: 14px; font-weight: bold;
-display: flex; align-items: center;
-justify-content: center; cursor: pointer;
-padding: 0 4px; white-space: nowrap; }
-.btn-full-play.active { background:
-#7C28C7; animation: pulse 2s infinite; }
-.range-panel { width: 100%; height: 100%;
-background: #FEF7E0; border: 1px solid
-#FFE0B2; border-radius: 10px; display:
-flex; align-items: center; justify-content:
-space-evenly; padding: 0 5px; }
-.range-label { font-size: 12px; color:
-#E37400; font-weight: bold; margin-right:
-2px; }
-.range-input { width: 32px; text-align:
-center; border: 1px solid #FFCC80;
-border-radius: 4px; padding: 2px 0;
-font-weight: bold; background: #fff;
-font-size: 13px; box-sizing: border-box; }
-.btn-range-play { background:
-var(--orange); color: white; border: none;
-padding: 6px 10px; border-radius: 6px;
-font-size: 13px; font-weight: bold; cursor:
-pointer; white-space: nowrap; }
-.btn-range-play.active { background:
-#E37400; animation: pulse 2s infinite; }
-.btn-action { border: none; border-radius:
-10px; font-size: 14px; font-weight: 600;
-cursor: pointer; display: flex;
-align-items: center; justify-content:
-center; gap: 6px; }
-.btn-blue { background: #E8F0FE; color:
-var(--primary); }
-.btn-blue.active { background:
-var(--primary); color: white; }
-.btn-orange { background: #FFF3E0; color:
-#E37400; border: 1px solid #FFE0B2; }
-.btn-orange.active { background:
-var(--orange); color: white; border-color:
-var(--orange); }
-.btn-record { width: 100%; height: 54px;
-border-radius: 27px; border: 2px solid
-#EEE; background: #fff; font-size: 16px;
-font-weight: 700; color: #5F6368; cursor:
-pointer; display: flex; align-items:
-center; justify-content: center;
-transition: 0.2s; }
-.btn-record.recording { background:
-#FCE8E6; border-color: var(--red); color:
-var(--red); animation: pulse 1s infinite; }
-.btn-record.playing { background: #E6F4EA;
-border-color: var(--green); color:
-var(--green); }
-.btn-nav { background: #F1F3F4; color:
-#3C4043; }
-
-
-
+.control-area { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 8px; border-top: 1px solid #f5f5f5; }
+.row-mixed { display: grid; grid-template-columns: 2fr 3fr; gap: 8px; height: 44px; }
+.btn-full-play { width: 100%; height: 100%; background: var(--purple); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 4px; white-space: nowrap; }
+.btn-full-play.active { background: #7C28C7; animation: pulse 2s infinite; }
+.range-panel { width: 100%; height: 100%; background: #FEF7E0; border: 1px solid #FFE0B2; border-radius: 10px; display: flex; align-items: center; justify-content: space-evenly; padding: 0 5px; }
+.range-label { font-size: 12px; color: #E37400; font-weight: bold; margin-right: 2px; }
+.range-input { width: 32px; text-align: center; border: 1px solid #FFCC80; border-radius: 4px; padding: 2px 0; font-weight: bold; background: #fff; font-size: 13px; box-sizing: border-box; }
+.btn-range-play { background: var(--orange); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+.btn-range-play.active { background: #E37400; animation: pulse 2s infinite; }
+.btn-action { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn-blue { background: #E8F0FE; color: var(--primary); }
+.btn-blue.active { background: var(--primary); color: white; }
+.btn-orange { background: #FFF3E0; color: #E37400; border: 1px solid #FFE0B2; }
+.btn-orange.active { background: var(--orange); color: white; border-color: var(--orange); }
+.btn-record { width: 100%; height: 54px; border-radius: 27px; border: 2px solid #EEE; background: #fff; font-size: 16px; font-weight: 700; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+.btn-record.recording { background: #FCE8E6; border-color: var(--red); color: var(--red); animation: pulse 1s infinite; }
+.btn-record.playing { background: #E6F4EA; border-color: var(--green); color: var(--green); }
+.btn-nav { background: #F1F3F4; color: #3C4043; }
 
 /* ======================================================= */
-/* 核心布局改造：Grid Layout - 左侧3等分，右侧2等分 */
+/* 核心布局：Grid Layout - 左侧3等分，右侧2等分             */
 /* ======================================================= */
 .control-grid {
     display: grid;
     grid-template-columns: 1fr 1.2fr;
-    /* 将原本的3行44px改为6小行，每行17px (17*2+10=44，完美保持左侧高度不变) */
-    grid-template-rows: repeat(6, 17px); 
+    grid-template-rows: repeat(6, 17px);
     gap: 10px;
     margin-top: 5px;
 }
-
-/* --- 左侧3个按钮：每个跨2行 --- */
 #btn-loop { grid-row: 1 / 3; grid-column: 1; width: 100%; height: 100%; }
 .btn-prev-grid { grid-row: 3 / 5; grid-column: 1; width: 100%; height: 100%; }
 #btn-record { grid-row: 5 / 7; grid-column: 1; width: 100%; height: 100%; border-radius: 10px; }
-
-/* --- 右侧2个按钮：每个跨3行（完美平分高度） --- */
-#btn-play-once { 
-    grid-row: 1 / 4; 
-    grid-column: 2; 
-    width: 100%; height: 100%; 
-    font-size: 16px; /* 稍微调大点字号以适应变高的按钮 */
-}
-.btn-next-grid {
-    grid-row: 4 / 7; 
-    grid-column: 2;
-    width: 100%; height: 100%; 
-    font-size: 18px; font-weight: 700;
-    background: #FFF; border: 1px solid #E0E0E0;
-}
+#btn-play-once { grid-row: 1 / 4; grid-column: 2; width: 100%; height: 100%; font-size: 16px; }
+.btn-next-grid { grid-row: 4 / 7; grid-column: 2; width: 100%; height: 100%; font-size: 18px; font-weight: 700; background: #FFF; border: 1px solid #E0E0E0; }
 /* ======================================================= */
 
+/* ======================================================= */
+/* AI 模式条样式                                            */
+/* ======================================================= */
+.ai-mode-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #E0F2F1;
+    border-radius: 10px;
+    border: 1px solid #B2DFDB;
+    margin-bottom: 6px;
+    transition: background 0.3s;
+}
+.ai-mode-bar.ai-running {
+    background: linear-gradient(90deg, #E0F2F1, #F1F8E9, #E0F2F1);
+    background-size: 200% 100%;
+    animation: ai-shimmer 2s infinite;
+    border-color: var(--ai);
+}
+@keyframes ai-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-
-
-
+.btn-ai-toggle {
+    background: var(--ai);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.2s;
+    flex-shrink: 0;
+}
+.btn-ai-toggle.idle {
+    background: #fff;
+    color: var(--ai);
+    border: 1.5px solid var(--ai);
+}
+.btn-ai-toggle.running {
+    background: var(--ai);
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+.ai-threshold-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+}
+.ai-threshold-group label {
+    font-size: 11px;
+    color: #00695C;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.ai-threshold-group input[type=range] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, var(--ai) 0%, var(--ai) var(--fill, 60%), #B2DFDB var(--fill, 60%), #B2DFDB 100%);
+    border-radius: 2px;
+    outline: none;
+}
+.ai-threshold-group input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--ai);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+#ai-threshold-val {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ai);
+    min-width: 30px;
+    text-align: right;
+    font-family: monospace;
+}
+.ai-status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.7);
+    color: #00695C;
+    min-width: 72px;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.3s, color 0.3s;
+}
+.ai-status-pill.success { background: #E6F4EA; color: #137333; }
+.ai-status-pill.fail { background: #FCE8E6; color: #C5221F; }
+.ai-status-pill.listening { background: #E8F0FE; color: var(--primary); animation: pulse 1s infinite; }
+/* ======================================================= */
 
 /* 编辑页列表 */
-.sub-item { background: #fff; padding:
-16px; border: 1px solid #E0E0E0;
-border-radius: 12px; margin-bottom: 12px; }
-.sub-meta { display: flex; align-items:
-center; justify-content: space-between;
-margin-bottom: 10px; border-bottom: 1px
-dashed #eee; padding-bottom: 5px; }
-.idx-badge { background: #F1F3F4; padding:
-2px 8px; border-radius: 6px; font-weight:
-bold; color: #5F6368; font-size: 12px; }
-.time-input { width: 80px; padding: 4px;
-border: 1px solid #DADCE0; border-radius:
-4px; text-align: center; font-family:
-monospace; font-size: 13px; }
+.sub-item { background: #fff; padding: 16px; border: 1px solid #E0E0E0; border-radius: 12px; margin-bottom: 12px; }
+.sub-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+.idx-badge { background: #F1F3F4; padding: 2px 8px; border-radius: 6px; font-weight: bold; color: #5F6368; font-size: 12px; }
+.time-input { width: 80px; padding: 4px; border: 1px solid #DADCE0; border-radius: 4px; text-align: center; font-family: monospace; font-size: 13px; }
 .sub-text-block { margin-bottom: 8px; }
-.sub-label { display: inline-block;
-font-size: 10px; font-weight: 700; color:
-#188038; background: #E6F4EA; padding: 2px
-4px; border-radius: 4px; margin-bottom:
-4px; }
-.sub-label.secondary { color: #1967D2;
-background: #E8F0FE; }
-.sub-line { width: 100%; padding: 8px;
-border: 1px solid #eee; border-radius: 4px;
-font-size: 15px; resize: vertical;
-min-height: 40px; }
-.sub-actions { display: grid;
-grid-template-columns: repeat(4, 1fr); gap:
-8px; margin-top: 10px; }
-.action-btn { width: 100%; padding: 10px 0;
-border-radius: 6px; border: none;
-font-size: 12px; font-weight: 600; cursor:
-pointer; display: flex; align-items:
-center; justify-content: center; }
-.btn-play-sm { background: #E8F0FE; color:
-var(--primary); }
-.btn-split { background: #FEF7E0; color:
-#E37400; }
-.btn-merge { background: #E6F4EA; color:
-#137333; }
-.btn-del { background: #FCE8E6; color:
-#C5221F; flex: none; }
-/* 通用组件 */
-.audio-status { font-size: 13px; padding:
-10px; border-radius: 8px; margin-bottom:
-15px; text-align: center; display: none; }
-.audio-status.warn { background: #FCE8E6;
-color: #C5221F; }
-.audio-status.ok { background: #E6F4EA;
-color: #137333; }
-.input-tabs { display: flex; gap: 15px;
-border-bottom: 1px solid #eee;
-padding-bottom: 10px; margin-bottom: 20px;
-}
-.tab-btn { padding: 8px 12px; font-size:
-14px; color: #5F6368; cursor: pointer;
-border-radius: 6px; font-weight: 500; }
-.tab-btn.active { background: #E8F0FE;
-color: var(--primary); }
+.sub-label { display: inline-block; font-size: 10px; font-weight: 700; color: #188038; background: #E6F4EA; padding: 2px 4px; border-radius: 4px; margin-bottom: 4px; }
+.sub-label.secondary { color: #1967D2; background: #E8F0FE; }
+.sub-line { width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 4px; font-size: 15px; resize: vertical; min-height: 40px; }
+.sub-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+.action-btn { width: 100%; padding: 10px 0; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-play-sm { background: #E8F0FE; color: var(--primary); }
+.btn-split { background: #FEF7E0; color: #E37400; }
+.btn-merge { background: #E6F4EA; color: #137333; }
+.btn-del { background: #FCE8E6; color: #C5221F; flex: none; }
+.audio-status { font-size: 13px; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; display: none; }
+.audio-status.warn { background: #FCE8E6; color: #C5221F; }
+.audio-status.ok { background: #E6F4EA; color: #137333; }
+.input-tabs { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+.tab-btn { padding: 8px 12px; font-size: 14px; color: #5F6368; cursor: pointer; border-radius: 6px; font-weight: 500; }
+.tab-btn.active { background: #E8F0FE; color: var(--primary); }
 .input-group { display: none; }
 .input-group.active { display: block; }
 .url-block { margin-bottom: 15px; }
-.url-label { font-size: 13px; font-weight:
-600; color: #444; margin-bottom: 6px;
-display: block; }
-.url-input { width: 100%; padding: 12px;
-border: 1px solid #DADCE0; border-radius:
-8px; font-size: 14px; outline: none;
-transition: 0.2s; }
-.url-input:focus { border-color:
-var(--primary); box-shadow: 0 0 0 2px
-rgba(26,115,232,0.2); }
-.history-select { width: 100%; padding:
-10px; margin-bottom: 15px; border: 1px
-solid var(--border); border-radius: 8px;
-background: #fff; font-size: 14px; }
-.btn-load-url { width: 100%; background:
-var(--primary); color: white; border: none;
-padding: 12px; border-radius: 8px;
-font-weight: 600; cursor: pointer; display:
-flex; justify-content: center; align-items:
-center; gap: 8px; transition: 0.2s; }
-.btn-load-url:disabled { background: #ccc;
-cursor: not-allowed; }
-.loading-spinner { width: 16px; height:
-16px; border: 2px solid
-rgba(255,255,255,0.4); border-top-color:
-#fff; border-radius: 50%; animation: spin
-1s infinite; display: none; }
-.file-box { display: flex; gap: 10px;
-flex-wrap: wrap; margin: 10px 0; }
-.btn-file { flex: 1; min-width: 100px;
-background: #F1F3F4; padding: 12px;
-border-radius: 8px; text-align: center;
-font-size: 13px; font-weight: 600; cursor:
-pointer; position: relative; }
-.btn-file input { position: absolute; top:
-0; left: 0; width: 100%; height: 100%;
-opacity: 0; }
-.btn-file.primary { background: #E8F0FE;
-color: var(--primary); }
-.btn-file.green { background: #E6F4EA;
-color: #137333; }
-.slider-row { display: flex; align-items:
-center; gap: 10px; background: #fff;
-border: 1px solid #eee; padding: 10px;
-border-radius: 8px; margin-top: 15px; }
-.btn-mini { padding: 6px 12px; background:
-var(--primary); color: white; border: none;
-border-radius: 4px; font-size: 12px;
-cursor: pointer; }
+.url-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; display: block; }
+.url-input { width: 100%; padding: 12px; border: 1px solid #DADCE0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
+.url-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+.history-select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 14px; }
+.btn-load-url { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
+.btn-load-url:disabled { background: #ccc; cursor: not-allowed; }
+.loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite; display: none; }
+.file-box { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+.btn-file { flex: 1; min-width: 100px; background: #F1F3F4; padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
+.btn-file input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+.btn-file.primary { background: #E8F0FE; color: var(--primary); }
+.btn-file.green { background: #E6F4EA; color: #137333; }
+.slider-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-top: 15px; }
+.btn-mini { padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
 /* Drawer */
-.drawer-overlay { position: fixed; top: 0;
-left: 0; width: 100%; height: 100%;
-background: rgba(0,0,0,0.5); z-index: 500;
-display: none; }
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; display: none; }
 .drawer-overlay.open { display: block; }
-.drawer-content { width: 80%; max-width:
-300px; height: 100%; background: #fff;
-padding: 24px; position: absolute; left: 0;
-top: 0; transform: translateX(-100%);
-transition: 0.3s; z-index: 501; display:
-flex; flex-direction: column; gap: 12px;
-overflow-y: auto; }
-.drawer-overlay.open .drawer-content {
-transform: translateX(0); }
-.toast { position: fixed; bottom: 80px;
-left: 50%; transform: translateX(-50%);
-background: #323232; color: white; padding:
-12px 24px; border-radius: 24px; font-size:
-14px; opacity: 0; pointer-events: none;
-transition: 0.3s; z-index: 999; text-align:
-center; width: max-content; max-width: 80%;
-}
+.drawer-content { width: 80%; max-width: 300px; height: 100%; background: #fff; padding: 24px; position: absolute; left: 0; top: 0; transform: translateX(-100%); transition: 0.3s; z-index: 501; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.drawer-overlay.open .drawer-content { transform: translateX(0); }
+.toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #323232; color: white; padding: 12px 24px; border-radius: 24px; font-size: 14px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 999; text-align: center; width: max-content; max-width: 80%; }
 .toast.show { opacity: 1; bottom: 100px; }
-.restore-bar { background: #FFF3E0; color:
-#B06000; padding: 12px; text-align: center;
-font-size: 14px; display: none; cursor:
-pointer; border-bottom: 1px solid #FEEFC3;
-font-weight: 500; }
-/* --- START: STYLES FOR SERVER BROWSER --- */
-#server-browser-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    display: none;
-    justify-content: center;
-    align-items: center;
-}
-#server-browser-content {
-    width: 90%;
-    max-width: 600px;
-    height: 80%;
-    max-height: 700px;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-#server-browser-header {
-    padding: 12px 16px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    background: #f8f9fa;
-}
-#server-browser-path {
-    font-size: 14px;
-    font-weight: 500;
-    color: #555;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    margin-right: 10px;
-}
-#server-browser-close {
-    font-size: 24px;
-    color: #888;
-    cursor: pointer;
-    font-weight: bold;
-    line-height: 1;
-    padding: 0 8px;
-}
-#server-browser-list {
-    padding: 8px;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-.browser-item {
-    padding: 12px 12px;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 15px;
-}
-.browser-item:hover {
-    background: #f5f5f5;
-}
-.browser-item.loading {
-    color: #888;
-    justify-content: center;
-    border: none;
-    padding: 20px;
-}
-.browser-item-icon {
-    font-size: 18px;
-    min-width: 24px;
-    text-align: center;
-}
-.browser-item-name {
-    word-break: break-all;
-    flex: 1;
-}
-/* --- END: STYLES FOR SERVER BROWSER --- */
-@keyframes pulse { 0% { opacity: 1; } 50% {
-opacity: 0.8; } 100% { opacity: 1; } }
-@keyframes spin { to { transform:
-rotate(360deg); } }
+.restore-bar { background: #FFF3E0; color: #B06000; padding: 12px; text-align: center; font-size: 14px; display: none; cursor: pointer; border-bottom: 1px solid #FEEFC3; font-weight: 500; }
+
+/* Server Browser Modal */
+#server-browser-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; justify-content: center; align-items: center; }
+#server-browser-content { width: 90%; max-width: 600px; height: 80%; max-height: 700px; background: #fff; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+#server-browser-header { padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; background: #f8f9fa; }
+#server-browser-path { font-size: 14px; font-weight: 500; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; margin-right: 10px; }
+#server-browser-close { font-size: 24px; color: #888; cursor: pointer; font-weight: bold; line-height: 1; padding: 0 8px; }
+#server-browser-list { padding: 8px; overflow-y: auto; flex-grow: 1; }
+.browser-item { padding: 12px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 15px; }
+.browser-item:hover { background: #f5f5f5; }
+.browser-item.loading { color: #888; justify-content: center; border: none; padding: 20px; }
+.browser-item-icon { font-size: 18px; min-width: 24px; text-align: center; }
+.browser-item-name { word-break: break-all; flex: 1; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<div id="restore-bar" class="restore-bar"
-onclick="app.restoreProgress()">发现上次进
-度(第<span id="restore-idx">1</span>句),
-点击恢复</div>
+<div id="restore-bar" class="restore-bar" onclick="app.restoreProgress()">发现上次进度(第<span id="restore-idx">1</span>句), 点击恢复</div>
 <div class="navbar">
-<div class="nav-title">🎧 影子跟读
-V50.99</div>
-<div class="mode-switch">
-<button class="mode-btn active"
-onclick="app.switchView('editor')">编辑
-</button>
-<button class="mode-btn"
-onclick="app.switchView('practice')">练习
-</button>
+    <div class="nav-title">🎧 影子跟读 V66.0</div>
+    <div class="mode-switch">
+        <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
+        <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
+    </div>
 </div>
-</div>
-<audio id="main-audio"
-crossorigin="anonymous"></audio>
+<audio id="main-audio" crossorigin="anonymous"></audio>
 <audio id="record-audio"></audio>
 <div class="view-container">
-<div id="editor-view">
-<div class="card">
-<div id="audio-status-msg"
-class="audio-status"></div>
-<div class="input-tabs">
-<div class="tab-btn active"
-onclick="ui.setTab('url')">🌍 网络链接
-</div>
-<div class="tab-btn"
-onclick="ui.setTab('local')">📁 本地文件
-</div>
-</div>
-<div id="group-url" class="input-group
-active">
-<select id="history-select"
-class="history-select" style="width:100%"
-onchange="app.fillHistory(this.value)">
-<option value="">▼ 选择历史记录...</option>
-</select>
-<div class="url-block" style="display: flex; gap: 10px; align-items: center;">
-    <label class="url-label" style="margin: 0; flex-grow: 1;">♫ 音频链接 (点击清空, 智能粘贴多链接)</label>
-    <button class="btn-mini" onclick="serverBrowser.open()">📂 浏览服务器...</button>
-</div>
-<div class="url-block">
-<input type="text" class="url-input"
-id="url-audio" placeholder="在此粘贴组合链
-接, 系统自动分配..."
-onclick="app.clearInputs()"
-onchange="app.saveInput()">
-</div>
-<div class="url-block">
-<label class="url-label">📄 字幕链接(自动
-分配)</label>
-<input type="text" class="url-input"
-id="url-srt-1" placeholder="字幕 1 (Eng或主字幕)"
-onchange="app.saveInput()">
-<input type="text" class="url-input"
-style="margin-top:6px" id="url-srt-2"
-placeholder="字幕 2 (Eng+Chs)"
-onchange="app.saveInput()">
-<input type="text" class="url-input"
-style="margin-top:6px" id="url-srt-3"
-placeholder="字幕 3 (Chs)"
-onchange="app.saveInput()">
-</div>
-<button class="btn-load-url"
-id="btn-load-url"
-onclick="app.loadFromUrl()">
-<span class="loading-spinner"
-id="url-spinner"></span>🚀 极速加载
-</button>
-</div>
-<div id="group-local" class="input-group">
-<div class="file-box">
-<div class="btn-file primary">♫ 导入 MP3
-<input type="file" id="audio-file"
-accept="audio/*"></div>
-<div class="btn-file sub-slot">📄 字幕 1
-<input type="file"
-onchange="app.importSub(this, 0)"
-accept=".srt,.txt"></div>
-<div class="btn-file sub-slot">📄 字幕 2
-<input type="file"
-onchange="app.importSub(this, 1)"
-accept=".srt,.txt"></div>
-<div class="btn-file sub-slot">📄 字幕 3
-<input type="file"
-onchange="app.importSub(this, 2)"
-accept=".srt,.txt"></div>
-</div>
-</div>
-<div class="file-box"
-style="margin-top:20px; border-top:1px
-solid #eee; padding-top:10px;">
-<button class="btn-file"
-onclick="app.exportProject()">💾 保存工程
-</button>
-<div class="btn-file">📂 加载工程 <input
-type="file" id="project-file"
-accept=".json"
-onclick="this.value=null"></div>
-</div>
-<div class="file-box">
-<button class="btn-file green"
-onclick="app.exportSRT(1)">↓ 导出字幕
-1</button>
-<button class="btn-file green"
-onclick="app.exportSRT(2)">↓ 导出字幕
-2</button>
-<button class="btn-file green"
-onclick="app.exportSRT(3)">↓ 导出字幕
-3</button>
-</div>
+    <!-- ==================== 编辑页 ==================== -->
+    <div id="editor-view">
+        <div class="card">
+            <div id="audio-status-msg" class="audio-status"></div>
+            <div class="input-tabs">
+                <div class="tab-btn active" onclick="ui.setTab('url')">🌍 网络链接</div>
+                <div class="tab-btn" onclick="ui.setTab('local')">📁 本地文件</div>
+            </div>
+            <div id="group-url" class="input-group active">
+                <select id="history-select" class="history-select" style="width:100%" onchange="app.fillHistory(this.value)">
+                    <option value="">▼ 选择历史记录...</option>
+                </select>
+                <div class="url-block" style="display: flex; gap: 10px; align-items: center;">
+                    <label class="url-label" style="margin: 0; flex-grow: 1;">♫ 音频链接 (点击清空, 智能粘贴多链接)</label>
+                    <button class="btn-mini" onclick="serverBrowser.open()">📂 浏览服务器...</button>
+                </div>
+                <div class="url-block">
+                    <input type="text" class="url-input" id="url-audio" placeholder="在此粘贴组合链接, 系统自动分配..." onclick="app.clearInputs()" onchange="app.saveInput()">
+                </div>
+                <div class="url-block">
+                    <label class="url-label">📄 字幕链接(自动分配)</label>
+                    <input type="text" class="url-input" id="url-srt-1" placeholder="字幕 1 (Eng或主字幕)" onchange="app.saveInput()">
+                    <input type="text" class="url-input" style="margin-top:6px" id="url-srt-2" placeholder="字幕 2 (Eng+Chs)" onchange="app.saveInput()">
+                    <input type="text" class="url-input" style="margin-top:6px" id="url-srt-3" placeholder="字幕 3 (Chs)" onchange="app.saveInput()">
+                </div>
+                <button class="btn-load-url" id="btn-load-url" onclick="app.loadFromUrl()">
+                    <span class="loading-spinner" id="url-spinner"></span>🚀 极速加载
+                </button>
+            </div>
+            <div id="group-local" class="input-group">
+                <div class="file-box">
+                    <div class="btn-file primary">♫ 导入 MP3 <input type="file" id="audio-file" accept="audio/*"></div>
+                    <div class="btn-file sub-slot">📄 字幕 1 <input type="file" onchange="app.importSub(this, 0)" accept=".srt,.txt"></div>
+                    <div class="btn-file sub-slot">📄 字幕 2 <input type="file" onchange="app.importSub(this, 1)" accept=".srt,.txt"></div>
+                    <div class="btn-file sub-slot">📄 字幕 3 <input type="file" onchange="app.importSub(this, 2)" accept=".srt,.txt"></div>
+                </div>
+            </div>
+            <div class="file-box" style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+                <button class="btn-file" onclick="app.exportProject()">💾 保存工程</button>
+                <div class="btn-file">📂 加载工程 <input type="file" id="project-file" accept=".json" onclick="this.value=null"></div>
+            </div>
+            <div class="file-box">
+                <button class="btn-file green" onclick="app.exportSRT(1)">↓ 导出字幕 1</button>
+                <button class="btn-file green" onclick="app.exportSRT(2)">↓ 导出字幕 2</button>
+                <button class="btn-file green" onclick="app.exportSRT(3)">↓ 导出字幕 3</button>
+            </div>
+            <div class="slider-row">
+                <span style="font-size:13px; font-weight:600; color:#555">🔪 断句灵敏度: </span>
+                <input type="range" id="threshold-range" min="0.01" max="0.1" step="0.01" value="0.02" style="flex:1" oninput="ui.updateThresh(this.value)">
+                <span id="threshold-val" style="font-family:monospace; font-size:12px;">0.02</span>
+                <button class="btn-mini" onclick="app.applyReAnalyze()">执行</button>
+            </div>
+            <div style="text-align:center; margin-top:10px; font-size:12px; color:#666">共 <span id="row-count">0</span> 句</div>
+        </div>
+        <div id="editor-list"></div>
+        <div style="text-align:center; padding:20px;">
+            <button class="btn-file" style="display:inline-flex; width:auto; border:1px dashed #ccc;" onclick="app.addNewRow()">+ 添加空行</button>
+        </div>
+    </div>
 
-<!-- ============================================== -->
-<!-- 核心修复处：原先这里错误地多了一个 </div> 导致提前关闭了 card！修复以保证编辑器容器结构完整 -->
-<!-- ============================================== -->
+    <!-- ==================== 练习页 ==================== -->
+    <div id="practice-view">
+        <div class="practice-card">
+            <div id="drawer-overlay" class="drawer-overlay" onclick="ui.toggleDrawer()">
+                <div class="drawer-content" onclick="event.stopPropagation()">
+                    <h3>⚙️ 菜单</h3>
+                    <button class="btn-file" onclick="app.exportProject()">💾 备份工程</button>
+                    <button class="btn-file" onclick="app.exportSRT(1)">↓ 导出字幕 1</button>
+                    <button class="btn-file" style="margin-top:10px" onclick="ui.toggleDrawer()">关闭</button>
+                </div>
+            </div>
 
-<div class="slider-row">
-<span style="font-size:13px;
-font-weight:600; color:#555">🔪 断句灵敏度:
-</span>
-<input type="range" id="threshold-range"
-min="0.01" max="0.1" step="0.01"
-value="0.02" style="flex:1"
-oninput="ui.updateThresh(this.value)">
-<span id="threshold-val"
-style="font-family:monospace;
-font-size:12px;">0.02</span>
-<button class="btn-mini"
-onclick="app.applyReAnalyze()">执行
-</button>
-</div>
-<div style="text-align:center;
-margin-top:10px; font-size:12px;
-color:#666">共 <span
-id="row-count">0</span> 句</div>
-</div> <!-- 正确在此闭合 .card 容器 -->
-<!-- 这里的 editor-list 必定会通过 js 的 loadFromUrl 渲染并加载完整的字幕数据 -->
-<div id="editor-list"></div>
-<div style="text-align:center;
-padding:20px;">
-<button class="btn-file"
-style="display:inline-flex; width:auto;
-border:1px dashed #ccc;"
-onclick="app.addNewRow()">+ 添加空行
-</button>
-</div>
-</div> <!-- 正常在此闭合 #editor-view 页面容器 -->
+            <!-- Header -->
+            <div class="practice-header">
+                <div style="display:flex; align-items:center;">
+                    <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
+                    <div style="display:flex; gap: 5px; margin-left: 5px; z-index: 10;">
+                        <button id="btn-perm-show" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermShow()">永显</button>
+                        <button id="btn-perm-hide" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermHide()">永隐</button>
+                    </div>
+                </div>
+                <div class="jump-select-wrapper">
+                    <select id="jump-select" class="jump-select" onchange="app.jumpTo(this.value)"><option>1</option></select>
+                </div>
+                <div class="header-right-group">
+                    <div class="sleep-wrapper">
+                        <div class="icon-btn" onclick="ui.toggleSleepModal()">⏰</div>
+                        <div id="sleep-display" class="sleep-display"></div>
+                        <div id="sleep-popup" class="sleep-popup">
+                            <div style="font-size:12px;color:#666;margin-bottom:5px;">定时关闭(分钟)</div>
+                            <div style="display:flex;gap:5px;">
+                                <input type="number" id="sleep-input" value="30" min="1" max="100" style="width:60px;padding:4px;border:1px solid #ddd;border-radius:4px;">
+                                <button class="btn-mini" onclick="app.startSleepTimer()">开始</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="text-toggle-btn" class="text-toggle" onclick="ui.toggleTextBlur()">👁 显示</div>
+                </div>
+            </div>
 
-<div id="practice-view">
-<div class="practice-card">
-<div id="drawer-overlay"
-class="drawer-overlay"
-onclick="ui.toggleDrawer()">
-<div class="drawer-content"
-onclick="event.stopPropagation()">
-<h3>⚙️ 菜单</h3>
-<button class="btn-file"
-onclick="app.exportProject()">💾 备份工程
-</button>
-<button class="btn-file"
-onclick="app.exportSRT(1)">↓ 导出字幕
-1</button>
-<button class="btn-file"
-style="margin-top:10px"
-onclick="ui.toggleDrawer()">关闭</button>
-</div>
-</div>
-<div class="practice-header">
-<div style="display:flex; align-items:center;">
-    <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
-    <!-- 永显永隐锁定按钮区 -->
-    <div style="display:flex; gap: 5px; margin-left: 5px; z-index: 10;">
-        <button id="btn-perm-show" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermShow()">永显</button>
-        <button id="btn-perm-hide" style="border:1px solid #ddd; background:#fff; color:#5f6368; border-radius: 4px; font-size: 11px; padding: 2px 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="app.setPermHide()">永隐</button>
+            <!-- Sub Switcher -->
+            <div class="sub-switcher">
+                <button class="sub-btn active" onclick="ui.switchSubTab(0)">字幕1</button>
+                <button class="sub-btn" onclick="ui.switchSubTab(1)">字幕2</button>
+                <button class="sub-btn" onclick="ui.switchSubTab(2)">字幕3</button>
+            </div>
+
+            <!-- Text Display -->
+            <div class="practice-text-container" onclick="ui.toggleTextBlur()">
+                <div id="practice-text-display" class="practice-text blur">(请加载内容)</div>
+                <div id="click-hint" class="click-hint">👈 点击切换显隐</div>
+            </div>
+
+            <!-- Control Area -->
+            <div class="control-area">
+
+                <!-- ====== AI 模式条 ====== -->
+                <div class="ai-mode-bar" id="ai-mode-bar">
+                    <button class="btn-ai-toggle idle" id="btn-ai-mode" onclick="aiMode.toggle()">🤖 AI模式</button>
+                    <div class="ai-threshold-group">
+                        <label for="ai-threshold">精度</label>
+                        <input type="range" id="ai-threshold" min="50" max="100" value="80" oninput="aiMode.updateThreshold(this.value)">
+                        <span id="ai-threshold-val">80%</span>
+                    </div>
+                    <span class="ai-status-pill" id="ai-status-pill">待机</span>
+                </div>
+                <!-- ======================== -->
+
+                <div class="row-mixed">
+                    <button class="btn-full-play" id="btn-full-play" onclick="engine.toggleFullPlay()">🎧 全文磨耳朵</button>
+                    <div class="range-panel">
+                        <span class="range-label">页码:</span>
+                        <input type="number" id="loop-start" class="range-input" value="1">
+                        <span>-</span>
+                        <input type="number" id="loop-end" class="range-input" value="10">
+                        <button class="btn-range-play" id="btn-range-play" onclick="engine.toggleRangeLoop()">循环</button>
+                    </div>
+                </div>
+
+                <!-- CSS Grid 六宫格 -->
+                <div class="control-grid">
+                    <button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
+                    <button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
+                    <button class="btn-action btn-nav btn-prev-grid" onclick="app.prev()">← 上一句</button>
+                    <button class="btn-action btn-nav btn-next-grid" onclick="app.next()">下一句 →</button>
+                    <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+                </div>
+
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="jump-select-wrapper">
-<select id="jump-select"
-class="jump-select"
-onchange="app.jumpTo(this.value)"><option>1
-</option></select>
-</div>
-<div class="header-right-group">
-<div class="sleep-wrapper">
-<div class="icon-btn"
-onclick="ui.toggleSleepModal()">⏰</div>
-<div id="sleep-display"
-class="sleep-display"></div>
-<div id="sleep-popup" class="sleep-popup">
-<div
-style="font-size:12px;color:#666;margin-bot
-tom:5px;">定时关闭(分钟)</div>
-<div style="display:flex;gap:5px;">
-<input type="number" id="sleep-input"
-value="30" min="1" max="100"
-style="width:60px;padding:4px;border:1px
-solid #ddd;border-radius:4px;">
-<button class="btn-mini"
-onclick="app.startSleepTimer()">开始
-</button>
-</div>
-</div>
-</div>
-<div id="text-toggle-btn"
-class="text-toggle"
-onclick="ui.toggleTextBlur()">👁 显示</div>
-</div>
-</div>
-<div class="sub-switcher">
-<button class="sub-btn active"
-onclick="ui.switchSubTab(0)">字幕1</button>
-<button class="sub-btn"
-onclick="ui.switchSubTab(1)">字幕2</button>
-<button class="sub-btn"
-onclick="ui.switchSubTab(2)">字幕3</button>
-</div>
-<div class="practice-text-container"
-onclick="ui.toggleTextBlur()">
-<div id="practice-text-display"
-class="practice-text blur">(请加载内容)
-</div>
-<div id="click-hint" class="click-hint">👈
-点击切换显隐</div>
-</div>
-<div class="control-area">
-<div class="row-mixed">
-<button class="btn-full-play"
-id="btn-full-play"
-onclick="engine.toggleFullPlay()">🎧 全文磨
-耳朵</button>
-<div class="range-panel">
-<span class="range-label">页码:</span>
-<input type="number" id="loop-start"
-class="range-input" value="1">
-<span>-</span>
-<input type="number" id="loop-end"
-class="range-input" value="10">
-<button class="btn-range-play"
-id="btn-range-play"
-onclick="engine.toggleRangeLoop()">循环
-</button>
-</div>
-</div>
-
-<!-- ============================================== -->
-<!-- 100% 精确复刻图一的 CSS Grid 六宫格交互排版   -->
-<!-- ============================================== -->
-<div class="control-grid">
-    <!-- Row 1 Left -->
-    <button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
-    <!-- Row 1 Right -->
-    <button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
-    
-    <!-- Row 2 Left -->
-    <button class="btn-action btn-nav btn-prev-grid" onclick="app.prev()">← 上一句</button>
-    <!-- Row 2 Right (Spanning 2 Rows) -->
-    <button class="btn-action btn-nav btn-next-grid" onclick="app.next()">下一句 →</button>
-    
-    <!-- Row 3 Left -->
-    <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
-</div>
-<!-- ============================================== -->
-
-</div>
-</div>
-</div>
 <!-- SERVER BROWSER MODAL -->
 <div id="server-browser-modal" onclick="serverBrowser.close()">
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
             <span id="server-browser-path">/</span>
-            <!-- 模糊查询搜索框 -->
             <input type="text" id="server-browser-search" placeholder="🔍 搜索音频..." style="padding: 6px 10px; border: 1px solid #ccc; border-radius: 16px; font-size: 13px; width: 140px; margin-right: 10px;" oninput="serverBrowser.filterFiles()">
             <span id="server-browser-close" onclick="serverBrowser.close()">×</span>
         </div>
-        <div id="server-browser-list">
-        </div>
+        <div id="server-browser-list"></div>
     </div>
 </div>
 
 <div id="toast" class="toast">提示</div>
+
 <script>
 const CONST = {
     STORAGE: 'shadow_v50_data',
@@ -776,195 +436,122 @@ const state = {
     audioBuffer: null,
     userBlurState: true,
     hasShownHint: false,
-    permBlurMode: 'none' // 'none', 'show', 'hide'
+    permBlurMode: 'none'
 };
 let hintTimer = null;
 
-// --- SERVER BROWSER LOGIC ---
+// ============================================================
+//  SERVER BROWSER
+// ============================================================
 const serverBrowser = {
-    history: [], 
+    history: [],
     allParsedFiles: [],
-    
     open() {
-        const modal = document.getElementById('server-browser-modal');
-        modal.style.display = 'flex';
+        document.getElementById('server-browser-modal').style.display = 'flex';
         this.history = [CONST.SERVER_BROWSER_BASE_URL];
         this.fetchAndRender(CONST.SERVER_BROWSER_BASE_URL);
     },
-
     close() {
-        const modal = document.getElementById('server-browser-modal');
-        modal.style.display = 'none';
+        document.getElementById('server-browser-modal').style.display = 'none';
         document.getElementById('server-browser-list').innerHTML = '';
-        const searchBox = document.getElementById('server-browser-search');
-        if(searchBox) searchBox.value = '';
+        const s = document.getElementById('server-browser-search');
+        if (s) s.value = '';
         this.history = [];
         this.allParsedFiles = [];
     },
-
-    navigate(url) {
-        this.history.push(url);
-        this.fetchAndRender(url);
-    },
-    
+    navigate(url) { this.history.push(url); this.fetchAndRender(url); },
     goBack() {
         if (this.history.length > 1) {
             this.history.pop();
-            const prevUrl = this.history[this.history.length - 1];
-            this.fetchAndRender(prevUrl);
+            this.fetchAndRender(this.history[this.history.length - 1]);
         }
     },
-
     fetchAndRender(url) {
         const listEl = document.getElementById('server-browser-list');
         const pathEl = document.getElementById('server-browser-path');
-        
         listEl.innerHTML = '<div class="browser-item loading">正在加载...</div>';
-        
-        let displayPath = url.replace(CONST.SERVER_BROWSER_BASE_URL, '/');
-        if (!displayPath.startsWith('/')) displayPath = '/' + displayPath;
-        pathEl.textContent = displayPath;
-        
+        let dp = url.replace(CONST.SERVER_BROWSER_BASE_URL, '/');
+        if (!dp.startsWith('/')) dp = '/' + dp;
+        pathEl.textContent = dp;
         fetch(url)
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP 错误 ${response.status}`);
-                return response.text();
-            })
+            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
             .then(html => this.parseAndRender(html, url))
-            .catch(error => {
-                console.error("加载文件列表失败:", error);
-                listEl.innerHTML = `<div class="browser-item loading" style="color:red;">加载失败: ${error.message} (检查CORS)</div>`;
+            .catch(e => {
+                listEl.innerHTML = `<div class="browser-item loading" style="color:red;">加载失败: ${e.message}</div>`;
             });
     },
-
     parseAndRender(html, baseUrl) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const doc = new DOMParser().parseFromString(html, 'text/html');
         const files = [];
-
         doc.querySelectorAll('a').forEach(a => {
             let href = a.getAttribute('href');
-            if (!href) return;
-            if (a.textContent.includes('返回上一级') || href.startsWith('?')) return;
-            if (href === '../' || href === '/') return;
-
+            if (!href || a.textContent.includes('返回上一级') || href.startsWith('?') || href === '../' || href === '/') return;
             const urlObj = new URL(href, baseUrl);
             const fullUrl = urlObj.href;
-            
-            const decodedPath = decodeURIComponent(urlObj.pathname);
-            const pathSegments = decodedPath.split('/').filter(Boolean);
-            if (pathSegments.length === 0) return;
-            
-            const name = pathSegments[pathSegments.length - 1];
-            const isDirectory = fullUrl.endsWith('/');
-
-            files.push({ name, url: fullUrl, isDirectory });
+            const path = decodeURIComponent(urlObj.pathname).split('/').filter(Boolean);
+            if (!path.length) return;
+            files.push({ name: path[path.length - 1], url: fullUrl, isDirectory: fullUrl.endsWith('/') });
         });
-
-        this.allParsedFiles = files; 
-        const searchBox = document.getElementById('server-browser-search');
-        if(searchBox) searchBox.value = '';
+        this.allParsedFiles = files;
+        const s = document.getElementById('server-browser-search');
+        if (s) s.value = '';
         this.renderList();
     },
-
-    filterFiles() {
-        this.renderList();
-    },
-
+    filterFiles() { this.renderList(); },
     renderList() {
         const listEl = document.getElementById('server-browser-list');
-        listEl.innerHTML = ''; 
-
-        const searchBox = document.getElementById('server-browser-search');
-        const query = searchBox ? searchBox.value.toLowerCase() : '';
-
+        listEl.innerHTML = '';
+        const s = document.getElementById('server-browser-search');
+        const q = s ? s.value.toLowerCase() : '';
         if (this.history.length > 1) {
-             const backItem = document.createElement('div');
-             backItem.className = 'browser-item';
-             backItem.innerHTML = '<span class="browser-item-icon">↩️</span> <span class="browser-item-name">返回上一级</span>';
-             backItem.onclick = () => this.goBack();
-             listEl.appendChild(backItem);
+            const back = document.createElement('div');
+            back.className = 'browser-item';
+            back.innerHTML = '<span class="browser-item-icon">↩️</span><span class="browser-item-name">返回上一级</span>';
+            back.onclick = () => this.goBack();
+            listEl.appendChild(back);
         }
-
-        if (this.allParsedFiles.length === 0) {
-            listEl.innerHTML += '<div class="browser-item loading">目录为空</div>';
-            return;
-        }
-
-        const displayFiles = this.allParsedFiles.filter(f => {
+        if (!this.allParsedFiles.length) { listEl.innerHTML += '<div class="browser-item loading">目录为空</div>'; return; }
+        const display = this.allParsedFiles.filter(f => {
             if (f.isDirectory) return true;
             const ext = f.name.split('.').pop().toLowerCase();
-            if (!['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) return false; 
-            return true;
-        }).filter(f => {
-            if (!query) return true;
-            return f.name.toLowerCase().includes(query);
-        });
-
-        displayFiles.sort((a, b) => {
+            if (!['mp3','wav','m4a','ogg'].includes(ext)) return false;
+            return !q || f.name.toLowerCase().includes(q);
+        }).sort((a,b) => {
             if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
             return a.name.localeCompare(b.name);
         });
-
-        if(displayFiles.length === 0 && query) {
-            listEl.innerHTML += '<div class="browser-item loading">没有找到匹配的音频</div>';
-        }
-
-        displayFiles.forEach(file => {
+        if (!display.length && q) { listEl.innerHTML += '<div class="browser-item loading">没有找到匹配的音频</div>'; }
+        display.forEach(f => {
             const item = document.createElement('div');
             item.className = 'browser-item';
-            const icon = file.isDirectory ? '📁' : '🎵';
-            item.innerHTML = `<span class="browser-item-icon">${icon}</span> <span class="browser-item-name">${file.name}</span>`;
-            item.onclick = () => {
-                if (file.isDirectory) {
-                    this.navigate(file.url);
-                } else {
-                    this.selectFile(file);
-                }
-            };
+            item.innerHTML = `<span class="browser-item-icon">${f.isDirectory ? '📁' : '🎵'}</span><span class="browser-item-name">${f.name}</span>`;
+            item.onclick = () => f.isDirectory ? this.navigate(f.url) : this.selectFile(f);
             listEl.appendChild(item);
         });
     },
-
     selectFile(file) {
-        const fileUrl = file.url;
-        const filename = file.name; 
-        const ext = filename.split('.').pop().toLowerCase();
-        
-        if (!['mp3', 'wav', 'm4a', 'ogg'].includes(ext)) {
-            ui.toast('请选择一个音频文件');
-            return;
-        }
-
-        const baseName = filename.substring(0, filename.lastIndexOf('.'));
-        
-        const findSub = (suffix) => {
-            const target = (baseName + suffix).toLowerCase();
-            const found = this.allParsedFiles.find(f => 
-                !f.isDirectory && f.name.toLowerCase() === target
-            );
-            return found ? found.url : '';
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['mp3','wav','m4a','ogg'].includes(ext)) { ui.toast('请选择音频文件'); return; }
+        const base = file.name.substring(0, file.name.lastIndexOf('.'));
+        const findSub = (sfx) => {
+            const t = (base + sfx).toLowerCase();
+            const f = this.allParsedFiles.find(x => !x.isDirectory && x.name.toLowerCase() === t);
+            return f ? f.url : '';
         };
-
-        const srt1_url = findSub('.eng.srt') || findSub('.srt');
-        const srt2_url = findSub('.engchs.srt');
-        const srt3_url = findSub('.chs.srt');
-        
-        document.getElementById('url-audio').value = fileUrl;
-        document.getElementById('url-srt-1').value = srt1_url;
-        document.getElementById('url-srt-2').value = srt2_url;
-        document.getElementById('url-srt-3').value = srt3_url;
-
+        document.getElementById('url-audio').value = file.url;
+        document.getElementById('url-srt-1').value = findSub('.eng.srt') || findSub('.srt');
+        document.getElementById('url-srt-2').value = findSub('.engchs.srt');
+        document.getElementById('url-srt-3').value = findSub('.chs.srt');
         app.saveInput();
         this.close();
-        
         ui.toast('🔗 链接已自动填充，开始加载...');
-        setTimeout(() => {
-            app.loadFromUrl();
-        }, 500);
+        setTimeout(() => app.loadFromUrl(), 500);
     }
 };
 
+// ============================================================
+//  NET
+// ============================================================
 const net = {
     fixUrl(url) {
         if (!url) return '';
@@ -975,47 +562,34 @@ const net = {
     },
     async fetchCommon(url, type) {
         ui.setLoadBtnText("尝试直连下载...");
-        try {
-            const res = await fetch(url);
-            if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
-        } catch (e) {
-            console.warn("直连失败,尝试代理", e);
-        }
+        try { const r = await fetch(url); if (r.ok) return type === 'blob' ? await r.blob() : await r.text(); } catch(e) {}
         ui.setLoadBtnText("直连失败,尝试代理...");
-        for (const proxy of CONST.PROXY) {
-            try {
-                const res = await fetch(proxy + encodeURIComponent(url));
-                if (res.ok) return type === 'blob' ? await res.blob() : await res.text();
-            } catch (e) {}
+        for (const p of CONST.PROXY) {
+            try { const r = await fetch(p + encodeURIComponent(url)); if (r.ok) return type === 'blob' ? await r.blob() : await r.text(); } catch(e) {}
         }
         throw new Error("下载失败(请检查链接或网络)");
     },
-    async fetchBlobSmart(url) {
-        return this.fetchCommon(url, 'blob');
-    },
-    async fetchTextSmart(url) {
-        return this.fetchCommon(url, 'text');
-    }
+    async fetchBlobSmart(url) { return this.fetchCommon(url, 'blob'); },
+    async fetchTextSmart(url) { return this.fetchCommon(url, 'text'); }
 };
+
+// ============================================================
+//  ENGINE
+// ============================================================
 const engine = {
     mode: 'IDLE',
     reqId: null,
     editorTimer: null,
     isWaiting: false,
     waitTimer: null,
-    startTicker() {
-        if (this.reqId) cancelAnimationFrame(this.reqId);
-        this.tick();
-    },
+    startTicker() { if (this.reqId) cancelAnimationFrame(this.reqId); this.tick(); },
     stopAll(releaseMic = false) {
         this.mode = 'IDLE';
         this.isWaiting = false;
         if (this.waitTimer) clearTimeout(this.waitTimer);
         const a = document.getElementById('main-audio');
         const r = document.getElementById('record-audio');
-        a.pause();
-        r.pause();
-        a.loop = false;
+        a.pause(); r.pause(); a.loop = false;
         if (this.reqId) cancelAnimationFrame(this.reqId);
         clearTimeout(this.editorTimer);
         recorder.stop(releaseMic);
@@ -1023,11 +597,9 @@ const engine = {
     },
     playSegment(i) {
         this.stopAll();
-        const s = state.segments[i];
-        const a = document.getElementById('main-audio');
+        const s = state.segments[i], a = document.getElementById('main-audio');
         if (!a.src) return ui.toast("音频未就绪");
-        a.currentTime = s.start;
-        a.play();
+        a.currentTime = s.start; a.play();
         this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start) * 1000);
     },
     tick() {
@@ -1037,60 +609,34 @@ const engine = {
         const ct = a.currentTime;
         if (this.mode === 'PLAY_ONCE') {
             const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) {
-                a.pause();
-                this.mode = 'IDLE';
-                ui.resetButtons();
-            }
+            if (seg && ct >= seg.end) { a.pause(); this.mode = 'IDLE'; ui.resetButtons(); }
         } else if (this.mode === 'LOOP_ONE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) {
-                this.startWait(() => {
-                    a.currentTime = seg.start;
-                    a.play();
-                });
-            }
+            if (seg && ct >= seg.end) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
         } else if (this.mode === 'LOOP_RANGE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            const endLimit = parseInt(document.getElementById('loop-end').value) - 1;
-            const startLimit = parseInt(document.getElementById('loop-start').value) - 1;
+            const endL = parseInt(document.getElementById('loop-end').value) - 1;
+            const startL = parseInt(document.getElementById('loop-start').value) - 1;
             if (seg && ct >= seg.end) {
-                let nextIdx = state.currIndex + 1;
-                if (nextIdx > endLimit || nextIdx >= state.segments.length) nextIdx = Math.max(0, startLimit);
-                this.startWait(() => {
-                    state.currIndex = nextIdx;
-                    a.currentTime = state.segments[nextIdx].start;
-                    ui.updatePractice(nextIdx);
-                    a.play();
-                });
+                let nx = state.currIndex + 1;
+                if (nx > endL || nx >= state.segments.length) nx = Math.max(0, startL);
+                this.startWait(() => { state.currIndex = nx; a.currentTime = state.segments[nx].start; ui.updatePractice(nx); a.play(); });
             }
         } else if (this.mode === 'FULL_PLAY') {
-            const activeIdx = state.segments.findIndex(s => ct >= s.start && ct < s.end);
-            if (activeIdx !== -1 && activeIdx !== state.currIndex) {
-                state.currIndex = activeIdx;
-                ui.updatePractice(activeIdx);
-            }
-            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.2)) {
-                a.currentTime = 0;
-                a.play();
-                state.currIndex = 0;
-                ui.updatePractice(0);
-            }
+            const ai = state.segments.findIndex(s => ct >= s.start && ct < s.end);
+            if (ai !== -1 && ai !== state.currIndex) { state.currIndex = ai; ui.updatePractice(ai); }
+            if (a.ended || (a.duration > 0 && ct >= a.duration - 0.2)) { a.currentTime = 0; a.play(); state.currIndex = 0; ui.updatePractice(0); }
         }
     },
     startWait(cb) {
         this.isWaiting = true;
-        const a = document.getElementById('main-audio');
-        a.pause();
-        this.waitTimer = setTimeout(() => {
-            if (this.mode === 'IDLE') return;
-            this.isWaiting = false;
-            cb();
-        }, 1500);
+        document.getElementById('main-audio').pause();
+        this.waitTimer = setTimeout(() => { if (this.mode === 'IDLE') return; this.isWaiting = false; cb(); }, 1500);
     },
     playOnce() {
+        if (aiMode.active) aiMode.stop();
         this.stopAll();
         if (!this.check()) return;
         this.mode = 'PLAY_ONCE';
@@ -1098,73 +644,64 @@ const engine = {
         this.startPlay();
     },
     toggleLoop() {
+        if (aiMode.active) aiMode.stop();
         if (this.mode === 'LOOP_ONE') this.stopAll();
-        else {
-            this.stopAll();
-            if (!this.check()) return;
-            this.mode = 'LOOP_ONE';
-            document.getElementById('btn-loop').classList.add('active');
-            this.startPlay();
-        }
+        else { this.stopAll(); if (!this.check()) return; this.mode = 'LOOP_ONE'; document.getElementById('btn-loop').classList.add('active'); this.startPlay(); }
     },
     toggleRangeLoop() {
+        if (aiMode.active) aiMode.stop();
         if (this.mode === 'LOOP_RANGE') this.stopAll();
         else {
             this.stopAll();
             if (!state.segments.length) return ui.toast("无内容");
             const start = Math.max(0, parseInt(document.getElementById('loop-start').value) - 1);
-            state.currIndex = start;
-            ui.updatePractice(start);
+            state.currIndex = start; ui.updatePractice(start);
             this.mode = 'LOOP_RANGE';
             const btn = document.getElementById('btn-range-play');
-            btn.classList.add('active');
-            btn.innerText = "停止";
+            btn.classList.add('active'); btn.innerText = "停止";
             this.startPlay();
         }
     },
     toggleFullPlay() {
+        if (aiMode.active) aiMode.stop();
         if (this.mode === 'FULL_PLAY') this.stopAll();
         else {
             this.stopAll();
             if (!this.check()) return;
             const a = document.getElementById('main-audio');
-            a.currentTime = 0;
-            state.currIndex = 0;
-            ui.updatePractice(0);
-            a.loop = true;
+            a.currentTime = 0; state.currIndex = 0; ui.updatePractice(0); a.loop = true;
             a.play().then(() => {
                 this.mode = 'FULL_PLAY';
                 const btn = document.getElementById('btn-full-play');
-                btn.classList.add('active');
-                btn.innerText = "⏹ 停止";
+                btn.classList.add('active'); btn.innerText = "⏹ 停止";
                 this.startTicker();
             });
         }
     },
     startPlay() {
-        const seg = state.segments[state.currIndex];
-        const a = document.getElementById('main-audio');
+        const seg = state.segments[state.currIndex], a = document.getElementById('main-audio');
         a.currentTime = seg.start;
-        a.play().then(() => this.startTicker()).catch(e => {
-            console.error(e);
-            ui.toast("播放失败");
-        });
+        a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); });
     },
     check() {
-        if (!state.segments.length) {
-            ui.toast("请先加载内容");
-            return false;
-        }
-        if (!document.getElementById('main-audio').src) {
-            ui.toast("音频未就绪");
-            return false;
-        }
+        if (!state.segments.length) { ui.toast("请先加载内容"); return false; }
+        if (!document.getElementById('main-audio').src) { ui.toast("音频未就绪"); return false; }
         return true;
     }
 };
+
+// ============================================================
+//  UI
+// ============================================================
 const ui = {
     init() {
         document.getElementById('url-audio').addEventListener('paste', (e) => app.handleSmartPaste(e));
+        // Update AI threshold slider fill on init
+        const slider = document.getElementById('ai-threshold');
+        if (slider) {
+            const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+            slider.style.setProperty('--fill', pct + '%');
+        }
         const p = new URLSearchParams(location.search);
         if (p.get('mp3')) {
             document.getElementById('url-audio').value = p.get('mp3');
@@ -1194,15 +731,10 @@ const ui = {
         const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
         const sel = document.getElementById('history-select');
         sel.innerHTML = '<option value="">▼ 选择历史记录...</option>';
-        h.forEach((item, i) => {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.text = item.name;
-            sel.appendChild(opt);
-        });
+        h.forEach((item, i) => { const o = document.createElement('option'); o.value = i; o.text = item.name; sel.appendChild(o); });
     },
     setTab(t) {
-        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (t === 'url' && i === 0) || (t === 'local' && i === 1)));
+        document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (t==='url'&&i===0)||(t==='local'&&i===1)));
         document.getElementById('group-url').style.display = t === 'url' ? 'block' : 'none';
         document.getElementById('group-local').style.display = t === 'local' ? 'block' : 'none';
     },
@@ -1210,43 +742,28 @@ const ui = {
         const btn = document.getElementById('btn-load-url');
         btn.innerHTML = t === "default" ? '<span class="loading-spinner" id="url-spinner"></span>🚀 极速加载' : t;
     },
-    updateThresh(v) {
-        document.getElementById('threshold-val').innerText = v;
-    },
+    updateThresh(v) { document.getElementById('threshold-val').innerText = v; },
     toast(m) {
         const t = document.getElementById('toast');
-        t.innerText = m;
-        t.classList.add('show');
+        t.innerText = m; t.classList.add('show');
         setTimeout(() => t.classList.remove('show'), 2000);
     },
     updateAudioStatus() {
-        const m = document.getElementById('audio-status-msg');
-        const a = document.getElementById('main-audio');
+        const m = document.getElementById('audio-status-msg'), a = document.getElementById('main-audio');
         if (a.src && a.src !== location.href) {
-            m.className = 'audio-status ok';
-            m.style.display = 'block';
-            m.innerText = "✅ 音频已就绪";
+            m.className = 'audio-status ok'; m.style.display = 'block'; m.innerText = "✅ 音频已就绪";
             setTimeout(() => m.style.display = 'none', 3000);
         } else {
-            m.className = 'audio-status warn';
-            m.style.display = 'block';
-            m.innerText = "⚠️ 音频未就绪";
+            m.className = 'audio-status warn'; m.style.display = 'block'; m.innerText = "⚠️ 音频未就绪";
         }
     },
     resetButtons() {
         document.getElementById('btn-play-once').classList.remove('active');
         document.getElementById('btn-loop').classList.remove('active');
-        const rangeBtn = document.getElementById('btn-range-play');
-        rangeBtn.classList.remove('active');
-        rangeBtn.innerText = "循环";
-        const fullBtn = document.getElementById('btn-full-play');
-        fullBtn.classList.remove('active');
-        fullBtn.innerText = "🎧 全文磨耳朵";
-        const recBtn = document.getElementById('btn-record');
-        if(recBtn) {
-            recBtn.classList.remove('recording', 'playing');
-            recBtn.innerText = "🎤 按下开始录音";
-        }
+        const rb = document.getElementById('btn-range-play'); rb.classList.remove('active'); rb.innerText = "循环";
+        const fb = document.getElementById('btn-full-play'); fb.classList.remove('active'); fb.innerText = "🎧 全文磨耳朵";
+        const rec = document.getElementById('btn-record');
+        if (rec) { rec.classList.remove('recording','playing'); rec.innerText = "🎤 按下开始录音"; }
     },
     renderEditor() {
         const l = document.getElementById('editor-list');
@@ -1256,10 +773,10 @@ const ui = {
             const d = document.createElement('div');
             d.className = 'sub-item';
             d.innerHTML = `
-                <div class="sub-meta"><span class="idx-badge">#${i + 1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
-                ${s.text !== undefined ? `<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>` : ''}
-                ${s.text2 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>` : ''}
-                ${s.text3 !== undefined ? `<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>` : ''}
+                <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div class="time-edit-group"><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+                ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>`:''}
+                ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>`:''}
+                ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>`:''}
                 <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂️ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🖇️ 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">❌ 删除</button></div>
             `;
             l.appendChild(d);
@@ -1269,67 +786,45 @@ const ui = {
         document.getElementById('loop-end').value = state.segments.length;
         const sel = document.getElementById('jump-select');
         sel.innerHTML = '';
-        state.segments.forEach((_, i) => {
-            const o = document.createElement('option');
-            o.value = i;
-            o.text = `第 ${i + 1} 句`;
-            sel.appendChild(o);
-        });
+        state.segments.forEach((_,i) => { const o = document.createElement('option'); o.value = i; o.text = `第 ${i+1} 句`; sel.appendChild(o); });
         app.save();
     },
     updatePractice(idx) {
         if (!state.segments[idx]) return;
-        const key = state.activeSub === 1 ? 'text2' : (state.activeSub === 2 ? 'text3' : 'text');
+        const key = state.activeSub===1 ? 'text2' : (state.activeSub===2 ? 'text3' : 'text');
         const txt = document.getElementById('practice-text-display');
         const content = state.segments[idx][key] || "(无内容)";
         txt.innerText = content;
         this.fitText(txt);
-        
         const toggleBtn = document.getElementById('text-toggle-btn');
-        if (state.userBlurState) {
-            txt.classList.add("blur");
-            toggleBtn.innerText = "👁 显示";
-        } else {
-            txt.classList.remove("blur");
-            toggleBtn.innerText = "🙈 隐藏";
-        }
-        
+        if (state.userBlurState) { txt.classList.add("blur"); toggleBtn.innerText = "👁 显示"; }
+        else { txt.classList.remove("blur"); toggleBtn.innerText = "🙈 隐藏"; }
         txt.className = content === "(无内容)" ? "practice-text empty" : "practice-text";
-        if(state.userBlurState) txt.classList.add('blur');
-        
+        if (state.userBlurState) txt.classList.add('blur');
         document.getElementById('jump-select').value = idx;
         if (!state.hasShownHint) {
             const hint = document.getElementById('click-hint');
             hint.classList.add('show');
-            setTimeout(() => {
-                hint.classList.remove('show');
-                state.hasShownHint = true;
-            }, 3000);
+            setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
         }
     },
     updatePermButtons() {
-        const btnShow = document.getElementById('btn-perm-show');
-        const btnHide = document.getElementById('btn-perm-hide');
-        if(btnShow && btnHide) {
-            btnShow.style.background = state.permBlurMode === 'show' ? 'var(--primary)' : '#fff';
-            btnShow.style.color = state.permBlurMode === 'show' ? 'white' : '#5f6368';
-            btnShow.style.borderColor = state.permBlurMode === 'show' ? 'var(--primary)' : '#ddd';
-
-            btnHide.style.background = state.permBlurMode === 'hide' ? 'var(--primary)' : '#fff';
-            btnHide.style.color = state.permBlurMode === 'hide' ? 'white' : '#5f6368';
-            btnHide.style.borderColor = state.permBlurMode === 'hide' ? 'var(--primary)' : '#ddd';
+        const bs = document.getElementById('btn-perm-show'), bh = document.getElementById('btn-perm-hide');
+        if (bs && bh) {
+            bs.style.background = state.permBlurMode==='show' ? 'var(--primary)' : '#fff';
+            bs.style.color = state.permBlurMode==='show' ? 'white' : '#5f6368';
+            bs.style.borderColor = state.permBlurMode==='show' ? 'var(--primary)' : '#ddd';
+            bh.style.background = state.permBlurMode==='hide' ? 'var(--primary)' : '#fff';
+            bh.style.color = state.permBlurMode==='hide' ? 'white' : '#5f6368';
+            bh.style.borderColor = state.permBlurMode==='hide' ? 'var(--primary)' : '#ddd';
         }
     },
     fitText(el) {
-        let size = 34;
-        el.style.fontSize = size + 'px';
-        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) {
-            size--;
-            el.style.fontSize = size + 'px';
-        }
+        let size = 34; el.style.fontSize = size + 'px';
+        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
     },
     toggleTextBlur() {
-        state.permBlurMode = 'none'; // 取消永久锁定
+        state.permBlurMode = 'none';
         state.userBlurState = !state.userBlurState;
         this.updatePermButtons();
         this.updatePractice(state.currIndex);
@@ -1342,69 +837,39 @@ const ui = {
     },
     switchSubTab(i) {
         state.activeSub = i;
-        document.querySelectorAll('.sub-btn').forEach((b, k) => b.classList.toggle('active', k === i));
+        document.querySelectorAll('.sub-btn').forEach((b,k) => b.classList.toggle('active', k===i));
         this.updatePractice(state.currIndex);
     },
-    toggleDrawer() {
-        document.getElementById('drawer-overlay').classList.toggle('open');
-    },
-    toggleSleepModal() {
-        document.getElementById('sleep-popup').classList.toggle('show');
-    }
+    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
+    toggleSleepModal() { document.getElementById('sleep-popup').classList.toggle('show'); }
 };
+
+// ============================================================
+//  APP
+// ============================================================
 const app = {
-    setPermShow() {
-        state.permBlurMode = 'show';
-        state.userBlurState = false;
-        ui.updatePermButtons();
-        ui.updatePractice(state.currIndex);
-    },
-    setPermHide() {
-        state.permBlurMode = 'hide';
-        state.userBlurState = true;
-        ui.updatePermButtons();
-        ui.updatePractice(state.currIndex);
-    },
+    setPermShow() { state.permBlurMode = 'show'; state.userBlurState = false; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
+    setPermHide() { state.permBlurMode = 'hide'; state.userBlurState = true; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
     clearInputs() {
-        document.getElementById('url-audio').value = '';
-        document.getElementById('url-srt-1').value = '';
-        document.getElementById('url-srt-2').value = '';
-        document.getElementById('url-srt-3').value = '';
+        ['url-audio','url-srt-1','url-srt-2','url-srt-3'].forEach(id => document.getElementById(id).value = '');
     },
     handleSmartPaste(e) {
         const text = (e.clipboardData || window.clipboardData).getData('text');
-        if (!text) return;
-        if (!text.match(/https?:\/\//) && !text.toLowerCase().includes('.mp3')) return;
+        if (!text || (!text.match(/https?:\/\//) && !text.toLowerCase().includes('.mp3'))) return;
         e.preventDefault();
         this.clearInputs();
-        const lines = text.split(/[\r\n]+/).map(line => line.trim()).filter(line => line);
-        let mp3Url = '';
-        const srtFiles = [];
-        lines.forEach(line => {
-            if (line.match(/\.mp3$/i)) {
-                mp3Url = line;
-            } else if (line.match(/\.(srt|txt)$/i)) {
-                srtFiles.push(line);
-            }
-        });
-        if (mp3Url) {
-            document.getElementById('url-audio').value = mp3Url;
-        }
-        let s1 = '', s2 = '', s3 = '';
-        if (srtFiles.length === 1) {
-            s1 = srtFiles[0];
-        } else if (srtFiles.length > 1) {
-            const has = (url, key) => url.toLowerCase().includes(key);
-            const fEngChs = srtFiles.find(u => has(u, 'engchs'));
-            const fChs = srtFiles.find(u => has(u, 'chs') && !has(u, 'engchs'));
-            const fEng = srtFiles.find(u => has(u, 'eng') && !has(u, 'engchs'));
-            if (fEng) s1 = fEng;
-            if (fEngChs) s2 = fEngChs;
-            if (fChs) s3 = fChs;
-            const remaining = srtFiles.filter(u => u !== s1 && u !== s2 && u !== s3);
-            if (!s1 && remaining.length > 0) s1 = remaining.shift();
-            if (!s2 && remaining.length > 0) s2 = remaining.shift();
-            if (!s3 && remaining.length > 0) s3 = remaining.shift();
+        const lines = text.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l);
+        let mp3 = '', srts = [];
+        lines.forEach(l => { if (l.match(/\.mp3$/i)) mp3 = l; else if (l.match(/\.(srt|txt)$/i)) srts.push(l); });
+        if (mp3) document.getElementById('url-audio').value = mp3;
+        let s1='',s2='',s3='';
+        if (srts.length === 1) { s1 = srts[0]; }
+        else if (srts.length > 1) {
+            const has=(u,k)=>u.toLowerCase().includes(k);
+            const fEC=srts.find(u=>has(u,'engchs')), fC=srts.find(u=>has(u,'chs')&&!has(u,'engchs')), fE=srts.find(u=>has(u,'eng')&&!has(u,'engchs'));
+            if(fE) s1=fE; if(fEC) s2=fEC; if(fC) s3=fC;
+            const rem=srts.filter(u=>u!==s1&&u!==s2&&u!==s3);
+            if(!s1&&rem.length) s1=rem.shift(); if(!s2&&rem.length) s2=rem.shift(); if(!s3&&rem.length) s3=rem.shift();
         }
         document.getElementById('url-srt-1').value = s1;
         document.getElementById('url-srt-2').value = s2;
@@ -1412,418 +877,605 @@ const app = {
         this.saveInput();
         ui.toast("📋 链接已智能分配");
     },
-    sleepTimerId: null,
-    sleepInterval: null,
+    sleepTimerId: null, sleepInterval: null,
     startSleepTimer() {
-        const input = document.getElementById('sleep-input');
-        const mins = parseInt(input.value);
-        if (!mins || mins < 1 || mins > 100) return ui.toast("请输入 1-100");
+        const mins = parseInt(document.getElementById('sleep-input').value);
+        if (!mins||mins<1||mins>100) return ui.toast("请输入 1-100");
         if (this.sleepTimerId) clearTimeout(this.sleepTimerId);
         if (this.sleepInterval) clearInterval(this.sleepInterval);
-        const endTime = Date.now() + mins * 60 * 1000;
+        const end = Date.now() + mins*60*1000;
         ui.toggleSleepModal();
-        const display = document.getElementById('sleep-display');
-        display.style.display = 'block';
-        const updateDisplay = () => {
-            const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            if (remaining <= 0) {
-                display.innerText = "";
-                display.style.display = "none";
-                clearInterval(this.sleepInterval);
-            } else {
-                const m = Math.floor(remaining / 60);
-                const s = remaining % 60;
-                display.innerText = `⏳ ${m}:${s.toString().padStart(2, '0')}`;
-            }
+        const disp = document.getElementById('sleep-display');
+        disp.style.display = 'block';
+        const upd = () => {
+            const rem = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+            if (!rem) { disp.innerText=''; disp.style.display='none'; clearInterval(this.sleepInterval); }
+            else { const m=Math.floor(rem/60),s=rem%60; disp.innerText=`⏳ ${m}:${s.toString().padStart(2,'0')}`; }
         };
-        updateDisplay();
-        this.sleepInterval = setInterval(updateDisplay, 1000);
+        upd();
+        this.sleepInterval = setInterval(upd, 1000);
         this.sleepTimerId = setTimeout(() => {
-            engine.stopAll();
-            ui.toast("⏰ 定时结束,停止播放");
-            display.style.display = 'none';
-            clearInterval(this.sleepInterval);
-        }, mins * 60 * 1000);
+            engine.stopAll(); ui.toast("⏰ 定时结束,停止播放");
+            disp.style.display='none'; clearInterval(this.sleepInterval);
+        }, mins*60*1000);
         ui.toast(`⏳ 倒计时 ${mins} 分钟开始`);
     },
     saveInput() {
-        const d = {
+        localStorage.setItem(CONST.INPUTS, JSON.stringify({
             mp3: document.getElementById('url-audio').value,
             s1: document.getElementById('url-srt-1').value,
             s2: document.getElementById('url-srt-2').value,
             s3: document.getElementById('url-srt-3').value
-        };
-        localStorage.setItem(CONST.INPUTS, JSON.stringify(d));
+        }));
     },
     addHistory(mp3, name) {
-        let h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
+        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
         h = h.filter(i => i.mp3 !== mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS));
-        h.unshift({
-            name: name || mp3.split('/').pop(),
-            mp3,
-            ...d
-        });
+        h.unshift({ name: name||mp3.split('/').pop(), mp3, ...d });
         if (h.length > 10) h.pop();
         localStorage.setItem(CONST.HIST, JSON.stringify(h));
         ui.renderHistory();
     },
     fillHistory(i) {
-        if (i === "") return;
-        const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
-        const item = h[i];
+        if (i==="") return;
+        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'), item = h[i];
         if (item) {
             document.getElementById('url-audio').value = item.mp3;
-            document.getElementById('url-srt-1').value = item.s1 || '';
-            document.getElementById('url-srt-2').value = item.s2 || '';
-            document.getElementById('url-srt-3').value = item.s3 || '';
+            document.getElementById('url-srt-1').value = item.s1||'';
+            document.getElementById('url-srt-2').value = item.s2||'';
+            document.getElementById('url-srt-3').value = item.s3||'';
             this.saveInput();
         }
     },
     async loadFromUrl() {
-        state.segments = [];
-        ui.renderEditor();
-        this.saveInput();
+        state.segments = []; ui.renderEditor(); this.saveInput();
         const mp3 = net.fixUrl(document.getElementById('url-audio').value.trim());
         const s1 = net.fixUrl(document.getElementById('url-srt-1').value.trim());
         const s2 = net.fixUrl(document.getElementById('url-srt-2').value.trim());
         const s3 = net.fixUrl(document.getElementById('url-srt-3').value.trim());
         if (!mp3) return ui.toast("请输入 MP3 链接");
-        const btn = document.getElementById('btn-load-url');
-        const spin = document.getElementById('url-spinner');
-        btn.disabled = true;
-        spin.style.display = 'inline-block';
+        const btn = document.getElementById('btn-load-url'), spin = document.getElementById('url-spinner');
+        btn.disabled = true; spin.style.display = 'inline-block';
         try {
             ui.toast("正在下载音频...");
-            const audioBlob = await net.fetchBlobSmart(mp3);
-            document.getElementById('main-audio').src = URL.createObjectURL(audioBlob);
+            const ab = await net.fetchBlobSmart(mp3);
+            document.getElementById('main-audio').src = URL.createObjectURL(ab);
             ui.toast("✅ 音频下载成功!正在获取字幕...");
-            const loadTxt = async (u) => u ? await net.fetchTextSmart(u) : null;
-            const [t1, t2, t3] = await Promise.all([loadTxt(s1), loadTxt(s2), loadTxt(s3)]);
-            if (t1 || t2 || t3) {
-                if (t1) {
-                    state.segments = parseSRT(t1);
-                    if (t2) this.mergeSub(parseSRT(t2), 'text2');
-                    if (t3) this.mergeSub(parseSRT(t3), 'text3');
-                } else if (t2) {
-                    state.segments = parseSRT(t2).map(s => ({
-                        start: s.start,
-                        end: s.end,
-                        text2: s.text
-                    }));
-                    if (t3) this.mergeSub(parseSRT(t3), 'text3');
-                } else {
-                    state.segments = parseSRT(t3).map(s => ({
-                        start: s.start,
-                        end: s.end,
-                        text3: s.text
-                    }));
-                }
+            const lt = async (u) => u ? await net.fetchTextSmart(u) : null;
+            const [t1,t2,t3] = await Promise.all([lt(s1),lt(s2),lt(s3)]);
+            if (t1||t2||t3) {
+                if (t1) { state.segments = parseSRT(t1); if(t2) this.mergeSub(parseSRT(t2),'text2'); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
+                else if (t2) { state.segments = parseSRT(t2).map(s=>({start:s.start,end:s.end,text2:s.text})); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
+                else { state.segments = parseSRT(t3).map(s=>({start:s.start,end:s.end,text3:s.text})); }
             } else {
                 ui.toast("正在进行静音断句(无字幕模式)...");
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const ab = await audioBlob.arrayBuffer();
-                const ctx = new(window.AudioContext || window.webkitAudioContext)();
-                state.audioBuffer = await ctx.decodeAudioData(ab);
+                await new Promise(r=>setTimeout(r,100));
+                const buf = await ab.arrayBuffer();
+                const ctx = new(window.AudioContext||window.webkitAudioContext)();
+                state.audioBuffer = await ctx.decodeAudioData(buf);
                 state.segments = detectSilence(state.audioBuffer, parseFloat(document.getElementById('threshold-range').value));
-                if (!state.segments.length) state.segments = [{
-                    start: 0,
-                    end: state.audioBuffer.duration,
-                    text: "(自动断句失败)"
-                }];
+                if (!state.segments.length) state.segments = [{start:0,end:state.audioBuffer.duration,text:"(自动断句失败)"}];
             }
             this.addHistory(mp3);
-            ui.renderEditor();
-            ui.updateAudioStatus();
+            ui.renderEditor(); ui.updateAudioStatus();
             ui.toast("✅ 全部就绪,正在跳转...");
             app.switchView('practice');
-        } catch (e) {
-            console.error(e);
-            ui.setLoadBtnText("加载失败:" + e.message);
-        } finally {
-            btn.disabled = false;
-            spin.style.display = 'none';
-            setTimeout(() => ui.setLoadBtnText("default"), 3000);
-        }
+        } catch(e) { console.error(e); ui.setLoadBtnText("加载失败:" + e.message); }
+        finally { btn.disabled=false; spin.style.display='none'; setTimeout(()=>ui.setLoadBtnText("default"),3000); }
     },
-    mergeSub(newS, k) {
-        state.segments.forEach(b => {
-            const m = newS.find(n => (n.start >= b.start && n.start < b.end));
-            if (m) b[k] = m.text;
-        });
-    },
+    mergeSub(newS, k) { state.segments.forEach(b => { const m=newS.find(n=>(n.start>=b.start&&n.start<b.end)); if(m) b[k]=m.text; }); },
     switchView(v) {
+        if (aiMode.active) aiMode.stop();
         engine.stopAll();
-        if (v === 'practice' && !state.segments.length) return ui.toast("请先加载内容");
-        document.getElementById('editor-view').style.display = v === 'editor' ? 'block' : 'none';
-        const pView = document.getElementById('practice-view');
-        pView.style.display = v === 'practice' ? 'flex' : 'none';
-        pView.classList.toggle('active', v === 'practice');
+        if (v==='practice' && !state.segments.length) return ui.toast("请先加载内容");
+        document.getElementById('editor-view').style.display = v==='editor' ? 'block' : 'none';
+        const pv = document.getElementById('practice-view');
+        pv.style.display = v==='practice' ? 'flex' : 'none';
+        pv.classList.toggle('active', v==='practice');
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
-        if (v === 'practice') this.loadItem(state.currIndex, false);
+        if (v==='practice') this.loadItem(state.currIndex, false);
     },
     loadItem(i, play) {
-        if (i < 0 || i >= state.segments.length) return;
-        state.currIndex = i;
-        engine.stopAll();
-        ui.updatePractice(i);
-        this.save();
+        if (i<0||i>=state.segments.length) return;
+        state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
         if (play) engine.playOnce();
     },
     next() {
-        if (state.currIndex < state.segments.length - 1) {
-            if (state.permBlurMode === 'show') state.userBlurState = false;
-            else if (state.permBlurMode === 'hide') state.userBlurState = true;
-            else state.userBlurState = true;
-            
-            this.loadItem(state.currIndex + 1, true);
+        if (state.currIndex < state.segments.length-1) {
+            if (state.permBlurMode==='show') state.userBlurState=false;
+            else if (state.permBlurMode==='hide') state.userBlurState=true;
+            else state.userBlurState=true;
+            this.loadItem(state.currIndex+1, true);
         }
     },
     prev() {
         if (state.currIndex > 0) {
-            if (state.permBlurMode === 'show') state.userBlurState = false;
-            else if (state.permBlurMode === 'hide') state.userBlurState = true;
-            else state.userBlurState = true;
-            
-            this.loadItem(state.currIndex - 1, true);
+            if (state.permBlurMode==='show') state.userBlurState=false;
+            else if (state.permBlurMode==='hide') state.userBlurState=true;
+            else state.userBlurState=true;
+            this.loadItem(state.currIndex-1, true);
         }
     },
     jumpTo(v) {
-        if (state.permBlurMode === 'show') state.userBlurState = false;
-        else if (state.permBlurMode === 'hide') state.userBlurState = true;
-        else state.userBlurState = true;
-        
+        if (state.permBlurMode==='show') state.userBlurState=false;
+        else if (state.permBlurMode==='hide') state.userBlurState=true;
+        else state.userBlurState=true;
+        if (aiMode.active) aiMode.stop();
         this.loadItem(parseInt(v), true);
     },
-    updateSeg(i, k, v) {
-        if (k.startsWith('text')) state.segments[i][k] = v;
-        else state.segments[i][k] = parseFloat(v);
-        this.save();
-    },
-    delSeg(i) {
-        state.segments.splice(i, 1);
-        ui.renderEditor();
-    },
+    updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
+    delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
     splitSeg(i) {
         const t = document.getElementById('main-audio').currentTime;
-        if (t > state.segments[i].start && t < state.segments[i].end) {
-            const old = state.segments[i];
-            const newSeg = {
-                start: t,
-                end: old.end,
-                text: ""
-            };
-            if (old.text2 !== undefined) newSeg.text2 = "";
-            if (old.text3 !== undefined) newSeg.text3 = "";
-            state.segments.splice(i + 1, 0, newSeg);
-            state.segments[i].end = t;
-            ui.renderEditor();
+        if (t>state.segments[i].start && t<state.segments[i].end) {
+            const old = state.segments[i], ns = {start:t,end:old.end,text:""};
+            if (old.text2!==undefined) ns.text2=""; if (old.text3!==undefined) ns.text3="";
+            state.segments.splice(i+1,0,ns); state.segments[i].end = t; ui.renderEditor();
         } else ui.toast("请在试听时暂停于拆分点");
     },
     mergeSeg(i) {
-        if (i < state.segments.length - 1) {
-            state.segments[i].end = state.segments[i + 1].end;
-            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i + 1].text || "")).trim();
-            if (state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i + 1].text2 || "");
-            if (state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i + 1].text3 || "");
-            state.segments.splice(i + 1, 1);
-            ui.renderEditor();
+        if (i < state.segments.length-1) {
+            state.segments[i].end = state.segments[i+1].end;
+            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
+            if (state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
+            if (state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
+            state.segments.splice(i+1,1); ui.renderEditor();
         }
     },
     addNewRow() {
-        const last = state.segments[state.segments.length - 1] || {
-            end: 0
-        };
-        const newObj = {
-            start: last.end,
-            end: last.end + 2,
-            text: ""
-        };
-        if (last.text2 !== undefined) newObj.text2 = "";
-        if (last.text3 !== undefined) newObj.text3 = "";
-        state.segments.push(newObj);
-        ui.renderEditor();
+        const last = state.segments[state.segments.length-1] || {end:0};
+        const n = {start:last.end, end:last.end+2, text:""};
+        if (last.text2!==undefined) n.text2=""; if (last.text3!==undefined) n.text3="";
+        state.segments.push(n); ui.renderEditor();
     },
     applyReAnalyze() {
         if (!state.audioBuffer) return ui.toast("需先成功加载音频数据");
-        const val = parseFloat(document.getElementById('threshold-range').value);
-        state.segments = detectSilence(state.audioBuffer, val);
-        ui.renderEditor();
-        ui.toast("重新分析完成");
+        state.segments = detectSilence(state.audioBuffer, parseFloat(document.getElementById('threshold-range').value));
+        ui.renderEditor(); ui.toast("重新分析完成");
     },
-    save() {
-        localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
-        localStorage.setItem(CONST.INDEX, state.currIndex);
-    },
+    save() { localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments)); localStorage.setItem(CONST.INDEX, state.currIndex); },
     restoreProgress() {
-        const d = localStorage.getItem(CONST.STORAGE);
-        const i = localStorage.getItem(CONST.INDEX);
-        if (d) {
-            state.segments = JSON.parse(d);
-            state.currIndex = parseInt(i) || 0;
-            ui.renderEditor();
-            document.getElementById('restore-bar').style.display = 'none';
-            ui.updateAudioStatus();
-            ui.toast("进度已恢复");
-        }
+        const d = localStorage.getItem(CONST.STORAGE), i = localStorage.getItem(CONST.INDEX);
+        if (d) { state.segments=JSON.parse(d); state.currIndex=parseInt(i)||0; ui.renderEditor(); document.getElementById('restore-bar').style.display='none'; ui.updateAudioStatus(); ui.toast("进度已恢复"); }
     },
     exportProject() {
-        const b = new Blob([JSON.stringify({
-            segments: state.segments,
-            idx: state.currIndex
-        })]);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b);
-        a.download = 'shadow.json';
-        a.click();
+        const b = new Blob([JSON.stringify({segments:state.segments,idx:state.currIndex})]);
+        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow.json'; a.click();
     },
     exportSRT(slot) {
         if (!state.segments.length) return ui.toast("无数据");
-        let key = 'text';
-        if (slot === 2) key = 'text2';
-        if (slot === 3) key = 'text3';
-        if (!state.segments.some(s => s[key])) return ui.toast(`字幕${slot}无内容`);
-        let c = "";
-        state.segments.forEach((s, i) => {
-            c += `${i + 1}\n${fmtTime(s.start, true)} --> ${fmtTime(s.end, true)}\n${s[key] || ''}\n\n`;
-        });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([c], {
-            type: 'text/plain'
-        }));
-        a.download = `sub_${slot}.srt`;
-        a.click();
+        const key = slot===2?'text2':slot===3?'text3':'text';
+        if (!state.segments.some(s=>s[key])) return ui.toast(`字幕${slot}无内容`);
+        let c = ""; state.segments.forEach((s,i) => { c+=`${i+1}\n${fmtTime(s.start,true)} --> ${fmtTime(s.end,true)}\n${s[key]||''}\n\n`; });
+        const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click();
     },
     loadProject(el) {
-        const f = el.files[0];
-        if (!f) return;
+        const f = el.files[0]; if (!f) return;
         const r = new FileReader();
-        r.onload = e => {
-            const d = JSON.parse(e.target.result);
-            state.segments = d.segments || d;
-            state.currIndex = d.idx || 0;
-            ui.renderEditor();
-            ui.updateAudioStatus();
-            ui.toast("工程加载成功");
-        };
+        r.onload = e => { const d=JSON.parse(e.target.result); state.segments=d.segments||d; state.currIndex=d.idx||0; ui.renderEditor(); ui.updateAudioStatus(); ui.toast("工程加载成功"); };
         r.readAsText(f);
     },
     importSub(el, k) {
-        const f = el.files[0];
-        if (!f) return;
+        const f = el.files[0]; if (!f) return;
         const r = new FileReader();
-        r.onload = e => {
-            const n = parseSRT(e.target.result);
-            if (k === 0) state.segments = n;
-            else app.mergeSub(n, k === 1 ? 'text2' : 'text3');
-            ui.renderEditor();
-        };
+        r.onload = e => { const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3'); ui.renderEditor(); };
         r.readAsText(f);
     }
 };
+
+// ============================================================
+//  RECORDER
+// ============================================================
 const recorder = {
-    rec: null,
-    chunks: [],
-    stream: null,
-    isRec: false,
+    rec: null, chunks: [], stream: null, isRec: false,
     async toggle() {
+        if (aiMode.active) { ui.toast('AI模式运行中，请先停止AI模式'); return; }
         const btn = document.getElementById('btn-record');
         if (!this.isRec) {
             engine.stopAll();
             try {
-                this.stream = await navigator.mediaDevices.getUserMedia({
-                    audio: true
-                });
-                this.rec = new MediaRecorder(this.stream);
-                this.chunks = [];
+                this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+                this.rec = new MediaRecorder(this.stream); this.chunks = [];
                 this.rec.ondataavailable = e => this.chunks.push(e.data);
-                this.rec.onstop = () => {
-                    if (this.stream) this.stream.getTracks().forEach(t => t.stop());
-                    if (!this.forceStop) this.playCmp();
-                };
-                this.rec.start();
-                this.isRec = true;
-                if(btn) {
-                    btn.classList.add('recording');
-                    btn.innerText = "■ 停止录音";
-                }
-            } catch (e) {
-                alert("无麦克风权限");
-            }
-        } else {
-            this.stop(false);
-        }
+                this.rec.onstop = () => { if(this.stream) this.stream.getTracks().forEach(t=>t.stop()); if(!this.forceStop) this.playCmp(); };
+                this.rec.start(); this.isRec = true;
+                if(btn) { btn.classList.add('recording'); btn.innerText="■ 停止录音"; }
+            } catch(e) { alert("无麦克风权限"); }
+        } else { this.stop(false); }
     },
     stop(force) {
-        if (this.isRec) {
-            this.forceStop = force;
-            this.rec.stop();
-            this.isRec = false;
-        }
+        if (this.isRec) { this.forceStop=force; this.rec.stop(); this.isRec=false; }
         const btn = document.getElementById('btn-record');
-        if(btn) {
-            btn.classList.remove('recording');
-            btn.innerText = "🎤 按下开始录音";
-        }
+        if(btn) { btn.classList.remove('recording'); btn.innerText="🎤 按下开始录音"; }
     },
     playCmp() {
-        const s = state.segments[state.currIndex];
-        const a = document.getElementById('main-audio');
-        const r = document.getElementById('record-audio');
-        const b = new Blob(this.chunks, {
-            type: 'audio/mp3'
-        });
-        r.src = URL.createObjectURL(b);
-        ui.toast("▶️ 原音");
-        a.currentTime = s.start;
-        a.play();
+        const s = state.segments[state.currIndex], a = document.getElementById('main-audio'), r = document.getElementById('record-audio');
+        const b = new Blob(this.chunks,{type:'audio/mp3'}); r.src=URL.createObjectURL(b);
+        ui.toast("▶️ 原音"); a.currentTime=s.start; a.play();
         const timer = setInterval(() => {
             if (a.currentTime >= s.end) {
-                a.pause();
-                clearInterval(timer);
+                a.pause(); clearInterval(timer);
                 setTimeout(() => {
-                    ui.toast("🎙️ 录音");
-                    r.currentTime = 0;
-                    r.play();
-                    r.onended = () => {
-                        const btn = document.getElementById('btn-record');
-                        if(btn) btn.classList.remove('playing');
-                        ui.toast("播放完毕");
-                    };
-                    const btn = document.getElementById('btn-record');
-                    if(btn) btn.classList.add('playing');
+                    ui.toast("🎙️ 录音"); r.currentTime=0; r.play();
+                    r.onended = () => { const btn=document.getElementById('btn-record'); if(btn) btn.classList.remove('playing'); ui.toast("播放完毕"); };
+                    const btn = document.getElementById('btn-record'); if(btn) btn.classList.add('playing');
                 }, 500);
             }
         }, 30);
     }
 };
+
+// ============================================================
+//  AI MODE  —— 智能跟读闭环引擎
+// ============================================================
+const aiMode = {
+    active: false,
+    failCount: 0,
+    maxFails: 3,
+    threshold: 80,
+    recognition: null,
+    audioCtx: null,
+    _cycleTimer: null,
+    _listenTimeout: null,
+
+    // ---------- 公开接口 ----------
+    toggle() {
+        if (this.active) this.stop();
+        else this.start();
+    },
+
+    updateThreshold(v) {
+        this.threshold = parseInt(v);
+        document.getElementById('ai-threshold-val').innerText = v + '%';
+        // Update slider fill CSS variable
+        const slider = document.getElementById('ai-threshold');
+        const pct = ((v - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.setProperty('--fill', pct + '%');
+    },
+
+    // ---------- 启动（含 iOS 解锁策略） ----------
+    async start() {
+        if (!state.segments.length) return ui.toast('请先加载内容');
+        if (!document.getElementById('main-audio').src) return ui.toast('音频未就绪');
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return ui.toast('❌ 浏览器不支持语音识别 (需iOS Safari 14.5+ 或 Chrome)');
+
+        // --- Step 1: 解锁 AudioContext（iOS 必须在用户手势内） ---
+        try {
+            if (!this.audioCtx) {
+                this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.audioCtx.state === 'suspended') {
+                await this.audioCtx.resume();
+            }
+            // 播放 1 帧静音，彻底激活 iOS 音频上下文
+            const silBuf = this.audioCtx.createBuffer(1, 1, 22050);
+            const silSrc = this.audioCtx.createBufferSource();
+            silSrc.buffer = silBuf;
+            silSrc.connect(this.audioCtx.destination);
+            silSrc.start(0);
+        } catch(e) { console.warn('AudioContext unlock warn:', e); }
+
+        // --- Step 2: 预授权麦克风（iOS 必须在用户手势内） ---
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop()); // 立即释放，仅为触发权限弹窗
+        } catch(e) {
+            ui.toast('❌ 麦克风权限被拒绝，无法开启AI模式');
+            return;
+        }
+
+        // --- Step 3: 停止其他引擎（不触发 aiMode.stop 的那种停法） ---
+        engine.mode = 'IDLE';
+        engine.isWaiting = false;
+        if (engine.waitTimer) clearTimeout(engine.waitTimer);
+        if (engine.reqId) cancelAnimationFrame(engine.reqId);
+        clearTimeout(engine.editorTimer);
+        document.getElementById('main-audio').pause();
+        document.getElementById('main-audio').loop = false;
+        recorder.stop(true);
+        ui.resetButtons();
+
+        // --- Step 4: 激活 AI 模式 ---
+        this.active = true;
+        this.failCount = 0;
+        this._setBtn('running');
+        document.getElementById('ai-mode-bar').classList.add('ai-running');
+        this.setStatus('🚀 启动中', '');
+
+        // 强制显示文字（AI模式下不应遮挡，便于对照）
+        state.userBlurState = false;
+        ui.updatePractice(state.currIndex);
+
+        // 开始第一个循环
+        setTimeout(() => this.runCycle(), 300);
+    },
+
+    // ---------- 停止 ----------
+    stop() {
+        this.active = false;
+        if (this._cycleTimer) { clearTimeout(this._cycleTimer); this._cycleTimer = null; }
+        if (this._listenTimeout) { clearTimeout(this._listenTimeout); this._listenTimeout = null; }
+        if (this.recognition) {
+            try { this.recognition.abort(); } catch(e) {}
+            this.recognition = null;
+        }
+        this._setBtn('idle');
+        document.getElementById('ai-mode-bar').classList.remove('ai-running');
+        this.setStatus('待机', '');
+    },
+
+    // ---------- 主循环 ----------
+    runCycle() {
+        if (!this.active) return;
+        const seg = state.segments[state.currIndex];
+        if (!seg) { this.stop(); return; }
+
+        state.currIndex = state.currIndex; // 触发 UI 同步
+        ui.updatePractice(state.currIndex);
+        this.setStatus('▶ 播放中', '');
+
+        const a = document.getElementById('main-audio');
+        a.currentTime = seg.start;
+        const playPromise = a.play();
+        const duration = Math.max(500, (seg.end - seg.start) * 1000) + 400;
+
+        this._cycleTimer = setTimeout(() => {
+            if (!this.active) return;
+            try { a.pause(); } catch(e) {}
+            this.startListening();
+        }, duration);
+    },
+
+    // ---------- 语音识别 ----------
+    startListening() {
+        if (!this.active) return;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.setStatus('👂 正在听...', 'listening');
+
+        const r = new SR();
+        r.lang = 'en-US';
+        r.continuous = false;
+        r.interimResults = false;
+        r.maxAlternatives = 3;
+        this.recognition = r;
+
+        let settled = false;
+        const settle = (fn) => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
+
+        r.onresult = (e) => {
+            settle(() => {
+                // 取所有候选项里最优匹配
+                const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+                const ref = this._normalize(state.segments[state.currIndex][key] || '');
+                let best = { sim: -1, t: '' };
+                for (let i = 0; i < e.results[0].length; i++) {
+                    const t = this._normalize(e.results[0][i].transcript);
+                    const s = this._similarity(ref, t);
+                    if (s > best.sim) best = { sim: s, t };
+                }
+                this.evaluate(best.sim * 100, best.t);
+            });
+        };
+
+        r.onerror = (e) => {
+            settle(() => {
+                console.warn('SR error:', e.error);
+                if (e.error === 'no-speech') this.setStatus('🔇 未检测到声音', 'fail');
+                else this.setStatus('⚠️ 识别出错', 'fail');
+                this._scheduleOnFail();
+            });
+        };
+
+        r.onend = () => {
+            settle(() => {
+                this.setStatus('🔇 无输入', 'fail');
+                this._scheduleOnFail();
+            });
+        };
+
+        // 8秒超时保险
+        this._listenTimeout = setTimeout(() => {
+            settle(() => {
+                try { r.abort(); } catch(e) {}
+                this.setStatus('⏱ 超时', 'fail');
+                this._scheduleOnFail();
+            });
+        }, 8000);
+
+        try { r.start(); } catch(e) {
+            settle(() => { this.setStatus('❌ 启动失败', 'fail'); this._scheduleOnFail(); });
+        }
+    },
+
+    // ---------- 评估 ----------
+    evaluate(simPct, transcript) {
+        const pass = simPct >= this.threshold;
+        const icon = pass ? '✅' : '❌';
+        this.setStatus(`${icon} ${simPct.toFixed(0)}%`, pass ? 'success' : 'fail');
+        console.log(`[AI] 识别: "${transcript}" | 相似度: ${simPct.toFixed(1)}% | 阈值: ${this.threshold}% | ${pass?'通过':'失败'}`);
+
+        if (pass) {
+            this.failCount = 0;
+            this.playBeep('success');
+            this._cycleTimer = setTimeout(() => {
+                if (!this.active) return;
+                if (state.currIndex < state.segments.length - 1) {
+                    state.currIndex++;
+                    this.runCycle();
+                } else {
+                    this.playBeep('complete');
+                    ui.toast('🎉 全部完成！AI模式结束');
+                    this.stop();
+                }
+            }, 900);
+        } else {
+            this._scheduleOnFail();
+        }
+    },
+
+    _scheduleOnFail() {
+        this.failCount++;
+        this.playBeep('fail');
+        if (this.failCount >= this.maxFails) {
+            this.failCount = 0;
+            this.setStatus('⏭ 连错3次，跳过', 'fail');
+            this.playBeep('skip');
+            this._cycleTimer = setTimeout(() => {
+                if (!this.active) return;
+                if (state.currIndex < state.segments.length - 1) state.currIndex++;
+                this.runCycle();
+            }, 1500);
+        } else {
+            this._cycleTimer = setTimeout(() => {
+                if (!this.active) return;
+                this.runCycle();
+            }, 900);
+        }
+    },
+
+    // ---------- 工具函数 ----------
+    _normalize(s) {
+        return s.toLowerCase()
+            .replace(/[^\w\s]/g, '')     // 移除标点
+            .replace(/\s+/g, ' ')        // 合并空格
+            .trim();
+    },
+
+    _similarity(a, b) {
+        if (!a && !b) return 1;
+        if (!a || !b) return 0;
+        const dist = this._levenshtein(a, b);
+        return 1 - dist / Math.max(a.length, b.length);
+    },
+
+    _levenshtein(a, b) {
+        const m = a.length, n = b.length;
+        // 优化：只保留2行滚动数组
+        let prev = Array.from({length: n+1}, (_,j) => j);
+        for (let i = 1; i <= m; i++) {
+            const curr = [i];
+            for (let j = 1; j <= n; j++) {
+                curr[j] = a[i-1] === b[j-1]
+                    ? prev[j-1]
+                    : 1 + Math.min(prev[j], curr[j-1], prev[j-1]);
+            }
+            prev = curr;
+        }
+        return prev[n];
+    },
+
+    // ---------- 音效（纯 AudioContext 合成） ----------
+    playBeep(type) {
+        try {
+            if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const ctx = this.audioCtx;
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            const now = ctx.currentTime;
+
+            if (type === 'success') {
+                // 清脆的"叮"声：880Hz → 1320Hz 双音
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.setValueAtTime(1320, now + 0.08);
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'fail') {
+                // 低沉的"嘟"声：220Hz 锯齿波
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                osc.start(now); osc.stop(now + 0.45);
+            } else if (type === 'skip') {
+                // 三连短音提示
+                for (let i = 0; i < 3; i++) {
+                    const o2 = ctx.createOscillator();
+                    const g2 = ctx.createGain();
+                    o2.connect(g2); g2.connect(ctx.destination);
+                    o2.type = 'triangle';
+                    o2.frequency.value = 440;
+                    const t = now + i * 0.15;
+                    g2.gain.setValueAtTime(0.25, t);
+                    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                    o2.start(t); o2.stop(t + 0.1);
+                }
+                osc.disconnect(); // 主osc不用了
+                return;
+            } else if (type === 'complete') {
+                // 胜利和弦：C5-E5-G5
+                [523, 659, 784].forEach((freq, i) => {
+                    const o2 = ctx.createOscillator();
+                    const g2 = ctx.createGain();
+                    o2.connect(g2); g2.connect(ctx.destination);
+                    o2.type = 'sine'; o2.frequency.value = freq;
+                    const t = now + i * 0.1;
+                    g2.gain.setValueAtTime(0.25, t);
+                    g2.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+                    o2.start(t); o2.stop(t + 0.6);
+                });
+                osc.disconnect();
+                return;
+            }
+        } catch(e) { console.warn('beep error:', e); }
+    },
+
+    setStatus(text, type) {
+        const pill = document.getElementById('ai-status-pill');
+        if (!pill) return;
+        pill.innerText = text;
+        pill.className = 'ai-status-pill' + (type ? ' ' + type : '');
+    },
+
+    _setBtn(mode) {
+        const btn = document.getElementById('btn-ai-mode');
+        if (!btn) return;
+        if (mode === 'running') {
+            btn.className = 'btn-ai-toggle running';
+            btn.innerText = '⏹ 停止AI';
+        } else {
+            btn.className = 'btn-ai-toggle idle';
+            btn.innerText = '🤖 AI模式';
+        }
+    }
+};
+
+// ============================================================
+//  事件绑定
+// ============================================================
 document.getElementById('project-file').addEventListener('change', e => app.loadProject(e.target));
 document.getElementById('audio-file').addEventListener('change', e => {
     const f = e.target.files[0];
-    if (f) {
-        document.getElementById('main-audio').src = URL.createObjectURL(f);
-        ui.updateAudioStatus();
-    }
+    if (f) { document.getElementById('main-audio').src = URL.createObjectURL(f); ui.updateAudioStatus(); }
+});
+// AI threshold 滑块同步 CSS fill
+document.getElementById('ai-threshold').addEventListener('input', function() {
+    const pct = ((this.value - this.min) / (this.max - this.min)) * 100;
+    this.style.setProperty('--fill', pct + '%');
 });
 
+// ============================================================
+//  工具函数
+// ============================================================
 function fmtTime(s, srt = false) {
-    const d = new Date(0);
-    d.setMilliseconds(s * 1000);
+    const d = new Date(0); d.setMilliseconds(s * 1000);
     const str = d.toISOString().substr(11, 12);
     return srt ? str.replace('.', ',') : str.substr(0, 8);
 }
 
-// 核心修复：完全使用 V50.3 的原生 SRT 解析逻辑，不进行任何额外的换行符清洗，
-// 确保与 V50.3 的行为 100% 一致。
+// 核心SRT解析（与V50.3行为100%一致）
 function parseSRT(t) {
     const r = [];
     const e = /(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s-->\s(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g;
     let m;
-    while (m = e.exec(t)) r.push({
-        start: pt(m[2]),
-        end: pt(m[3]),
-        text: m[4].trim()
-    });
+    while (m = e.exec(t)) r.push({ start: pt(m[2]), end: pt(m[3]), text: m[4].trim() });
     return r;
 }
 
@@ -1834,42 +1486,28 @@ function pt(s) {
 }
 
 function detectSilence(b, th) {
-    const d = b.getChannelData(0),
-        sr = b.sampleRate,
-        min = 0.4 * sr;
-    let res = [],
-        sp = false,
-        st = 0,
-        sil = 0;
+    const d = b.getChannelData(0), sr = b.sampleRate, min = 0.4 * sr;
+    let res = [], sp = false, st = 0, sil = 0;
     for (let i = 0; i < d.length; i += 200) {
         if (Math.abs(d[i]) > th) {
-            if (!sp) {
-                sp = true;
-                st = i;
-            }
+            if (!sp) { sp = true; st = i; }
             sil = 0;
         } else if (sp) {
             if (!sil) sil = i;
             if (i - sil > min) {
-                const s = st / sr,
-                    e = sil / sr;
-                if (e - s > 0.3) res.push({
-                    start: s,
-                    end: e,
-                    text: ""
-                });
-                sp = false;
-                sil = 0;
+                const s = st/sr, e = sil/sr;
+                if (e-s > 0.3) res.push({start:s, end:e, text:""});
+                sp = false; sil = 0;
             }
         }
     }
-    if (sp) res.push({
-        start: st / sr,
-        end: d.length / sr,
-        text: ""
-    });
+    if (sp) res.push({start:st/sr, end:d.length/sr, text:""});
     return res;
 }
+
+// ============================================================
+//  初始化
+// ============================================================
 ui.init();
 </script>
 </body>
