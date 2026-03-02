@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V68.0 (AI智能跟读·全新升级)</title>
+<title>影子跟读 Pro V69.0 (AI精准跟读·四项修复)</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -186,7 +186,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V68.0</div>
+    <div class="nav-title">🎧 影子跟读 V69.0</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -1056,15 +1056,17 @@ const aiMode = {
     active: false,
     failCount: 0,
     maxFails: 3,
-    threshold: 100,          // ← 默认100%
+    threshold: 100,
     recognition: null,
     audioCtx: null,
     _cycleTimer: null,
     _listenTimeout: null,
-    manualPracticeMode: false, // ← 是否在手动复习模式
-    failedSentences: [],       // ← 本轮识别失败的句子索引
-    reviewMode: false,         // ← 是否在复习失败句子模式
-    reviewQueue: [],           // ← 待复习句子队列
+    _playRafId: null,    // ← RAF精准时间轴监控
+    _warmSR: null,       // ← 预热SR对象，减少启动延迟
+    manualPracticeMode: false,
+    failedSentences: [],
+    reviewMode: false,
+    reviewQueue: [],
 
     // ──────────────────────────────────────
     //  公开接口：开关切换
@@ -1149,8 +1151,11 @@ const aiMode = {
         this.reviewMode = false;
         if (this._cycleTimer) { clearTimeout(this._cycleTimer); this._cycleTimer = null; }
         if (this._listenTimeout) { clearTimeout(this._listenTimeout); this._listenTimeout = null; }
+        if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
         if (this.recognition) { try { this.recognition.abort(); } catch(e) {} this.recognition = null; }
-        if (wasManual) engine.stopAll(); // 停止手动复习时的引擎
+        if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} this._warmSR = null; }
+        const a = document.getElementById('main-audio'); try { a.pause(); } catch(e) {}
+        if (wasManual) engine.stopAll();
         this._setBtn('idle');
         document.getElementById('ai-mode-bar').classList.remove('ai-running', 'ai-manual');
         document.getElementById('btn-ai-resume').style.display = 'none';
@@ -1164,7 +1169,6 @@ const aiMode = {
     runCycle() {
         if (!this.active) return;
 
-        // 复习模式：检查队列是否为空
         if (this.reviewMode && this.reviewQueue.length === 0) {
             this.active = false;
             this._setBtn('idle');
@@ -1177,7 +1181,7 @@ const aiMode = {
 
         const idx = this.reviewMode ? this.reviewQueue[0] : state.currIndex;
         state.currIndex = idx;
-        state.userBlurState = true; // AI模式下始终永隐
+        state.userBlurState = true;
         ui.updatePractice(idx);
         this.setStatus('▶ 播放中', '');
 
@@ -1185,15 +1189,50 @@ const aiMode = {
         if (!seg) { this.stop(); return; }
 
         const a = document.getElementById('main-audio');
-        a.currentTime = seg.start;
-        a.play();
-        const duration = Math.max(500, (seg.end - seg.start) * 1000) + 500;
 
-        this._cycleTimer = setTimeout(() => {
-            if (!this.active) return;
+        // ── 预热SR对象：在用户点击后的手势上下文内提前创建，降低mic启动延迟
+        this._preWarmSR();
+
+        a.currentTime = seg.start;
+        const playP = a.play();
+        if (playP) playP.catch(e => { console.error('AI play failed:', e); this.stop(); });
+
+        // ── RAF精准时间轴：严格在seg.end处停止，不依赖setTimeout漂移
+        this._startPlayWatcher(seg.end);
+    },
+
+    // ── RAF监控播放终点，精准在seg.end停止，立即触发识别
+    _startPlayWatcher(endTime) {
+        if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
+        const a = document.getElementById('main-audio');
+        const watch = () => {
+            if (!this.active) { this._playRafId = null; return; }
+            // 已经暂停（例如到达文件末尾）或超过终点
+            if (!a.paused && a.currentTime < endTime) {
+                this._playRafId = requestAnimationFrame(watch);
+                return;
+            }
+            // 精准停止
             try { a.pause(); } catch(e) {}
+            this._playRafId = null;
+            // 立即启动识别，SR已预热，mic延迟最小化
             this.startListening();
-        }, duration);
+        };
+        this._playRafId = requestAnimationFrame(watch);
+    },
+
+    // ── 预热SR：提前构建对象，减少.start()后的mic启动延迟
+    _preWarmSR() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) return;
+        try {
+            if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} }
+            this._warmSR = new SR();
+            this._warmSR.lang = 'en-US';
+            this._warmSR.continuous = false;
+            this._warmSR.interimResults = false;
+            this._warmSR.maxAlternatives = 3;
+        } catch(e) { this._warmSR = null; }
     },
 
     // ──────────────────────────────────────
@@ -1204,16 +1243,26 @@ const aiMode = {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.setStatus('👂 正在听...', 'listening');
 
-        const r = new SR();
-        r.lang = 'en-US'; r.continuous = false; r.interimResults = false; r.maxAlternatives = 3;
+        // ── 使用预热SR或新建，最小化mic启动延迟
+        const r = this._warmSR || new SR();
+        this._warmSR = null;
+        r.lang = 'en-US';
+        r.continuous = false;
+        r.interimResults = false;
+        r.maxAlternatives = 3;
         this.recognition = r;
+
+        // ── 动态超时：按句子词数计算，每词1.2s，最少12s，最多25s
+        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+        const refText = state.segments[state.currIndex][key] || '';
+        const wordCount = refText.trim().split(/\s+/).filter(Boolean).length;
+        const dynamicTimeout = Math.min(25000, Math.max(12000, wordCount * 1200));
 
         let settled = false;
         const settle = fn => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
 
         r.onresult = e => settle(() => {
-            const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
-            const ref = this._normalize(state.segments[state.currIndex][key] || '');
+            const ref = this._normalize(refText);
             let best = { sim: -1, t: '' };
             for (let i = 0; i < e.results[0].length; i++) {
                 const t = this._normalize(e.results[0][i].transcript);
@@ -1225,22 +1274,32 @@ const aiMode = {
 
         r.onerror = e => settle(() => {
             console.warn('SR error:', e.error);
-            this.setStatus('🔇 未听到', 'fail');
+            if (e.error === 'no-speech') {
+                this.setStatus('🔇 未听到', 'fail');
+            } else if (e.error === 'aborted') {
+                // 主动中止，不触发失败
+                return;
+            } else {
+                this.setStatus(`⚠️ ${e.error}`, 'fail');
+            }
             this._scheduleOnFail();
         });
 
         r.onend = () => settle(() => {
+            // onend 在 onresult 之后也会触发；settle 保证只处理一次
             this.setStatus('🔇 无输入', 'fail');
             this._scheduleOnFail();
         });
 
         this._listenTimeout = setTimeout(() => settle(() => {
             try { r.abort(); } catch(e) {}
-            this.setStatus('⏱ 超时', 'fail');
+            this.setStatus(`⏱ 超时(${(dynamicTimeout/1000).toFixed(0)}s)`, 'fail');
             this._scheduleOnFail();
-        }), 8000);
+        }), dynamicTimeout);
 
-        try { r.start(); } catch(e) { settle(() => { this.setStatus('❌ 启动失败', 'fail'); this._scheduleOnFail(); }); }
+        try { r.start(); } catch(e) {
+            settle(() => { this.setStatus('❌ 启动失败', 'fail'); this._scheduleOnFail(); });
+        }
     },
 
     // ──────────────────────────────────────
@@ -1291,15 +1350,12 @@ const aiMode = {
     // ──────────────────────────────────────
     _enterManualPractice() {
         this.manualPracticeMode = true;
-        // UI 变化：显示手动复习提示
         document.getElementById('ai-mode-bar').classList.remove('ai-running');
         document.getElementById('ai-mode-bar').classList.add('ai-manual');
         document.getElementById('btn-ai-resume').style.display = 'block';
         document.getElementById('text-container').classList.add('ai-manual');
         this.setStatus('👆 手动复习', 'manual');
-        // 允许显示文字帮助用户看清句子
-        state.userBlurState = false;
-        ui.updatePractice(state.currIndex);
+        // ← 不强制显示/隐藏字幕，由用户自己通过"👁 显示"按钮决定
         ui.toast('💡 可点"循环单句"/"播单句"练习，完成后点"继续AI →"');
     },
 
