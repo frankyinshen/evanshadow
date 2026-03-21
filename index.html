@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V70.1</title>
+<title>影子跟读 Pro V70.2</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -29,38 +30,38 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .icon-btn { font-size: 24px; cursor: pointer; padding: 5px; color: #5F6368; z-index: 2; user-select: none; }
 .header-right-group { display: flex; align-items: center; gap: 10px; z-index: 2; }
 .sleep-wrapper { position: relative; display: flex; align-items: center; }
-.sleep-display { font-size: 13px; color: var(--orange); font-weight: bold; margin-left: 4px; display: none; font-family: monospace; }
+.sleep-display { font-size: 13px; color: var(–orange); font-weight: bold; margin-left: 4px; display: none; font-family: monospace; }
 .sleep-popup { position: absolute; top: 100%; right: 0; background: #fff; border: 1px solid #eee; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; display: none; width: 180px; z-index: 100; margin-top: 5px; }
 .sleep-popup.show { display: block; }
-.text-toggle { font-size: 14px; font-weight: 600; color: var(--primary); cursor: pointer; padding: 5px; }
+.text-toggle { font-size: 14px; font-weight: 600; color: var(–primary); cursor: pointer; padding: 5px; }
 .jump-select-wrapper { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; width: 100%; text-align: center; pointer-events: none; }
 .jump-select { font-size: 15px; font-weight: 600; background: #F1F3F4; border: none; padding: 6px 20px; border-radius: 20px; outline: none; text-align: center; pointer-events: auto; }
 .sub-switcher { display: flex; gap: 6px; justify-content: center; margin-bottom: 5px; flex-shrink: 0; min-height: 28px; }
-.sub-btn { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border); background: #fff; cursor: pointer; color: #5F6368; transition: 0.2s; }
-.sub-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.sub-btn { font-size: 12px; padding: 4px 12px; border-radius: 12px; border: 1px solid var(–border); background: #fff; cursor: pointer; color: #5F6368; transition: 0.2s; }
+.sub-btn.active { background: var(–primary); color: white; border-color: var(–primary); }
 .practice-text-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; cursor: pointer; margin: 5px 0 10px 0; background: #FAFAFA; border-radius: 12px; border: 1px dashed #E0E0E0; overflow: hidden; min-height: 0; transition: border-color 0.3s; }
-.practice-text-container.ai-manual { border-color: var(--ai); border-style: solid; background: #E0F2F1; }
-.practice-text { width: 100%; padding: 10px 15px; line-height: 1.4; font-weight: 500; color: var(--text); text-align: center; font-size: 34px; white-space: pre-wrap; overflow-y: auto; max-height: 100%; }
+.practice-text-container.ai-manual { border-color: var(–ai); border-style: solid; background: #E0F2F1; }
+.practice-text { width: 100%; padding: 10px 15px; line-height: 1.4; font-weight: 500; color: var(–text); text-align: center; font-size: 34px; white-space: pre-wrap; overflow-y: auto; max-height: 100%; }
 .practice-text.blur { filter: blur(10px); opacity: 0.3; overflow: hidden; }
 .click-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #999; background: rgba(255,255,255,0.8); padding: 2px 8px; border-radius: 10px; pointer-events: none; opacity: 0; transition: opacity 0.5s ease; }
 .click-hint.show { opacity: 1; }
 .control-area { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 8px; border-top: 1px solid #f5f5f5; }
 .row-mixed { display: grid; grid-template-columns: 2fr 3fr; gap: 8px; height: 44px; }
-.btn-full-play { width: 100%; height: 100%; background: var(--purple); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 4px; white-space: nowrap; }
+.btn-full-play { width: 100%; height: 100%; background: var(–purple); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 4px; white-space: nowrap; }
 .btn-full-play.active { background: #7C28C7; animation: pulse 2s infinite; }
 .range-panel { width: 100%; height: 100%; background: #FEF7E0; border: 1px solid #FFE0B2; border-radius: 10px; display: flex; align-items: center; justify-content: space-evenly; padding: 0 5px; }
 .range-label { font-size: 12px; color: #E37400; font-weight: bold; margin-right: 2px; }
 .range-input { width: 32px; text-align: center; border: 1px solid #FFCC80; border-radius: 4px; padding: 2px 0; font-weight: bold; background: #fff; font-size: 13px; box-sizing: border-box; }
-.btn-range-play { background: var(--orange); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+.btn-range-play { background: var(–orange); color: white; border: none; padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap; }
 .btn-range-play.active { background: #E37400; animation: pulse 2s infinite; }
 .btn-action { border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.btn-blue { background: #E8F0FE; color: var(--primary); }
-.btn-blue.active { background: var(--primary); color: white; }
+.btn-blue { background: #E8F0FE; color: var(–primary); }
+.btn-blue.active { background: var(–primary); color: white; }
 .btn-orange { background: #FFF3E0; color: #E37400; border: 1px solid #FFE0B2; }
-.btn-orange.active { background: var(--orange); color: white; border-color: var(--orange); }
+.btn-orange.active { background: var(–orange); color: white; border-color: var(–orange); }
 .btn-record { width: 100%; height: 54px; border-radius: 27px; border: 2px solid #EEE; background: #fff; font-size: 16px; font-weight: 700; color: #5F6368; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-.btn-record.recording { background: #FCE8E6; border-color: var(--red); color: var(--red); animation: pulse 1s infinite; }
-.btn-record.playing { background: #E6F4EA; border-color: var(--green); color: var(--green); }
+.btn-record.recording { background: #FCE8E6; border-color: var(–red); color: var(–red); animation: pulse 1s infinite; }
+.btn-record.playing { background: #E6F4EA; border-color: var(–green); color: var(–green); }
 .btn-nav { background: #F1F3F4; color: #3C4043; }
 
 .control-grid { display: grid; grid-template-columns: 1fr 1.2fr; grid-template-rows: repeat(6, 17px); gap: 10px; margin-top: 5px; }
@@ -71,30 +72,30 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .btn-next-grid { grid-row: 4 / 7; grid-column: 2; width: 100%; height: 100%; font-size: 18px; font-weight: 700; background: #FFF; border: 1px solid #E0E0E0; }
 
 .ai-mode-bar { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 6px 10px; background: #E0F2F1; border-radius: 10px; border: 1px solid #B2DFDB; margin-bottom: 6px; transition: background 0.3s; }
-.ai-mode-bar.ai-running { background: linear-gradient(90deg, #E0F2F1, #F1F8E9, #E0F2F1); background-size: 200% 100%; animation: ai-shimmer 2.5s infinite; border-color: var(--ai); }
-.ai-mode-bar.ai-manual { background: #FFF3E0; border-color: var(--orange); animation: none; }
+.ai-mode-bar.ai-running { background: linear-gradient(90deg, #E0F2F1, #F1F8E9, #E0F2F1); background-size: 200% 100%; animation: ai-shimmer 2.5s infinite; border-color: var(–ai); }
+.ai-mode-bar.ai-manual { background: #FFF3E0; border-color: var(–orange); animation: none; }
 @keyframes ai-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-.btn-ai-toggle { background: var(--ai); color: white; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; flex-shrink: 0; }
-.btn-ai-toggle.idle { background: #fff; color: var(--ai); border: 1.5px solid var(--ai); }
-.btn-ai-toggle.running { background: var(--ai); color: white; animation: pulse 1.5s infinite; }
-.btn-ai-toggle.paused { background: var(--orange); color: white; }
+.btn-ai-toggle { background: var(–ai); color: white; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; flex-shrink: 0; }
+.btn-ai-toggle.idle { background: #fff; color: var(–ai); border: 1.5px solid var(–ai); }
+.btn-ai-toggle.running { background: var(–ai); color: white; animation: pulse 1.5s infinite; }
+.btn-ai-toggle.paused { background: var(–orange); color: white; }
 .ai-threshold-group { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
 .ai-threshold-group label { font-size: 11px; color: #00695C; font-weight: 600; white-space: nowrap; }
-.ai-threshold-group input[type=range] { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: linear-gradient(to right, var(--ai) 0%, var(--ai) var(--fill, 100%), #B2DFDB var(--fill, 100%), #B2DFDB 100%); border-radius: 2px; outline: none; min-width: 0; }
-.ai-threshold-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--ai); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-#ai-threshold-val { font-size: 12px; font-weight: 700; color: var(--ai); min-width: 34px; text-align: right; font-family: monospace; }
-.btn-ai-resume { background: var(--orange); color: white; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; animation: pulse 1s infinite; display: none; }
+.ai-threshold-group input[type=range] { flex: 1; height: 4px; -webkit-appearance: none; appearance: none; background: linear-gradient(to right, var(–ai) 0%, var(–ai) var(–fill, 100%), #B2DFDB var(–fill, 100%), #B2DFDB 100%); border-radius: 2px; outline: none; min-width: 0; }
+.ai-threshold-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(–ai); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+#ai-threshold-val { font-size: 12px; font-weight: 700; color: var(–ai); min-width: 34px; text-align: right; font-family: monospace; }
+.btn-ai-resume { background: var(–orange); color: white; border: none; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; animation: pulse 1s infinite; display: none; }
 .ai-status-pill { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 10px; background: rgba(255,255,255,0.7); color: #00695C; min-width: 66px; text-align: center; white-space: nowrap; flex-shrink: 0; transition: background 0.3s, color 0.3s; }
 .ai-status-pill.success { background: #E6F4EA; color: #137333; }
 .ai-status-pill.fail { background: #FCE8E6; color: #C5221F; }
-.ai-status-pill.listening { background: #E8F0FE; color: var(--primary); animation: pulse 1s infinite; }
+.ai-status-pill.listening { background: #E8F0FE; color: var(–primary); animation: pulse 1s infinite; }
 .ai-status-pill.manual { background: #FFF3E0; color: #E37400; animation: pulse 1.5s infinite; }
 
 /* 速率按钮 */
 .speed-bar { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
 .speed-label { font-size: 11px; color: #5F6368; font-weight: 600; margin-right: 2px; }
-.btn-speed { border: 1px solid var(--border); background: #fff; color: #5F6368; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-.btn-speed.active { background: var(--primary); color: white; border-color: var(--primary); }
+.btn-speed { border: 1px solid var(–border); background: #fff; color: #5F6368; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+.btn-speed.active { background: var(–primary); color: white; border-color: var(–primary); }
 
 #ai-round-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); z-index: 2000; display: none; justify-content: center; align-items: center; }
 .ai-round-card { background: #fff; border-radius: 20px; padding: 28px 22px 22px; max-width: 320px; width: 90%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.25); animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1); }
@@ -103,12 +104,12 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .round-title { font-size: 20px; font-weight: 700; color: #202124; margin: 0 0 8px; }
 .round-stats { font-size: 13px; color: #5F6368; margin-bottom: 6px; }
 .round-accuracy-bar { height: 6px; background: #E0E0E0; border-radius: 3px; margin: 10px 0; overflow: hidden; }
-.round-accuracy-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--green), #00E676); transition: width 0.8s ease; }
-.round-msg { font-size: 15px; font-weight: 600; color: var(--primary); margin: 0 0 20px; line-height: 1.5; }
+.round-accuracy-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(–green), #00E676); transition: width 0.8s ease; }
+.round-msg { font-size: 15px; font-weight: 600; color: var(–primary); margin: 0 0 20px; line-height: 1.5; }
 .round-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: 0.2s; }
 .round-btn:last-child { margin-bottom: 0; }
-.round-btn-review { background: var(--ai); color: white; }
-.round-btn-review:active { background: var(--ai-dark); }
+.round-btn-review { background: var(–ai); color: white; }
+.round-btn-review:active { background: var(–ai-dark); }
 .round-btn-done { background: #F1F3F4; color: #3C4043; }
 
 /* 编辑页 */
@@ -122,7 +123,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .sub-line { width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 4px; font-size: 15px; resize: vertical; min-height: 40px; }
 .sub-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
 .action-btn { width: 100%; padding: 10px 0; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.btn-play-sm { background: #E8F0FE; color: var(--primary); }
+.btn-play-sm { background: #E8F0FE; color: var(–primary); }
 .btn-split { background: #FEF7E0; color: #E37400; }
 .btn-merge { background: #E6F4EA; color: #137333; }
 .btn-del { background: #FCE8E6; color: #C5221F; }
@@ -131,24 +132,24 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .audio-status.ok { background: #E6F4EA; color: #137333; }
 .input-tabs { display: flex; gap: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
 .tab-btn { padding: 8px 12px; font-size: 14px; color: #5F6368; cursor: pointer; border-radius: 6px; font-weight: 500; }
-.tab-btn.active { background: #E8F0FE; color: var(--primary); }
+.tab-btn.active { background: #E8F0FE; color: var(–primary); }
 .input-group { display: none; }
 .input-group.active { display: block; }
 .url-block { margin-bottom: 15px; }
 .url-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; display: block; }
 .url-input { width: 100%; padding: 12px; border: 1px solid #DADCE0; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s; }
-.url-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
-.history-select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(--border); border-radius: 8px; background: #fff; font-size: 14px; }
-.btn-load-url { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
+.url-input:focus { border-color: var(–primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+.history-select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid var(–border); border-radius: 8px; background: #fff; font-size: 14px; }
+.btn-load-url { width: 100%; background: var(–primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s; }
 .btn-load-url:disabled { background: #ccc; cursor: not-allowed; }
 .loading-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite; display: none; }
 .file-box { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
 .btn-file { flex: 1; min-width: 100px; background: #F1F3F4; padding: 12px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
 .btn-file input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
-.btn-file.primary { background: #E8F0FE; color: var(--primary); }
+.btn-file.primary { background: #E8F0FE; color: var(–primary); }
 .btn-file.green { background: #E6F4EA; color: #137333; }
 .slider-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-top: 15px; }
-.btn-mini { padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
+.btn-mini { padding: 6px 12px; background: var(–primary); color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; }
 .drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; display: none; }
 .drawer-overlay.open { display: block; }
 .drawer-content { width: 80%; max-width: 300px; height: 100%; background: #fff; padding: 24px; position: absolute; left: 0; top: 0; transform: translateX(-100%); transition: 0.3s; z-index: 501; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
@@ -170,13 +171,14 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.75; } 100% { opacity: 1; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+
 </head>
 <body>
 <div id="restore-bar" class="restore-bar" onclick="app.restoreProgress()">
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.1</div>
+    <div class="nav-title">🎧 影子跟读 V70.2</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -246,102 +248,106 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
         </div>
     </div>
 
-    <!-- 练习页 -->
-    <div id="practice-view">
-        <div class="practice-card">
-            <div id="drawer-overlay" class="drawer-overlay" onclick="ui.toggleDrawer()">
-                <div class="drawer-content" onclick="event.stopPropagation()">
-                    <h3>⚙️ 菜单</h3>
-                    <button class="btn-file" onclick="app.exportProject()">💾 备份工程</button>
-                    <button class="btn-file" onclick="app.exportSRT(1)">↓ 导出字幕 1</button>
-                    <button class="btn-file" style="margin-top:10px" onclick="ui.toggleDrawer()">关闭</button>
+```
+<!-- 练习页 -->
+<div id="practice-view">
+    <div class="practice-card">
+        <div id="drawer-overlay" class="drawer-overlay" onclick="ui.toggleDrawer()">
+            <div class="drawer-content" onclick="event.stopPropagation()">
+                <h3>⚙️ 菜单</h3>
+                <button class="btn-file" onclick="app.exportProject()">💾 备份工程</button>
+                <button class="btn-file" onclick="app.exportSRT(1)">↓ 导出字幕 1</button>
+                <button class="btn-file" style="margin-top:10px" onclick="ui.toggleDrawer()">关闭</button>
+            </div>
+        </div>
+
+        <div class="practice-header">
+            <div style="display:flex;align-items:center;">
+                <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
+                <div style="display:flex;gap:5px;margin-left:5px;z-index:10;">
+                    <button id="btn-perm-show" style="border:1px solid #ddd;background:#fff;color:#5f6368;border-radius:4px;font-size:11px;padding:2px 6px;cursor:pointer;font-weight:bold;transition:0.2s;" onclick="app.setPermShow()">永显</button>
+                    <button id="btn-perm-hide" style="border:1px solid #ddd;background:#fff;color:#5f6368;border-radius:4px;font-size:11px;padding:2px 6px;cursor:pointer;font-weight:bold;transition:0.2s;" onclick="app.setPermHide()">永隐</button>
                 </div>
             </div>
-
-            <div class="practice-header">
-                <div style="display:flex;align-items:center;">
-                    <div class="icon-btn" onclick="ui.toggleDrawer()">☰</div>
-                    <div style="display:flex;gap:5px;margin-left:5px;z-index:10;">
-                        <button id="btn-perm-show" style="border:1px solid #ddd;background:#fff;color:#5f6368;border-radius:4px;font-size:11px;padding:2px 6px;cursor:pointer;font-weight:bold;transition:0.2s;" onclick="app.setPermShow()">永显</button>
-                        <button id="btn-perm-hide" style="border:1px solid #ddd;background:#fff;color:#5f6368;border-radius:4px;font-size:11px;padding:2px 6px;cursor:pointer;font-weight:bold;transition:0.2s;" onclick="app.setPermHide()">永隐</button>
-                    </div>
-                </div>
-                <div class="jump-select-wrapper">
-                    <select id="jump-select" class="jump-select" onchange="app.jumpTo(this.value)"><option>1</option></select>
-                </div>
-                <div class="header-right-group">
-                    <div class="sleep-wrapper">
-                        <div class="icon-btn" onclick="ui.toggleSleepModal()">⏰</div>
-                        <div id="sleep-display" class="sleep-display"></div>
-                        <div id="sleep-popup" class="sleep-popup">
-                            <div style="font-size:12px;color:#666;margin-bottom:5px;">定时关闭(分钟)</div>
-                            <div style="display:flex;gap:5px;">
-                                <input type="number" id="sleep-input" value="30" min="1" max="100" style="width:60px;padding:4px;border:1px solid #ddd;border-radius:4px;">
-                                <button class="btn-mini" onclick="app.startSleepTimer()">开始</button>
-                            </div>
+            <div class="jump-select-wrapper">
+                <select id="jump-select" class="jump-select" onchange="app.jumpTo(this.value)"><option>1</option></select>
+            </div>
+            <div class="header-right-group">
+                <div class="sleep-wrapper">
+                    <div class="icon-btn" onclick="ui.toggleSleepModal()">⏰</div>
+                    <div id="sleep-display" class="sleep-display"></div>
+                    <div id="sleep-popup" class="sleep-popup">
+                        <div style="font-size:12px;color:#666;margin-bottom:5px;">定时关闭(分钟)</div>
+                        <div style="display:flex;gap:5px;">
+                            <input type="number" id="sleep-input" value="30" min="1" max="100" style="width:60px;padding:4px;border:1px solid #ddd;border-radius:4px;">
+                            <button class="btn-mini" onclick="app.startSleepTimer()">开始</button>
                         </div>
                     </div>
-                    <div id="text-toggle-btn" class="text-toggle" onclick="ui.toggleTextBlur()">👁 显示</div>
+                </div>
+                <div id="text-toggle-btn" class="text-toggle" onclick="ui.toggleTextBlur()">👁 显示</div>
+            </div>
+        </div>
+
+        <div class="sub-switcher">
+            <button class="sub-btn active" onclick="ui.switchSubTab(0)">字幕1</button>
+            <button class="sub-btn" onclick="ui.switchSubTab(1)">字幕2</button>
+            <button class="sub-btn" onclick="ui.switchSubTab(2)">字幕3</button>
+        </div>
+
+        <div class="practice-text-container" id="text-container" onclick="ui.toggleTextBlur()">
+            <div id="practice-text-display" class="practice-text blur">(请加载内容)</div>
+            <div id="click-hint" class="click-hint">👈 点击切换显隐</div>
+        </div>
+
+        <div class="control-area">
+            <!-- AI 模式条 -->
+            <div class="ai-mode-bar" id="ai-mode-bar">
+                <button class="btn-ai-toggle idle" id="btn-ai-mode" onclick="aiMode.toggle()">🤖 AI模式</button>
+                <div class="ai-threshold-group">
+                    <label for="ai-threshold">精度</label>
+                    <input type="range" id="ai-threshold" min="50" max="100" value="100" oninput="aiMode.updateThreshold(this.value)">
+                    <span id="ai-threshold-val">100%</span>
+                </div>
+                <button class="btn-ai-resume" id="btn-ai-resume" onclick="aiMode.resumeFromManual()">继续AI →</button>
+                <span class="ai-status-pill" id="ai-status-pill">待机</span>
+            </div>
+
+            <!-- [新增 Fix B] 播放速率条 -->
+            <div class="speed-bar">
+                <span class="speed-label">速率:</span>
+                <button class="btn-speed" onclick="ui.setSpeed(0.75)" data-speed="0.75">0.75×</button>
+                <button class="btn-speed active" onclick="ui.setSpeed(1.0)" data-speed="1.0">1.0×</button>
+                <button class="btn-speed" onclick="ui.setSpeed(1.25)" data-speed="1.25">1.25×</button>
+                <button class="btn-speed" onclick="ui.setSpeed(1.5)" data-speed="1.5">1.5×</button>
+            </div>
+
+            <div class="row-mixed">
+                <button class="btn-full-play" id="btn-full-play" onclick="engine.toggleFullPlay()">🎧 全文磨耳朵</button>
+                <div class="range-panel">
+                    <span class="range-label">页码:</span>
+                    <input type="number" id="loop-start" class="range-input" value="1">
+                    <span>-</span>
+                    <input type="number" id="loop-end" class="range-input" value="10">
+                    <button class="btn-range-play" id="btn-range-play" onclick="engine.toggleRangeLoop()">循环</button>
                 </div>
             </div>
 
-            <div class="sub-switcher">
-                <button class="sub-btn active" onclick="ui.switchSubTab(0)">字幕1</button>
-                <button class="sub-btn" onclick="ui.switchSubTab(1)">字幕2</button>
-                <button class="sub-btn" onclick="ui.switchSubTab(2)">字幕3</button>
-            </div>
-
-            <div class="practice-text-container" id="text-container" onclick="ui.toggleTextBlur()">
-                <div id="practice-text-display" class="practice-text blur">(请加载内容)</div>
-                <div id="click-hint" class="click-hint">👈 点击切换显隐</div>
-            </div>
-
-            <div class="control-area">
-                <!-- AI 模式条 -->
-                <div class="ai-mode-bar" id="ai-mode-bar">
-                    <button class="btn-ai-toggle idle" id="btn-ai-mode" onclick="aiMode.toggle()">🤖 AI模式</button>
-                    <div class="ai-threshold-group">
-                        <label for="ai-threshold">精度</label>
-                        <input type="range" id="ai-threshold" min="50" max="100" value="100" oninput="aiMode.updateThreshold(this.value)">
-                        <span id="ai-threshold-val">100%</span>
-                    </div>
-                    <button class="btn-ai-resume" id="btn-ai-resume" onclick="aiMode.resumeFromManual()">继续AI →</button>
-                    <span class="ai-status-pill" id="ai-status-pill">待机</span>
-                </div>
-
-                <!-- [新增 Fix B] 播放速率条 -->
-                <div class="speed-bar">
-                    <span class="speed-label">速率:</span>
-                    <button class="btn-speed" onclick="ui.setSpeed(0.75)" data-speed="0.75">0.75×</button>
-                    <button class="btn-speed active" onclick="ui.setSpeed(1.0)" data-speed="1.0">1.0×</button>
-                    <button class="btn-speed" onclick="ui.setSpeed(1.25)" data-speed="1.25">1.25×</button>
-                    <button class="btn-speed" onclick="ui.setSpeed(1.5)" data-speed="1.5">1.5×</button>
-                </div>
-
-                <div class="row-mixed">
-                    <button class="btn-full-play" id="btn-full-play" onclick="engine.toggleFullPlay()">🎧 全文磨耳朵</button>
-                    <div class="range-panel">
-                        <span class="range-label">页码:</span>
-                        <input type="number" id="loop-start" class="range-input" value="1">
-                        <span>-</span>
-                        <input type="number" id="loop-end" class="range-input" value="10">
-                        <button class="btn-range-play" id="btn-range-play" onclick="engine.toggleRangeLoop()">循环</button>
-                    </div>
-                </div>
-
-                <div class="control-grid">
-                    <button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
-                    <button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
-                    <button class="btn-action btn-nav btn-prev-grid" onclick="app.prev()">← 上一句</button>
-                    <button class="btn-action btn-nav btn-next-grid" onclick="app.next()">下一句 →</button>
-                    <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
-                </div>
+            <div class="control-grid">
+                <button class="btn-action btn-orange" id="btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
+                <button class="btn-action btn-blue" id="btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
+                <button class="btn-action btn-nav btn-prev-grid" onclick="app.prev()">← 上一句</button>
+                <button class="btn-action btn-nav btn-next-grid" onclick="app.next()">下一句 →</button>
+                <button class="btn-record" id="btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
             </div>
         </div>
     </div>
 </div>
+```
+
+</div>
 
 <!-- AI 轮次完成弹窗 -->
+
 <div id="ai-round-modal" onclick="aiMode.closeRoundModal()">
     <div class="ai-round-card" onclick="event.stopPropagation()">
         <span class="round-emoji" id="round-emoji">🎉</span>
@@ -355,6 +361,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 </div>
 
 <!-- SERVER BROWSER MODAL -->
+
 <div id="server-browser-modal" onclick="serverBrowser.close()">
     <div id="server-browser-content" onclick="event.stopPropagation()">
         <div id="server-browser-header">
@@ -389,7 +396,10 @@ const state = {
     userBlurState: true,
     hasShownHint: false,
     permBlurMode: 'none',
-    playbackRate: 1.0   // [Fix B] 全局速率状态
+    playbackRate: 1.0,
+    // [Fix 1] 追踪 ObjectURL，切换时释放旧的防内存泄漏
+    _audioObjectUrl: null,
+    _recordObjectUrl: null
 };
 
 // ============================================================
@@ -721,958 +731,1041 @@ const ui = {
             d.innerHTML = `
                 <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
                 ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>`:''}
-                ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>`:''}
-                ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>`:''}
-                <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂️ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🖇️ 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">❌ 删除</button></div>
-            `;
-            l.appendChild(d);
-        });
-        document.getElementById('loop-start').max = state.segments.length;
-        document.getElementById('loop-end').max = state.segments.length;
-        document.getElementById('loop-end').value = state.segments.length;
-        const sel = document.getElementById('jump-select'); sel.innerHTML = '';
-        state.segments.forEach((_,i) => { const o = document.createElement('option'); o.value = i; o.text = `第 ${i+1} 句`; sel.appendChild(o); });
-        app.save();
-    },
-    updatePractice(idx) {
-        if (!state.segments[idx]) return;
-        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
-        const txt = document.getElementById('practice-text-display');
-        const content = state.segments[idx][key] || "(无内容)";
-        txt.innerText = content;
-        this.fitText(txt);
-        const toggleBtn = document.getElementById('text-toggle-btn');
-        if (state.userBlurState) { txt.classList.add("blur"); toggleBtn.innerText = "👁 显示"; }
-        else { txt.classList.remove("blur"); toggleBtn.innerText = "🙈 隐藏"; }
-        txt.className = content === "(无内容)" ? "practice-text empty" : "practice-text";
-        if (state.userBlurState) txt.classList.add('blur');
-        document.getElementById('jump-select').value = idx;
-        if (!state.hasShownHint) {
-            const hint = document.getElementById('click-hint'); hint.classList.add('show');
-            setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
-        }
-    },
-    updatePermButtons() {
-        const bs = document.getElementById('btn-perm-show'), bh = document.getElementById('btn-perm-hide');
-        if (bs && bh) {
-            bs.style.background = state.permBlurMode==='show' ? 'var(--primary)' : '#fff';
-            bs.style.color = state.permBlurMode==='show' ? 'white' : '#5f6368';
-            bs.style.borderColor = state.permBlurMode==='show' ? 'var(--primary)' : '#ddd';
-            bh.style.background = state.permBlurMode==='hide' ? 'var(--primary)' : '#fff';
-            bh.style.color = state.permBlurMode==='hide' ? 'white' : '#5f6368';
-            bh.style.borderColor = state.permBlurMode==='hide' ? 'var(--primary)' : '#ddd';
-        }
-    },
-    fitText(el) {
-        let size = 34; el.style.fontSize = size + 'px';
-        while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
-    },
-    toggleTextBlur() {
-        state.permBlurMode = 'none';
-        state.userBlurState = !state.userBlurState;
-        this.updatePermButtons(); this.updatePractice(state.currIndex);
+
+```
+            ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>`:''}
+            ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>`:''}
+            <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂️ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🖇️ 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">❌ 删除</button></div>
+        `;
+        l.appendChild(d);
+    });
+    document.getElementById('loop-start').max = state.segments.length;
+    document.getElementById('loop-end').max = state.segments.length;
+    document.getElementById('loop-end').value = state.segments.length;
+    const sel = document.getElementById('jump-select'); sel.innerHTML = '';
+    state.segments.forEach((_,i) => { const o = document.createElement('option'); o.value = i; o.text = `第 ${i+1} 句`; sel.appendChild(o); });
+    app.save();
+},
+updatePractice(idx) {
+    if (!state.segments[idx]) return;
+    const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+    const txt = document.getElementById('practice-text-display');
+    const content = state.segments[idx][key] || "(无内容)";
+    txt.innerText = content;
+    this.fitText(txt);
+    const toggleBtn = document.getElementById('text-toggle-btn');
+    if (state.userBlurState) { txt.classList.add("blur"); toggleBtn.innerText = "👁 显示"; }
+    else { txt.classList.remove("blur"); toggleBtn.innerText = "🙈 隐藏"; }
+    txt.className = content === "(无内容)" ? "practice-text empty" : "practice-text";
+    if (state.userBlurState) txt.classList.add('blur');
+    document.getElementById('jump-select').value = idx;
+    if (!state.hasShownHint) {
         const hint = document.getElementById('click-hint'); hint.classList.add('show');
-        setTimeout(() => hint.classList.remove('show'), 3000);
-    },
-    switchSubTab(i) {
-        state.activeSub = i;
-        document.querySelectorAll('.sub-btn').forEach((b,k) => b.classList.toggle('active', k===i));
-        this.updatePractice(state.currIndex);
-    },
-    toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
-    toggleSleepModal() { document.getElementById('sleep-popup').classList.toggle('show'); },
-    // [Fix B] 设置播放速率
-    setSpeed(rate) {
-        state.playbackRate = rate;
-        document.querySelectorAll('.btn-speed').forEach(b => {
-            b.classList.toggle('active', parseFloat(b.dataset.speed) === rate);
-        });
-        const a = document.getElementById('main-audio');
-        a.playbackRate = rate;
-        ui.toast(`播放速率: ${rate}×`);
+        setTimeout(() => { hint.classList.remove('show'); state.hasShownHint = true; }, 3000);
     }
+},
+updatePermButtons() {
+    const bs = document.getElementById('btn-perm-show'), bh = document.getElementById('btn-perm-hide');
+    if (bs && bh) {
+        bs.style.background = state.permBlurMode==='show' ? 'var(--primary)' : '#fff';
+        bs.style.color = state.permBlurMode==='show' ? 'white' : '#5f6368';
+        bs.style.borderColor = state.permBlurMode==='show' ? 'var(--primary)' : '#ddd';
+        bh.style.background = state.permBlurMode==='hide' ? 'var(--primary)' : '#fff';
+        bh.style.color = state.permBlurMode==='hide' ? 'white' : '#5f6368';
+        bh.style.borderColor = state.permBlurMode==='hide' ? 'var(--primary)' : '#ddd';
+    }
+},
+fitText(el) {
+    let size = 34; el.style.fontSize = size + 'px';
+    while (el.scrollHeight > el.parentElement.clientHeight && size > 16) { size--; el.style.fontSize = size + 'px'; }
+},
+toggleTextBlur() {
+    state.permBlurMode = 'none';
+    state.userBlurState = !state.userBlurState;
+    this.updatePermButtons(); this.updatePractice(state.currIndex);
+    const hint = document.getElementById('click-hint'); hint.classList.add('show');
+    setTimeout(() => hint.classList.remove('show'), 3000);
+},
+switchSubTab(i) {
+    state.activeSub = i;
+    document.querySelectorAll('.sub-btn').forEach((b,k) => b.classList.toggle('active', k===i));
+    this.updatePractice(state.currIndex);
+},
+toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
+toggleSleepModal() { document.getElementById('sleep-popup').classList.toggle('show'); },
+// [Fix B] 设置播放速率
+setSpeed(rate) {
+    state.playbackRate = rate;
+    document.querySelectorAll('.btn-speed').forEach(b => {
+        b.classList.toggle('active', parseFloat(b.dataset.speed) === rate);
+    });
+    const a = document.getElementById('main-audio');
+    a.playbackRate = rate;
+    ui.toast(`播放速率: ${rate}×`);
+}
+```
+
 };
 
 // ============================================================
 //  APP
 // ============================================================
 const app = {
-    setPermShow() { state.permBlurMode = 'show'; state.userBlurState = false; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
-    setPermHide() { state.permBlurMode = 'hide'; state.userBlurState = true; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
-    clearInputs() { ['url-audio','url-srt-1','url-srt-2','url-srt-3'].forEach(id => document.getElementById(id).value = ''); },
-    handleSmartPaste(e) {
-        const text = (e.clipboardData || window.clipboardData).getData('text');
-        if (!text || (!text.match(/https?:\/\//) && !text.toLowerCase().includes('.mp3'))) return;
-        e.preventDefault(); this.clearInputs();
-        const lines = text.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l);
-        let mp3 = '', srts = [];
-        lines.forEach(l => { if (l.match(/\.mp3$/i)) mp3 = l; else if (l.match(/\.(srt|txt)$/i)) srts.push(l); });
-        if (mp3) document.getElementById('url-audio').value = mp3;
-        let s1='',s2='',s3='';
-        if (srts.length === 1) { s1 = srts[0]; }
-        else if (srts.length > 1) {
-            const has=(u,k)=>u.toLowerCase().includes(k);
-            const fEC=srts.find(u=>has(u,'engchs')), fC=srts.find(u=>has(u,'chs')&&!has(u,'engchs')), fE=srts.find(u=>has(u,'eng')&&!has(u,'engchs'));
-            if(fE) s1=fE; if(fEC) s2=fEC; if(fC) s3=fC;
-            const rem=srts.filter(u=>u!==s1&&u!==s2&&u!==s3);
-            if(!s1&&rem.length) s1=rem.shift(); if(!s2&&rem.length) s2=rem.shift(); if(!s3&&rem.length) s3=rem.shift();
-        }
-        document.getElementById('url-srt-1').value = s1;
-        document.getElementById('url-srt-2').value = s2;
-        document.getElementById('url-srt-3').value = s3;
-        this.saveInput(); ui.toast("📋 链接已智能分配");
-    },
-    sleepTimerId: null, sleepIntervalId: null,  // [Fix 8] 改名避免歧义
-    startSleepTimer() {
-        const mins = parseInt(document.getElementById('sleep-input').value);
-        if (!mins||mins<1||mins>100) return ui.toast("请输入 1-100");
-        // [Fix 8] 明确清除旧定时器后再启动新的
-        if (this.sleepTimerId) { clearTimeout(this.sleepTimerId); this.sleepTimerId = null; }
-        if (this.sleepIntervalId) { clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
-        const end = Date.now() + mins*60*1000;
-        ui.toggleSleepModal();
-        const disp = document.getElementById('sleep-display'); disp.style.display = 'block';
-        const upd = () => {
-            const rem = Math.max(0, Math.ceil((end - Date.now()) / 1000));
-            if (!rem) { disp.innerText=''; disp.style.display='none'; clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
-            else { disp.innerText=`⏳ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`; }
-        };
-        upd();
-        this.sleepIntervalId = setInterval(upd, 1000);
-        this.sleepTimerId = setTimeout(() => {
-            engine.stopAll(); ui.toast("⏰ 定时结束");
-            disp.style.display='none';
-            if (this.sleepIntervalId) { clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
-        }, mins*60*1000);
-        ui.toast(`⏳ 倒计时 ${mins} 分钟开始`);
-    },
-    saveInput() {
-        localStorage.setItem(CONST.INPUTS, JSON.stringify({
-            mp3: document.getElementById('url-audio').value,
-            s1: document.getElementById('url-srt-1').value,
-            s2: document.getElementById('url-srt-2').value,
-            s3: document.getElementById('url-srt-3').value
-        }));
-    },
-    addHistory(mp3, name) {
-        let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
-        h = h.filter(i => i.mp3 !== mp3);
-        const d = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-        h.unshift({ name: name||mp3.split('/').pop(), mp3, ...d });
-        if (h.length > 10) h.pop();
-        localStorage.setItem(CONST.HIST, JSON.stringify(h));
-        ui.renderHistory();
-    },
-    fillHistory(i) {
-        if (i==="") return;
-        const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'), item = h[i];
-        if (item) {
-            document.getElementById('url-audio').value = item.mp3;
-            document.getElementById('url-srt-1').value = item.s1||'';
-            document.getElementById('url-srt-2').value = item.s2||'';
-            document.getElementById('url-srt-3').value = item.s3||'';
-            this.saveInput();
-        }
-    },
-    async loadFromUrl() {
-        state.segments = []; ui.renderEditor(); this.saveInput();
-        const mp3 = net.fixUrl(document.getElementById('url-audio').value.trim());
-        const s1 = net.fixUrl(document.getElementById('url-srt-1').value.trim());
-        const s2 = net.fixUrl(document.getElementById('url-srt-2').value.trim());
-        const s3 = net.fixUrl(document.getElementById('url-srt-3').value.trim());
-        if (!mp3) return ui.toast("请输入 MP3 链接");
-        const btn = document.getElementById('btn-load-url'), spin = document.getElementById('url-spinner');
-        btn.disabled = true; spin.style.display = 'inline-block';
-        try {
-            ui.toast("正在下载音频...");
-            const ab = await net.fetchBlobSmart(mp3);
-            document.getElementById('main-audio').src = URL.createObjectURL(ab);
-            ui.toast("✅ 音频下载成功！正在获取字幕...");
-            const lt = async u => u ? await net.fetchTextSmart(u) : null;
-            const [t1,t2,t3] = await Promise.all([lt(s1),lt(s2),lt(s3)]);
-            if (t1||t2||t3) {
-                if (t1) { state.segments = parseSRT(t1); if(t2) this.mergeSub(parseSRT(t2),'text2'); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
-                else if (t2) { state.segments = parseSRT(t2).map(s=>({start:s.start,end:s.end,text2:s.text})); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
-                else { state.segments = parseSRT(t3).map(s=>({start:s.start,end:s.end,text3:s.text})); }
-            } else {
-                ui.toast("正在进行静音断句(无字幕模式)...");
-                await new Promise(r=>setTimeout(r,100));
-                const buf = await ab.arrayBuffer();
-                const ctx = new(window.AudioContext||window.webkitAudioContext)();
-                state.audioBuffer = await ctx.decodeAudioData(buf);
-                state.segments = detectSilence(state.audioBuffer, parseFloat(document.getElementById('threshold-range').value));
-                if (!state.segments.length) state.segments = [{start:0,end:state.audioBuffer.duration,text:"(自动断句失败)"}];
-            }
-            localStorage.setItem(CONST.SESSION, mp3);
-            this.addHistory(mp3);
-            ui.renderEditor(); ui.updateAudioStatus();
-            ui.toast("✅ 全部就绪，正在跳转...");
-            app.switchView('practice');
-        } catch(e) { console.error(e); ui.setLoadBtnText("加载失败:" + e.message); }
-        finally { btn.disabled=false; spin.style.display='none'; setTimeout(()=>ui.setLoadBtnText("default"),3000); }
-    },
-    mergeSub(newS, k) { state.segments.forEach(b => { const m=newS.find(n=>n.start>=b.start&&n.start<b.end); if(m) b[k]=m.text; }); },
-    switchView(v) {
-        if (aiMode.active) aiMode.stop();
-        engine.stopAll();
-        if (v==='practice' && !state.segments.length) return ui.toast("请先加载内容");
-        document.getElementById('editor-view').style.display = v==='editor' ? 'block' : 'none';
-        const pv = document.getElementById('practice-view');
-        pv.style.display = v==='practice' ? 'flex' : 'none';
-        pv.classList.toggle('active', v==='practice');
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
-        if (v==='practice') this.loadItem(state.currIndex, false);
-    },
-    loadItem(i, play) {
-        if (i<0||i>=state.segments.length) return;
-        state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
-        if (play) engine.playOnce();
-    },
-    next() {
-        if (aiMode.active) { aiMode.stop(); ui.toast('已停止AI模式'); }
-        if (state.currIndex < state.segments.length-1) {
-            state.userBlurState = state.permBlurMode==='show' ? false : true;
-            this.loadItem(state.currIndex+1, true);
-        }
-    },
-    prev() {
-        if (aiMode.active) { aiMode.stop(); ui.toast('已停止AI模式'); }
-        if (state.currIndex > 0) {
-            state.userBlurState = state.permBlurMode==='show' ? false : true;
-            this.loadItem(state.currIndex-1, true);
-        }
-    },
-    jumpTo(v) {
-        if (aiMode.active) { aiMode.stop(); ui.toast('已停止AI模式'); }
-        state.userBlurState = state.permBlurMode==='show' ? false : true;
-        this.loadItem(parseInt(v), true);
-    },
-    updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
-    delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
-    splitSeg(i) {
-        const t = document.getElementById('main-audio').currentTime;
-        if (t>state.segments[i].start && t<state.segments[i].end) {
-            const old = state.segments[i], ns={start:t,end:old.end,text:""};
-            if(old.text2!==undefined) ns.text2=""; if(old.text3!==undefined) ns.text3="";
-            state.segments.splice(i+1,0,ns); state.segments[i].end = t; ui.renderEditor();
-        } else ui.toast("请在试听时暂停于拆分点");
-    },
-    mergeSeg(i) {
-        if (i < state.segments.length-1) {
-            state.segments[i].end = state.segments[i+1].end;
-            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
-            if(state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
-            if(state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
-            state.segments.splice(i+1,1); ui.renderEditor();
-        }
-    },
-    addNewRow() {
-        const last = state.segments[state.segments.length-1]||{end:0};
-        const n={start:last.end,end:last.end+2,text:""};
-        if(last.text2!==undefined) n.text2=""; if(last.text3!==undefined) n.text3="";
-        state.segments.push(n); ui.renderEditor();
-    },
-    applyReAnalyze() {
-        if (!state.audioBuffer) return ui.toast("需先成功加载音频数据");
-        state.segments = detectSilence(state.audioBuffer, parseFloat(document.getElementById('threshold-range').value));
-        ui.renderEditor(); ui.toast("重新分析完成");
-    },
-    save() {
-        localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
-        localStorage.setItem(CONST.INDEX, state.currIndex);
-    },
-    // [Fix 1] 恢复进度：重新加载音频再跳转练习页
-    restoreProgress() {
-        const d = localStorage.getItem(CONST.STORAGE), i = parseInt(localStorage.getItem(CONST.INDEX) || 0);
-        if (!d) return;
-        state.segments = JSON.parse(d);
-        state.currIndex = i;
-        ui.renderEditor();
-        document.getElementById('restore-bar').style.display = 'none';
+setPermShow() { state.permBlurMode = ‘show’; state.userBlurState = false; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
+setPermHide() { state.permBlurMode = ‘hide’; state.userBlurState = true; ui.updatePermButtons(); ui.updatePractice(state.currIndex); },
+clearInputs() { [‘url-audio’,‘url-srt-1’,‘url-srt-2’,‘url-srt-3’].forEach(id => document.getElementById(id).value = ‘’); },
+handleSmartPaste(e) {
+const text = (e.clipboardData || window.clipboardData).getData(‘text’);
+if (!text || (!text.match(/https?:///) && !text.toLowerCase().includes(’.mp3’))) return;
+e.preventDefault(); this.clearInputs();
+const lines = text.split(/[\r\n]+/).map(l=>l.trim()).filter(l=>l);
+let mp3 = ‘’, srts = [];
+lines.forEach(l => { if (l.match(/.mp3$/i)) mp3 = l; else if (l.match(/.(srt|txt)$/i)) srts.push(l); });
+if (mp3) document.getElementById(‘url-audio’).value = mp3;
+let s1=’’,s2=’’,s3=’’;
+if (srts.length === 1) { s1 = srts[0]; }
+else if (srts.length > 1) {
+const has=(u,k)=>u.toLowerCase().includes(k);
+const fEC=srts.find(u=>has(u,‘engchs’)), fC=srts.find(u=>has(u,‘chs’)&&!has(u,‘engchs’)), fE=srts.find(u=>has(u,‘eng’)&&!has(u,‘engchs’));
+if(fE) s1=fE; if(fEC) s2=fEC; if(fC) s3=fC;
+const rem=srts.filter(u=>u!==s1&&u!==s2&&u!==s3);
+if(!s1&&rem.length) s1=rem.shift(); if(!s2&&rem.length) s2=rem.shift(); if(!s3&&rem.length) s3=rem.shift();
+}
+document.getElementById(‘url-srt-1’).value = s1;
+document.getElementById(‘url-srt-2’).value = s2;
+document.getElementById(‘url-srt-3’).value = s3;
+this.saveInput(); ui.toast(“📋 链接已智能分配”);
+},
+sleepTimerId: null, sleepIntervalId: null,  // [Fix 8] 改名避免歧义
+startSleepTimer() {
+const mins = parseInt(document.getElementById(‘sleep-input’).value);
+if (!mins||mins<1||mins>100) return ui.toast(“请输入 1-100”);
+// [Fix 8] 明确清除旧定时器后再启动新的
+if (this.sleepTimerId) { clearTimeout(this.sleepTimerId); this.sleepTimerId = null; }
+if (this.sleepIntervalId) { clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
+const end = Date.now() + mins*60*1000;
+ui.toggleSleepModal();
+const disp = document.getElementById(‘sleep-display’); disp.style.display = ‘block’;
+const upd = () => {
+const rem = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+if (!rem) { disp.innerText=’’; disp.style.display=‘none’; clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
+else { disp.innerText=`⏳ ${Math.floor(rem/60)}:${(rem%60).toString().padStart(2,'0')}`; }
+};
+upd();
+this.sleepIntervalId = setInterval(upd, 1000);
+this.sleepTimerId = setTimeout(() => {
+engine.stopAll(); ui.toast(“⏰ 定时结束”);
+disp.style.display=‘none’;
+if (this.sleepIntervalId) { clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
+}, mins*60*1000);
+ui.toast(`⏳ 倒计时 ${mins} 分钟开始`);
+},
+saveInput() {
+localStorage.setItem(CONST.INPUTS, JSON.stringify({
+mp3: document.getElementById(‘url-audio’).value,
+s1: document.getElementById(‘url-srt-1’).value,
+s2: document.getElementById(‘url-srt-2’).value,
+s3: document.getElementById(‘url-srt-3’).value
+}));
+},
+addHistory(mp3, name) {
+let h = JSON.parse(localStorage.getItem(CONST.HIST)||’[]’);
+h = h.filter(i => i.mp3 !== mp3);
+const d = JSON.parse(localStorage.getItem(CONST.INPUTS) || ‘{}’);
+h.unshift({ name: name||mp3.split(’/’).pop(), mp3, …d });
+if (h.length > 10) h.pop();
+localStorage.setItem(CONST.HIST, JSON.stringify(h));
+ui.renderHistory();
+},
+fillHistory(i) {
+if (i===””) return;
+const h = JSON.parse(localStorage.getItem(CONST.HIST)||’[]’), item = h[i];
+if (item) {
+document.getElementById(‘url-audio’).value = item.mp3;
+document.getElementById(‘url-srt-1’).value = item.s1||’’;
+document.getElementById(‘url-srt-2’).value = item.s2||’’;
+document.getElementById(‘url-srt-3’).value = item.s3||’’;
+this.saveInput();
+}
+},
+async loadFromUrl() {
+state.segments = []; ui.renderEditor(); this.saveInput();
+const mp3 = net.fixUrl(document.getElementById(‘url-audio’).value.trim());
+const s1 = net.fixUrl(document.getElementById(‘url-srt-1’).value.trim());
+const s2 = net.fixUrl(document.getElementById(‘url-srt-2’).value.trim());
+const s3 = net.fixUrl(document.getElementById(‘url-srt-3’).value.trim());
+if (!mp3) return ui.toast(“请输入 MP3 链接”);
+const btn = document.getElementById(‘btn-load-url’), spin = document.getElementById(‘url-spinner’);
+btn.disabled = true; spin.style.display = ‘inline-block’;
+try {
+ui.toast(“正在下载音频…”);
+const ab = await net.fetchBlobSmart(mp3);
+// [Fix 1] 释放旧 ObjectURL，防止多次加载导致内存泄漏
+if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
+state._audioObjectUrl = URL.createObjectURL(ab);
+document.getElementById(‘main-audio’).src = state._audioObjectUrl;
+ui.toast(“✅ 音频下载成功！正在获取字幕…”);
+const lt = async u => u ? await net.fetchTextSmart(u) : null;
+const [t1,t2,t3] = await Promise.all([lt(s1),lt(s2),lt(s3)]);
+if (t1||t2||t3) {
+if (t1) { state.segments = parseSRT(t1); if(t2) this.mergeSub(parseSRT(t2),‘text2’); if(t3) this.mergeSub(parseSRT(t3),‘text3’); }
+else if (t2) { state.segments = parseSRT(t2).map(s=>({start:s.start,end:s.end,text2:s.text})); if(t3) this.mergeSub(parseSRT(t3),‘text3’); }
+else { state.segments = parseSRT(t3).map(s=>({start:s.start,end:s.end,text3:s.text})); }
+} else {
+ui.toast(“正在进行智能断句，请稍候…”);
+await new Promise(r=>setTimeout(r,100));
+const buf = await ab.arrayBuffer();
+const ctx = new(window.AudioContext||window.webkitAudioContext)();
+state.audioBuffer = await ctx.decodeAudioData(buf);
+// [Fix 3] 用 Web Worker 做断句运算，避免长音频卡死 UI 主线程
+state.segments = await detectSilenceAsync(
+state.audioBuffer,
+parseFloat(document.getElementById(‘threshold-range’).value)
+);
+if (!state.segments.length) state.segments = [{start:0,end:state.audioBuffer.duration,text:”(自动断句失败)”}];
+}
+localStorage.setItem(CONST.SESSION, mp3);
+this.addHistory(mp3);
+ui.renderEditor(); ui.updateAudioStatus();
+ui.toast(“✅ 全部就绪，正在跳转…”);
+app.switchView(‘practice’);
+} catch(e) { console.error(e); ui.setLoadBtnText(“加载失败:” + e.message); }
+finally { btn.disabled=false; spin.style.display=‘none’; setTimeout(()=>ui.setLoadBtnText(“default”),3000); }
+},
+mergeSub(newS, k) { state.segments.forEach(b => { const m=newS.find(n=>n.start>=b.start&&n.start<b.end); if(m) b[k]=m.text; }); },
+switchView(v) {
+if (aiMode.active) aiMode.stop();
+engine.stopAll();
+if (v===‘practice’ && !state.segments.length) return ui.toast(“请先加载内容”);
+document.getElementById(‘editor-view’).style.display = v===‘editor’ ? ‘block’ : ‘none’;
+const pv = document.getElementById(‘practice-view’);
+pv.style.display = v===‘practice’ ? ‘flex’ : ‘none’;
+pv.classList.toggle(‘active’, v===‘practice’);
+document.querySelectorAll(’.mode-btn’).forEach(b => b.classList.toggle(‘active’, b.onclick.toString().includes(v)));
+if (v===‘practice’) this.loadItem(state.currIndex, false);
+},
+loadItem(i, play) {
+if (i<0||i>=state.segments.length) return;
+state.currIndex = i; engine.stopAll(); ui.updatePractice(i); this.save();
+if (play) engine.playOnce();
+},
+next() {
+if (aiMode.active) { aiMode.stop(); ui.toast(‘已停止AI模式’); }
+if (state.currIndex < state.segments.length-1) {
+state.userBlurState = state.permBlurMode===‘show’ ? false : true;
+this.loadItem(state.currIndex+1, true);
+}
+},
+prev() {
+if (aiMode.active) { aiMode.stop(); ui.toast(‘已停止AI模式’); }
+if (state.currIndex > 0) {
+state.userBlurState = state.permBlurMode===‘show’ ? false : true;
+this.loadItem(state.currIndex-1, true);
+}
+},
+jumpTo(v) {
+if (aiMode.active) { aiMode.stop(); ui.toast(‘已停止AI模式’); }
+state.userBlurState = state.permBlurMode===‘show’ ? false : true;
+this.loadItem(parseInt(v), true);
+},
+updateSeg(i,k,v) { if(k.startsWith(‘text’)) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
+delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
+splitSeg(i) {
+const t = document.getElementById(‘main-audio’).currentTime;
+if (t>state.segments[i].start && t<state.segments[i].end) {
+const old = state.segments[i], ns={start:t,end:old.end,text:””};
+if(old.text2!==undefined) ns.text2=””; if(old.text3!==undefined) ns.text3=””;
+state.segments.splice(i+1,0,ns); state.segments[i].end = t; ui.renderEditor();
+} else ui.toast(“请在试听时暂停于拆分点”);
+},
+mergeSeg(i) {
+if (i < state.segments.length-1) {
+state.segments[i].end = state.segments[i+1].end;
+state.segments[i].text = (state.segments[i].text + “ “ + (state.segments[i+1].text||””)).trim();
+if(state.segments[i].text2) state.segments[i].text2 += “ “ + (state.segments[i+1].text2||””);
+if(state.segments[i].text3) state.segments[i].text3 += “ “ + (state.segments[i+1].text3||””);
+state.segments.splice(i+1,1); ui.renderEditor();
+}
+},
+addNewRow() {
+const last = state.segments[state.segments.length-1]||{end:0};
+const n={start:last.end,end:last.end+2,text:””};
+if(last.text2!==undefined) n.text2=””; if(last.text3!==undefined) n.text3=””;
+state.segments.push(n); ui.renderEditor();
+},
+applyReAnalyze() {
+if (!state.audioBuffer) return ui.toast(“需先成功加载音频数据”);
+ui.toast(“重新分析中…”);
+detectSilenceAsync(state.audioBuffer, parseFloat(document.getElementById(‘threshold-range’).value))
+.then(segs => { state.segments = segs; ui.renderEditor(); ui.toast(“重新分析完成”); });
+},
+save() {
+localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
+localStorage.setItem(CONST.INDEX, state.currIndex);
+},
+// [Fix 1] 恢复进度：重新加载音频再跳转练习页
+restoreProgress() {
+const d = localStorage.getItem(CONST.STORAGE), i = parseInt(localStorage.getItem(CONST.INDEX) || 0);
+if (!d) return;
+state.segments = JSON.parse(d);
+state.currIndex = i;
+ui.renderEditor();
+document.getElementById(‘restore-bar’).style.display = ‘none’;
 
-        const mainAudio = document.getElementById('main-audio');
-        const savedInputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-        const mp3 = net.fixUrl((savedInputs.mp3 || '').trim());
+```
+    const mainAudio = document.getElementById('main-audio');
+    const savedInputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
+    const mp3 = net.fixUrl((savedInputs.mp3 || '').trim());
 
-        if (mainAudio.src && mainAudio.src !== location.href) {
-            // 音频 blob URL 仍然有效（同一页面会话内）
+    if (mainAudio.src && mainAudio.src !== location.href) {
+        // 音频 blob URL 仍然有效（同一页面会话内）
+        ui.updateAudioStatus();
+        ui.toast(`✅ 已恢复到第 ${i + 1} 句`);
+        app.switchView('practice');
+    } else if (mp3) {
+        // 刷新后 blob URL 失效，需要重新下载音频
+        ui.toast('⏳ 正在重新加载音频，请稍候...');
+        net.fetchBlobSmart(mp3).then(ab => {
+            if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
+            state._audioObjectUrl = URL.createObjectURL(ab);
+            mainAudio.src = state._audioObjectUrl;
             ui.updateAudioStatus();
-            ui.toast(`✅ 已恢复到第 ${i + 1} 句`);
+            ui.toast(`✅ 音频就绪，已恢复到第 ${i + 1} 句`);
             app.switchView('practice');
-        } else if (mp3) {
-            // 刷新后 blob URL 失效，需要重新下载音频
-            ui.toast('⏳ 正在重新加载音频，请稍候...');
-            net.fetchBlobSmart(mp3).then(ab => {
-                mainAudio.src = URL.createObjectURL(ab);
-                ui.updateAudioStatus();
-                ui.toast(`✅ 音频就绪，已恢复到第 ${i + 1} 句`);
-                app.switchView('practice');
-            }).catch(e => {
-                ui.toast('❌ 音频重载失败：' + e.message);
-                ui.updateAudioStatus();
-            });
-        } else {
-            ui.toast('✅ 进度已恢复（请手动加载音频）');
+        }).catch(e => {
+            ui.toast('❌ 音频重载失败：' + e.message);
             ui.updateAudioStatus();
-        }
-    },
-    // [Fix 6] exportProject 包含音频链接
-    exportProject() {
-        const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-        const data = {
-            version: 70,
-            segments: state.segments,
-            idx: state.currIndex,
-            inputs: inputs   // 保存 mp3/srt 链接，loadProject 时可自动回填
-        };
-        const b = new Blob([JSON.stringify(data, null, 2)]);
-        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow_v70.json'; a.click();
-    },
-    exportSRT(slot) {
-        if (!state.segments.length) return ui.toast("无数据");
-        const key = slot===2?'text2':slot===3?'text3':'text';
-        if (!state.segments.some(s=>s[key])) return ui.toast(`字幕${slot}无内容`);
-        let c = ""; state.segments.forEach((s,i) => { c+=`${i+1}\n${fmtTime(s.start,true)} --> ${fmtTime(s.end,true)}\n${s[key]||''}\n\n`; });
-        const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click();
-    },
-    // [Fix 6] loadProject 自动回填输入框并尝试加载音频
-    loadProject(el) {
-        const f = el.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = e => {
-            const d = JSON.parse(e.target.result);
-            state.segments = d.segments || d;
-            state.currIndex = d.idx || 0;
-            // 回填链接（兼容旧版无 inputs 字段）
-            if (d.inputs) {
-                if (d.inputs.mp3) document.getElementById('url-audio').value = d.inputs.mp3;
-                if (d.inputs.s1)  document.getElementById('url-srt-1').value = d.inputs.s1;
-                if (d.inputs.s2)  document.getElementById('url-srt-2').value = d.inputs.s2;
-                if (d.inputs.s3)  document.getElementById('url-srt-3').value = d.inputs.s3;
-                app.saveInput();
-                ui.toast('工程加载成功，可点「极速加载」重新载入音频');
-            } else {
-                ui.toast('工程加载成功（旧版工程，请手动填入音频链接）');
-            }
-            ui.renderEditor(); ui.updateAudioStatus();
-        };
-        r.readAsText(f);
-    },
-    importSub(el, k) {
-        const f = el.files[0]; if (!f) return;
-        const r = new FileReader();
-        r.onload = e => { const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3'); ui.renderEditor(); };
-        r.readAsText(f);
+        });
+    } else {
+        ui.toast('✅ 进度已恢复（请手动加载音频）');
+        ui.updateAudioStatus();
     }
+},
+// [Fix 6] exportProject 包含音频链接
+exportProject() {
+    const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
+    const data = {
+        version: 70,
+        segments: state.segments,
+        idx: state.currIndex,
+        inputs: inputs   // 保存 mp3/srt 链接，loadProject 时可自动回填
+    };
+    const b = new Blob([JSON.stringify(data, null, 2)]);
+    const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow_v70.json'; a.click();
+},
+exportSRT(slot) {
+    if (!state.segments.length) return ui.toast("无数据");
+    const key = slot===2?'text2':slot===3?'text3':'text';
+    if (!state.segments.some(s=>s[key])) return ui.toast(`字幕${slot}无内容`);
+    let c = ""; state.segments.forEach((s,i) => { c+=`${i+1}\n${fmtTime(s.start,true)} --> ${fmtTime(s.end,true)}\n${s[key]||''}\n\n`; });
+    const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click();
+},
+// [Fix 6] loadProject 自动回填输入框并尝试加载音频
+loadProject(el) {
+    const f = el.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+        const d = JSON.parse(e.target.result);
+        state.segments = d.segments || d;
+        state.currIndex = d.idx || 0;
+        // 回填链接（兼容旧版无 inputs 字段）
+        if (d.inputs) {
+            if (d.inputs.mp3) document.getElementById('url-audio').value = d.inputs.mp3;
+            if (d.inputs.s1)  document.getElementById('url-srt-1').value = d.inputs.s1;
+            if (d.inputs.s2)  document.getElementById('url-srt-2').value = d.inputs.s2;
+            if (d.inputs.s3)  document.getElementById('url-srt-3').value = d.inputs.s3;
+            app.saveInput();
+            ui.toast('工程加载成功，可点「极速加载」重新载入音频');
+        } else {
+            ui.toast('工程加载成功（旧版工程，请手动填入音频链接）');
+        }
+        ui.renderEditor(); ui.updateAudioStatus();
+    };
+    r.readAsText(f);
+},
+importSub(el, k) {
+    const f = el.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = e => { const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3'); ui.renderEditor(); };
+    r.readAsText(f);
+}
+```
+
 };
 
 // ============================================================
 //  RECORDER
 // ============================================================
 const recorder = {
-    rec: null, chunks: [], stream: null, isRec: false,
-    async toggle() {
-        if (aiMode.active) { ui.toast('AI模式运行中，请先停止AI模式'); return; }
-        const btn = document.getElementById('btn-record');
-        if (!this.isRec) {
-            engine.stopAll();
-            try {
-                this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
-                this.rec = new MediaRecorder(this.stream); this.chunks = [];
-                this.rec.ondataavailable = e => this.chunks.push(e.data);
-                this.rec.onstop = () => { if(this.stream) this.stream.getTracks().forEach(t=>t.stop()); if(!this.forceStop) this.playCmp(); };
-                this.rec.start(); this.isRec = true;
-                if(btn) { btn.classList.add('recording'); btn.innerText="■ 停止录音"; }
-            } catch(e) { alert("无麦克风权限"); }
-        } else { this.stop(false); }
-    },
-    stop(force) {
-        if (this.isRec) { this.forceStop=force; this.rec.stop(); this.isRec=false; }
-        const btn = document.getElementById('btn-record');
-        if(btn) { btn.classList.remove('recording'); btn.innerText="🎤 按下开始录音"; }
-    },
-    playCmp() {
-        const s = state.segments[state.currIndex], a = document.getElementById('main-audio'), r = document.getElementById('record-audio');
-        const b = new Blob(this.chunks,{type:'audio/mp3'}); r.src=URL.createObjectURL(b);
-        ui.toast("▶️ 原音"); a.currentTime=s.start; a.play();
-        const timer = setInterval(() => {
-            if (a.currentTime >= s.end) {
-                a.pause(); clearInterval(timer);
-                setTimeout(() => {
-                    ui.toast("🎙️ 录音"); r.currentTime=0; r.play();
-                    r.onended = () => { const btn=document.getElementById('btn-record'); if(btn) btn.classList.remove('playing'); ui.toast("播放完毕"); };
-                    const btn = document.getElementById('btn-record'); if(btn) btn.classList.add('playing');
-                }, 500);
-            }
-        }, 30);
-    }
+rec: null, chunks: [], stream: null, isRec: false,
+async toggle() {
+if (aiMode.active) { ui.toast(‘AI模式运行中，请先停止AI模式’); return; }
+const btn = document.getElementById(‘btn-record’);
+if (!this.isRec) {
+engine.stopAll();
+try {
+this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+this.rec = new MediaRecorder(this.stream); this.chunks = [];
+this.rec.ondataavailable = e => this.chunks.push(e.data);
+this.rec.onstop = () => { if(this.stream) this.stream.getTracks().forEach(t=>t.stop()); if(!this.forceStop) this.playCmp(); };
+this.rec.start(); this.isRec = true;
+if(btn) { btn.classList.add(‘recording’); btn.innerText=“■ 停止录音”; }
+} catch(e) { alert(“无麦克风权限”); }
+} else { this.stop(false); }
+},
+stop(force) {
+if (this.isRec) { this.forceStop=force; this.rec.stop(); this.isRec=false; }
+const btn = document.getElementById(‘btn-record’);
+if(btn) { btn.classList.remove(‘recording’); btn.innerText=“🎤 按下开始录音”; }
+},
+playCmp() {
+const s = state.segments[state.currIndex], a = document.getElementById(‘main-audio’), r = document.getElementById(‘record-audio’);
+const b = new Blob(this.chunks,{type:‘audio/mp3’});
+// [Fix 1] 释放上次录音的 ObjectURL
+if (state._recordObjectUrl) { URL.revokeObjectURL(state._recordObjectUrl); state._recordObjectUrl = null; }
+state._recordObjectUrl = URL.createObjectURL(b);
+r.src = state._recordObjectUrl;
+ui.toast(“▶️ 原音”); a.currentTime=s.start; a.play();
+const timer = setInterval(() => {
+if (a.currentTime >= s.end) {
+a.pause(); clearInterval(timer);
+setTimeout(() => {
+ui.toast(“🎙️ 录音”); r.currentTime=0; r.play();
+r.onended = () => { const btn=document.getElementById(‘btn-record’); if(btn) btn.classList.remove(‘playing’); ui.toast(“播放完毕”); };
+const btn = document.getElementById(‘btn-record’); if(btn) btn.classList.add(‘playing’);
+}, 500);
+}
+}, 30);
+}
 };
 
 // ============================================================
 //  AI MODE —— V70 修复版
 // ============================================================
 const aiMode = {
-    active: false,
-    failCount: 0,
-    maxFails: 3,
-    threshold: 100,
-    recognition: null,
-    audioCtx: null,
-    _cycleTimer: null,
-    _listenTimeout: null,
-    _playRafId: null,
-    _warmSR: null,
-    manualPracticeMode: false,
-    failedSentences: [],
-    reviewMode: false,
-    reviewQueue: [],
-    // [Fix 7] 记录AI启动前的 permBlurMode，停止后还原
-    _prevPermBlurMode: 'none',
+active: false,
+failCount: 0,
+maxFails: 3,
+threshold: 100,
+recognition: null,
+audioCtx: null,
+_cycleTimer: null,
+_listenTimeout: null,
+_playRafId: null,
+_warmSR: null,
+manualPracticeMode: false,
+failedSentences: [],
+reviewMode: false,
+reviewQueue: [],
+// [Fix 7] 记录AI启动前的 permBlurMode，停止后还原
+_prevPermBlurMode: ‘none’,
 
-    toggle() {
-        if (this.active) this.stop();
-        else this.start();
-    },
+```
+toggle() {
+    if (this.active) this.stop();
+    else this.start();
+},
 
-    updateThreshold(v) {
-        this.threshold = parseInt(v);
-        document.getElementById('ai-threshold-val').innerText = v + '%';
-        const slider = document.getElementById('ai-threshold');
-        const pct = ((v - slider.min) / (slider.max - slider.min)) * 100;
-        slider.style.setProperty('--fill', pct + '%');
-    },
+updateThreshold(v) {
+    this.threshold = parseInt(v);
+    document.getElementById('ai-threshold-val').innerText = v + '%';
+    const slider = document.getElementById('ai-threshold');
+    const pct = ((v - slider.min) / (slider.max - slider.min)) * 100;
+    slider.style.setProperty('--fill', pct + '%');
+},
 
-    async start() {
-        if (!state.segments.length) return ui.toast('请先加载内容');
-        if (!document.getElementById('main-audio').src) return ui.toast('音频未就绪');
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return ui.toast('❌ 浏览器不支持语音识别 (需 iOS Safari 14.5+ 或 Chrome)');
+async start() {
+    if (!state.segments.length) return ui.toast('请先加载内容');
+    if (!document.getElementById('main-audio').src) return ui.toast('音频未就绪');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return ui.toast('❌ 浏览器不支持语音识别 (需 iOS Safari 14.5+ 或 Chrome)');
 
-        try {
-            if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
-            if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
-            const silBuf = this.audioCtx.createBuffer(1,1,22050);
-            const silSrc = this.audioCtx.createBufferSource(); silSrc.buffer = silBuf;
-            silSrc.connect(this.audioCtx.destination); silSrc.start(0);
-        } catch(e) { console.warn('AudioContext unlock warn:', e); }
+    // [Fix 6] iOS AudioContext 彻底解锁：在用户手势同步上下文内播一个 gain=0.001
+    // 的极微弱振荡器（50ms），确保后续所有 playBeep（在 setTimeout 里）都不会静音
+    try {
+        if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
+        if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
+        const ctx = this.audioCtx;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.001, ctx.currentTime);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+    } catch(e) { console.warn('AudioContext unlock warn:', e); }
 
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-            stream.getTracks().forEach(t=>t.stop());
-        } catch(e) { ui.toast('❌ 麦克风权限被拒绝'); return; }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        stream.getTracks().forEach(t=>t.stop());
+    } catch(e) { ui.toast('❌ 麦克风权限被拒绝'); return; }
 
-        // [Fix 4] 无条件调用 engine.stopAll()
-        engine.stopAll(true);
+    // [Fix 4] 无条件调用 engine.stopAll()
+    engine.stopAll(true);
 
-        this.active = true;
-        if (!this.reviewMode) {
-            this.failedSentences = [];
-        }
-        this.failCount = 0;
-        this.manualPracticeMode = false;
-        this._setBtn('running');
-        document.getElementById('ai-mode-bar').classList.add('ai-running');
-        document.getElementById('ai-mode-bar').classList.remove('ai-manual');
-        document.getElementById('btn-ai-resume').style.display = 'none';
-        document.getElementById('text-container').classList.remove('ai-manual');
-        this.setStatus('🚀 启动中', '');
+    this.active = true;
+    if (!this.reviewMode) {
+        this.failedSentences = [];
+    }
+    this.failCount = 0;
+    this.manualPracticeMode = false;
+    this._setBtn('running');
+    document.getElementById('ai-mode-bar').classList.add('ai-running');
+    document.getElementById('ai-mode-bar').classList.remove('ai-manual');
+    document.getElementById('btn-ai-resume').style.display = 'none';
+    document.getElementById('text-container').classList.remove('ai-manual');
+    this.setStatus('🚀 启动中', '');
 
-        // [Fix 7] 保存当前 permBlurMode，再强制永隐
-        this._prevPermBlurMode = state.permBlurMode;
-        state.permBlurMode = 'hide';
-        state.userBlurState = true;
-        ui.updatePermButtons();
-        ui.updatePractice(state.currIndex);
+    // [Fix 7] 保存当前 permBlurMode，再强制永隐
+    this._prevPermBlurMode = state.permBlurMode;
+    state.permBlurMode = 'hide';
+    state.userBlurState = true;
+    ui.updatePermButtons();
+    ui.updatePractice(state.currIndex);
 
-        setTimeout(() => this.runCycle(), 400);
-    },
+    setTimeout(() => this.runCycle(), 400);
+},
 
-    stop() {
-        const wasManual = this.manualPracticeMode;
+stop() {
+    const wasManual = this.manualPracticeMode;
+    this.active = false;
+    this.manualPracticeMode = false;
+    this.reviewMode = false;
+    if (this._cycleTimer) { clearTimeout(this._cycleTimer); this._cycleTimer = null; }
+    if (this._listenTimeout) { clearTimeout(this._listenTimeout); this._listenTimeout = null; }
+    if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
+    if (this.recognition) { try { this.recognition.abort(); } catch(e) {} this.recognition = null; }
+    if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} this._warmSR = null; }
+    // [Fix 4] 无条件停止引擎（不只在 wasManual 时）
+    engine.stopAll();
+    this._setBtn('idle');
+    document.getElementById('ai-mode-bar').classList.remove('ai-running', 'ai-manual');
+    document.getElementById('btn-ai-resume').style.display = 'none';
+    document.getElementById('text-container').classList.remove('ai-manual');
+    this.setStatus('待机', '');
+
+    // [Fix 7] 还原 permBlurMode，并刷新字幕显隐状态
+    state.permBlurMode = this._prevPermBlurMode;
+    if (state.permBlurMode === 'show') state.userBlurState = false;
+    else if (state.permBlurMode === 'hide') state.userBlurState = true;
+    // none: 保持用户上次手动切换的状态（不改变 userBlurState）
+    ui.updatePermButtons();
+    ui.updatePractice(state.currIndex);
+},
+
+runCycle() {
+    if (!this.active) return;
+
+    if (this.reviewMode && this.reviewQueue.length === 0) {
         this.active = false;
-        this.manualPracticeMode = false;
-        this.reviewMode = false;
-        if (this._cycleTimer) { clearTimeout(this._cycleTimer); this._cycleTimer = null; }
-        if (this._listenTimeout) { clearTimeout(this._listenTimeout); this._listenTimeout = null; }
-        if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
-        if (this.recognition) { try { this.recognition.abort(); } catch(e) {} this.recognition = null; }
-        if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} this._warmSR = null; }
-        // [Fix 4] 无条件停止引擎（不只在 wasManual 时）
-        engine.stopAll();
         this._setBtn('idle');
-        document.getElementById('ai-mode-bar').classList.remove('ai-running', 'ai-manual');
-        document.getElementById('btn-ai-resume').style.display = 'none';
-        document.getElementById('text-container').classList.remove('ai-manual');
-        this.setStatus('待机', '');
-
-        // [Fix 7] 还原 permBlurMode，并刷新字幕显隐状态
+        document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
+        this.setStatus('复习完成', 'success');
+        this.playBeep('complete');
+        // [Fix 7] 还原 permBlurMode
         state.permBlurMode = this._prevPermBlurMode;
         if (state.permBlurMode === 'show') state.userBlurState = false;
-        else if (state.permBlurMode === 'hide') state.userBlurState = true;
-        // none: 保持用户上次手动切换的状态（不改变 userBlurState）
-        ui.updatePermButtons();
-        ui.updatePractice(state.currIndex);
-    },
+        ui.updatePermButtons(); ui.updatePractice(state.currIndex);
+        setTimeout(() => this.showRoundComplete(true), 800);
+        return;
+    }
 
-    runCycle() {
-        if (!this.active) return;
+    const idx = this.reviewMode ? this.reviewQueue[0] : state.currIndex;
+    state.currIndex = idx;
+    state.userBlurState = true;
+    ui.updatePractice(idx);
+    this.setStatus('▶ 播放中', '');
 
-        if (this.reviewMode && this.reviewQueue.length === 0) {
-            this.active = false;
-            this._setBtn('idle');
-            document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
-            this.setStatus('复习完成', 'success');
-            this.playBeep('complete');
-            // [Fix 7] 还原 permBlurMode
-            state.permBlurMode = this._prevPermBlurMode;
-            if (state.permBlurMode === 'show') state.userBlurState = false;
-            ui.updatePermButtons(); ui.updatePractice(state.currIndex);
-            setTimeout(() => this.showRoundComplete(true), 800);
+    const seg = state.segments[idx];
+    if (!seg) { this.stop(); return; }
+
+    const a = document.getElementById('main-audio');
+    this._preWarmSR();
+    a.currentTime = seg.start;
+    // [Fix B] AI 模式下也应用当前速率
+    a.playbackRate = state.playbackRate;
+    const playP = a.play();
+    if (playP) playP.catch(e => { console.error('AI play failed:', e); this.stop(); });
+
+    this._startPlayWatcher(seg.end);
+},
+
+_startPlayWatcher(endTime) {
+    if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
+    const a = document.getElementById('main-audio');
+    const watch = () => {
+        if (!this.active) { this._playRafId = null; return; }
+        if (!a.paused && a.currentTime < endTime) {
+            this._playRafId = requestAnimationFrame(watch);
             return;
         }
+        try { a.pause(); } catch(e) {}
+        this._playRafId = null;
+        this.startListening();
+    };
+    this._playRafId = requestAnimationFrame(watch);
+},
 
-        const idx = this.reviewMode ? this.reviewQueue[0] : state.currIndex;
-        state.currIndex = idx;
-        state.userBlurState = true;
-        ui.updatePractice(idx);
-        this.setStatus('▶ 播放中', '');
+_preWarmSR() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    try {
+        if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} }
+        this._warmSR = new SR();
+        this._warmSR.lang = 'en-US';
+        this._warmSR.continuous = false;
+        this._warmSR.interimResults = false;
+        this._warmSR.maxAlternatives = 3;
+    } catch(e) { this._warmSR = null; }
+},
 
-        const seg = state.segments[idx];
-        if (!seg) { this.stop(); return; }
+startListening() {
+    if (!this.active) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    this.setStatus('👂 正在听...', 'listening');
 
-        const a = document.getElementById('main-audio');
-        this._preWarmSR();
-        a.currentTime = seg.start;
-        // [Fix B] AI 模式下也应用当前速率
-        a.playbackRate = state.playbackRate;
-        const playP = a.play();
-        if (playP) playP.catch(e => { console.error('AI play failed:', e); this.stop(); });
+    const r = this._warmSR || new SR();
+    this._warmSR = null;
+    r.lang = 'en-US';
+    r.continuous = false;
+    r.interimResults = false;
+    r.maxAlternatives = 3;
+    this.recognition = r;
 
-        this._startPlayWatcher(seg.end);
-    },
+    const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+    const refText = state.segments[state.currIndex][key] || '';
+    const wordCount = refText.trim().split(/\s+/).filter(Boolean).length;
+    const dynamicTimeout = Math.min(25000, Math.max(12000, wordCount * 1200));
 
-    _startPlayWatcher(endTime) {
-        if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
-        const a = document.getElementById('main-audio');
-        const watch = () => {
-            if (!this.active) { this._playRafId = null; return; }
-            if (!a.paused && a.currentTime < endTime) {
-                this._playRafId = requestAnimationFrame(watch);
-                return;
-            }
-            try { a.pause(); } catch(e) {}
-            this._playRafId = null;
-            this.startListening();
-        };
-        this._playRafId = requestAnimationFrame(watch);
-    },
+    let settled = false;
+    const settle = fn => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
 
-    _preWarmSR() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) return;
-        try {
-            if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} }
-            this._warmSR = new SR();
-            this._warmSR.lang = 'en-US';
-            this._warmSR.continuous = false;
-            this._warmSR.interimResults = false;
-            this._warmSR.maxAlternatives = 3;
-        } catch(e) { this._warmSR = null; }
-    },
-
-    startListening() {
-        if (!this.active) return;
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        this.setStatus('👂 正在听...', 'listening');
-
-        const r = this._warmSR || new SR();
-        this._warmSR = null;
-        r.lang = 'en-US';
-        r.continuous = false;
-        r.interimResults = false;
-        r.maxAlternatives = 3;
-        this.recognition = r;
-
-        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
-        const refText = state.segments[state.currIndex][key] || '';
-        const wordCount = refText.trim().split(/\s+/).filter(Boolean).length;
-        const dynamicTimeout = Math.min(25000, Math.max(12000, wordCount * 1200));
-
-        let settled = false;
-        const settle = fn => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
-
-        r.onresult = e => settle(() => {
-            const ref = this._normalize(refText);
-            let best = { sim: -1, t: '' };
-            for (let i = 0; i < e.results[0].length; i++) {
-                const t = this._normalize(e.results[0][i].transcript);
-                const s = this._similarity(ref, t);
-                if (s > best.sim) best = { sim: s, t };
-            }
-            this.evaluate(best.sim * 100, best.t);
-        });
-
-        r.onerror = e => settle(() => {
-            console.warn('SR error:', e.error);
-            if (e.error === 'no-speech') {
-                this.setStatus('🔇 未听到', 'fail');
-            } else if (e.error === 'aborted') {
-                return;
-            } else {
-                this.setStatus(`⚠️ ${e.error}`, 'fail');
-            }
-            this._scheduleOnFail();
-        });
-
-        r.onend = () => settle(() => {
-            this.setStatus('🔇 无输入', 'fail');
-            this._scheduleOnFail();
-        });
-
-        this._listenTimeout = setTimeout(() => settle(() => {
-            try { r.abort(); } catch(e) {}
-            this.setStatus(`⏱ 超时(${(dynamicTimeout/1000).toFixed(0)}s)`, 'fail');
-            this._scheduleOnFail();
-        }), dynamicTimeout);
-
-        try { r.start(); } catch(e) {
-            settle(() => { this.setStatus('❌ 启动失败', 'fail'); this._scheduleOnFail(); });
+    r.onresult = e => settle(() => {
+        const ref = this._normalize(refText);
+        let best = { sim: -1, t: '' };
+        for (let i = 0; i < e.results[0].length; i++) {
+            const t = this._normalize(e.results[0][i].transcript);
+            const s = this._similarity(ref, t);
+            if (s > best.sim) best = { sim: s, t };
         }
-    },
+        this.evaluate(best.sim * 100, best.t);
+    });
 
-    evaluate(simPct, transcript) {
-        const pass = simPct >= this.threshold;
-        const icon = pass ? '✅' : '❌';
-        this.setStatus(`${icon} ${simPct.toFixed(0)}%`, pass ? 'success' : 'fail');
-        console.log(`[AI] 识别: "${transcript}" | 相似度: ${simPct.toFixed(1)}% | 阈值: ${this.threshold}% | ${pass?'通过':'失败'}`);
-
-        if (pass) {
-            this.failCount = 0;
-            if (this.reviewMode) this.reviewQueue.shift();
-            this.playBeep('success');
-            this._cycleTimer = setTimeout(() => {
-                if (!this.active) return;
-                if (this.reviewMode) { this.runCycle(); return; }
-                if (state.currIndex < state.segments.length - 1) {
-                    state.currIndex++;
-                    this.runCycle();
-                } else {
-                    this.active = false;
-                    this._setBtn('idle');
-                    document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
-                    this.setStatus('🎊 完成！', 'success');
-                    this.playBeep('complete');
-                    // [Fix 7] 还原 permBlurMode
-                    state.permBlurMode = this._prevPermBlurMode;
-                    if (state.permBlurMode === 'show') state.userBlurState = false;
-                    ui.updatePermButtons(); ui.updatePractice(state.currIndex);
-                    setTimeout(() => this.showRoundComplete(), 1000);
-                }
-            }, 800);
-
+    r.onerror = e => settle(() => {
+        console.warn('SR error:', e.error);
+        if (e.error === 'no-speech') {
+            this.setStatus('🔇 未听到', 'fail');
+        } else if (e.error === 'aborted') {
+            return;
         } else {
-            if (this.failCount === 0 && !this.reviewMode) {
-                this.failCount = 1;
-                this.playBeep('fail');
-                this._enterManualPractice();
-            } else {
-                this._scheduleOnFail();
-            }
+            this.setStatus(`⚠️ ${e.error}`, 'fail');
         }
-    },
+        this._scheduleOnFail();
+    });
 
-    _enterManualPractice() {
-        this.manualPracticeMode = true;
-        document.getElementById('ai-mode-bar').classList.remove('ai-running');
-        document.getElementById('ai-mode-bar').classList.add('ai-manual');
-        document.getElementById('btn-ai-resume').style.display = 'block';
-        document.getElementById('text-container').classList.add('ai-manual');
-        this.setStatus('👆 手动复习', 'manual');
-        ui.toast('💡 可点"循环单句"/"播单句"练习，完成后点"继续AI →"');
-    },
+    r.onend = () => settle(() => {
+        this.setStatus('🔇 无输入', 'fail');
+        this._scheduleOnFail();
+    });
 
-    resumeFromManual() {
-        if (!this.active || !this.manualPracticeMode) return;
-        this.manualPracticeMode = false;
-        engine.stopAll();
-        state.userBlurState = true;
-        ui.updatePractice(state.currIndex);
-        document.getElementById('ai-mode-bar').classList.add('ai-running');
-        document.getElementById('ai-mode-bar').classList.remove('ai-manual');
-        document.getElementById('btn-ai-resume').style.display = 'none';
-        document.getElementById('text-container').classList.remove('ai-manual');
-        this.setStatus('▶ 继续中...', '');
-        this._cycleTimer = setTimeout(() => this.runCycle(), 600);
-    },
+    this._listenTimeout = setTimeout(() => settle(() => {
+        try { r.abort(); } catch(e) {}
+        this.setStatus(`⏱ 超时(${(dynamicTimeout/1000).toFixed(0)}s)`, 'fail');
+        this._scheduleOnFail();
+    }), dynamicTimeout);
 
-    _scheduleOnFail() {
-        this.failCount++;
-        this.playBeep('fail');
+    try { r.start(); } catch(e) {
+        settle(() => { this.setStatus('❌ 启动失败', 'fail'); this._scheduleOnFail(); });
+    }
+},
 
-        if (!this.reviewMode && this.failCount >= this.maxFails) {
-            if (!this.failedSentences.includes(state.currIndex)) {
-                this.failedSentences.push(state.currIndex);
-            }
-            this.failCount = 0;
-            this.setStatus('⏭ 跳过', 'fail');
-            this.playBeep('skip');
-            this._cycleTimer = setTimeout(() => {
-                if (!this.active) return;
-                if (state.currIndex < state.segments.length - 1) {
-                    state.currIndex++;
-                    this.runCycle();
-                } else {
-                    this.active = false;
-                    this._setBtn('idle');
-                    document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
-                    this.setStatus('完成', 'success');
-                    // [Fix 7] 还原 permBlurMode
-                    state.permBlurMode = this._prevPermBlurMode;
-                    if (state.permBlurMode === 'show') state.userBlurState = false;
-                    ui.updatePermButtons(); ui.updatePractice(state.currIndex);
-                    setTimeout(() => this.showRoundComplete(), 800);
-                }
-            }, 1500);
-        } else {
-            this._cycleTimer = setTimeout(() => {
-                if (!this.active) return;
-                this.runCycle();
-            }, 900);
-        }
-    },
+evaluate(simPct, transcript) {
+    const pass = simPct >= this.threshold;
+    const icon = pass ? '✅' : '❌';
+    this.setStatus(`${icon} ${simPct.toFixed(0)}%`, pass ? 'success' : 'fail');
+    console.log(`[AI] 识别: "${transcript}" | 相似度: ${simPct.toFixed(1)}% | 阈值: ${this.threshold}% | ${pass?'通过':'失败'}`);
 
-    showRoundComplete(isReview = false) {
-        const total = state.segments.length;
-        const failedCount = this.failedSentences.length;
-        const passedCount = total - failedCount;
-        const accuracy = total > 0 ? Math.round(passedCount / total * 100) : 100;
-
-        let emoji, title, msg;
-        if (isReview) {
-            const stillFailed = this.failedSentences.length;
-            if (stillFailed === 0) {
-                emoji = '🏅'; title = '复习大获全胜！';
-                msg = '太了不起了！所有错误的句子全部通关，你的坚持没有白费！';
-            } else {
-                emoji = '💪'; title = '复习完成！';
-                msg = `还有 ${stillFailed} 句需要继续磨练，但每次练习都是进步！`;
-            }
-        } else {
-            if (accuracy >= 97) {
-                emoji = '🏆'; title = '完美表现！近乎满分！';
-                msg = '你的发音令人叹服，几乎每一句都无懈可击！继续保持这份完美！';
-            } else if (accuracy >= 85) {
-                emoji = '🌟'; title = '非常出色！';
-                msg = '你的英语口语真的很棒！这样的水平已经超越了大多数人，为你骄傲！';
-            } else if (accuracy >= 70) {
-                emoji = '💪'; title = '很有进步！';
-                msg = '基础扎实，继续坚持跟读练习，你会越来越强！语感正在悄悄提升！';
-            } else if (accuracy >= 50) {
-                emoji = '📈'; title = '不错的开始！';
-                msg = '每一次开口都是勇气，继续跟读，进步会越来越快！不要放弃！';
-            } else {
-                emoji = '🌱'; title = '勇于开口就是进步！';
-                msg = '英语学习从来都不是一朝一夕，每一次练习都在积累！继续加油！';
-            }
-        }
-
-        document.getElementById('round-emoji').innerText = emoji;
-        document.getElementById('round-title').innerText = title;
-        document.getElementById('round-stats').innerText = `共 ${total} 句 · 通过 ${passedCount} 句 · 正确率 ${accuracy}%`;
-        document.getElementById('round-msg').innerText = msg;
-
-        const fill = document.getElementById('round-accuracy-fill');
-        fill.style.width = '0%';
-        setTimeout(() => { fill.style.width = accuracy + '%'; }, 100);
-
-        const reviewBtn = document.getElementById('round-review-btn');
-        if (!isReview && this.failedSentences.length > 0) {
-            reviewBtn.style.display = 'block';
-            reviewBtn.innerText = `💪 再次练习错误句子 (${this.failedSentences.length} 句)`;
-        } else {
-            reviewBtn.style.display = 'none';
-        }
-
-        document.getElementById('ai-round-modal').style.display = 'flex';
-    },
-
-    closeRoundModal() {
-        document.getElementById('ai-round-modal').style.display = 'none';
-    },
-
-    startReview() {
-        if (!this.failedSentences.length) return;
-        this.closeRoundModal();
-        this.reviewMode = true;
-        this.reviewQueue = [...this.failedSentences];
-        // [Fix 2] 统一在这里清空 failedSentences，start() 内不重复清空
-        this.failedSentences = [];
+    if (pass) {
         this.failCount = 0;
-        state.currIndex = this.reviewQueue[0];
-        ui.updatePractice(state.currIndex);
-        ui.toast(`💪 开始复习 ${this.reviewQueue.length} 个错误句子`);
-        setTimeout(() => this.start(), 300);
-    },
-
-    _normalize(s) {
-        return s.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
-    },
-
-    _similarity(a, b) {
-        if (!a && !b) return 1;
-        if (!a || !b) return 0;
-        // [Fix 9] 词数差超过 60% 时快速返回低分，跳过完整 Levenshtein
-        const aWords = a.split(' ').length, bWords = b.split(' ').length;
-        const maxW = Math.max(aWords, bWords), minW = Math.min(aWords, bWords);
-        if (maxW > 0 && minW / maxW < 0.4) return minW / maxW * 0.5;
-        const dist = this._levenshtein(a, b);
-        return 1 - dist / Math.max(a.length, b.length);
-    },
-
-    _levenshtein(a, b) {
-        const m = a.length, n = b.length;
-        let prev = Array.from({length: n+1}, (_,j) => j);
-        for (let i = 1; i <= m; i++) {
-            const curr = [i];
-            for (let j = 1; j <= n; j++) {
-                curr[j] = a[i-1]===b[j-1] ? prev[j-1] : 1+Math.min(prev[j],curr[j-1],prev[j-1]);
+        if (this.reviewMode) this.reviewQueue.shift();
+        this.playBeep('success');
+        this._cycleTimer = setTimeout(() => {
+            if (!this.active) return;
+            if (this.reviewMode) { this.runCycle(); return; }
+            if (state.currIndex < state.segments.length - 1) {
+                state.currIndex++;
+                this.runCycle();
+            } else {
+                this.active = false;
+                this._setBtn('idle');
+                document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
+                this.setStatus('🎊 完成！', 'success');
+                this.playBeep('complete');
+                // [Fix 7] 还原 permBlurMode
+                state.permBlurMode = this._prevPermBlurMode;
+                if (state.permBlurMode === 'show') state.userBlurState = false;
+                ui.updatePermButtons(); ui.updatePractice(state.currIndex);
+                setTimeout(() => this.showRoundComplete(), 1000);
             }
-            prev = curr;
+        }, 800);
+
+    } else {
+        if (this.failCount === 0 && !this.reviewMode) {
+            this.failCount = 1;
+            this.playBeep('fail');
+            this._enterManualPractice();
+        } else {
+            this._scheduleOnFail();
         }
-        return prev[n];
-    },
+    }
+},
 
-    playBeep(type) {
-        try {
-            if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
-            const ctx = this.audioCtx;
-            if (ctx.state === 'suspended') ctx.resume();
-            const now = ctx.currentTime;
+_enterManualPractice() {
+    this.manualPracticeMode = true;
+    document.getElementById('ai-mode-bar').classList.remove('ai-running');
+    document.getElementById('ai-mode-bar').classList.add('ai-manual');
+    document.getElementById('btn-ai-resume').style.display = 'block';
+    document.getElementById('text-container').classList.add('ai-manual');
+    this.setStatus('👆 手动复习', 'manual');
+    ui.toast('💡 可点"循环单句"/"播单句"练习，完成后点"继续AI →"');
+},
 
-            if (type === 'success') {
-                const arpNotes = [
-                    { freq: 659.25, t: 0,    dur: 0.22 },
-                    { freq: 783.99, t: 0.075, dur: 0.22 },
-                    { freq: 987.77, t: 0.15,  dur: 0.22 },
-                    { freq: 1318.5, t: 0.225, dur: 0.38 },
-                ];
-                arpNotes.forEach(n => {
-                    const osc = ctx.createOscillator(), g = ctx.createGain();
-                    osc.connect(g); g.connect(ctx.destination);
-                    osc.type = 'sine'; osc.frequency.value = n.freq;
-                    const t = now + n.t;
-                    g.gain.setValueAtTime(0, t);
-                    g.gain.linearRampToValueAtTime(0.4, t + 0.018);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + n.dur);
-                    osc.start(t); osc.stop(t + n.dur);
-                });
-                const shimmer = ctx.createOscillator(), sg = ctx.createGain();
-                shimmer.connect(sg); sg.connect(ctx.destination);
-                shimmer.type = 'triangle'; shimmer.frequency.value = 2637;
-                sg.gain.setValueAtTime(0.15, now); sg.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-                shimmer.start(now); shimmer.stop(now + 0.1);
-                const base = ctx.createOscillator(), bg = ctx.createGain();
-                base.connect(bg); bg.connect(ctx.destination);
-                base.type = 'sine'; base.frequency.value = 329.63;
-                bg.gain.setValueAtTime(0.15, now); bg.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-                base.start(now); base.stop(now + 0.4);
+resumeFromManual() {
+    if (!this.active || !this.manualPracticeMode) return;
+    this.manualPracticeMode = false;
+    engine.stopAll();
+    state.userBlurState = true;
+    ui.updatePractice(state.currIndex);
+    document.getElementById('ai-mode-bar').classList.add('ai-running');
+    document.getElementById('ai-mode-bar').classList.remove('ai-manual');
+    document.getElementById('btn-ai-resume').style.display = 'none';
+    document.getElementById('text-container').classList.remove('ai-manual');
+    this.setStatus('▶ 继续中...', '');
+    this._cycleTimer = setTimeout(() => this.runCycle(), 600);
+},
 
-            } else if (type === 'fail') {
+_scheduleOnFail() {
+    this.failCount++;
+    this.playBeep('fail');
+
+    if (!this.reviewMode && this.failCount >= this.maxFails) {
+        if (!this.failedSentences.includes(state.currIndex)) {
+            this.failedSentences.push(state.currIndex);
+        }
+        this.failCount = 0;
+        this.setStatus('⏭ 跳过', 'fail');
+        this.playBeep('skip');
+        this._cycleTimer = setTimeout(() => {
+            if (!this.active) return;
+            if (state.currIndex < state.segments.length - 1) {
+                state.currIndex++;
+                this.runCycle();
+            } else {
+                this.active = false;
+                this._setBtn('idle');
+                document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
+                this.setStatus('完成', 'success');
+                // [Fix 7] 还原 permBlurMode
+                state.permBlurMode = this._prevPermBlurMode;
+                if (state.permBlurMode === 'show') state.userBlurState = false;
+                ui.updatePermButtons(); ui.updatePractice(state.currIndex);
+                setTimeout(() => this.showRoundComplete(), 800);
+            }
+        }, 1500);
+    } else {
+        this._cycleTimer = setTimeout(() => {
+            if (!this.active) return;
+            this.runCycle();
+        }, 900);
+    }
+},
+
+showRoundComplete(isReview = false) {
+    const total = state.segments.length;
+    const failedCount = this.failedSentences.length;
+    const passedCount = total - failedCount;
+    const accuracy = total > 0 ? Math.round(passedCount / total * 100) : 100;
+
+    let emoji, title, msg;
+    if (isReview) {
+        const stillFailed = this.failedSentences.length;
+        if (stillFailed === 0) {
+            emoji = '🏅'; title = '复习大获全胜！';
+            msg = '太了不起了！所有错误的句子全部通关，你的坚持没有白费！';
+        } else {
+            emoji = '💪'; title = '复习完成！';
+            msg = `还有 ${stillFailed} 句需要继续磨练，但每次练习都是进步！`;
+        }
+    } else {
+        if (accuracy >= 97) {
+            emoji = '🏆'; title = '完美表现！近乎满分！';
+            msg = '你的发音令人叹服，几乎每一句都无懈可击！继续保持这份完美！';
+        } else if (accuracy >= 85) {
+            emoji = '🌟'; title = '非常出色！';
+            msg = '你的英语口语真的很棒！这样的水平已经超越了大多数人，为你骄傲！';
+        } else if (accuracy >= 70) {
+            emoji = '💪'; title = '很有进步！';
+            msg = '基础扎实，继续坚持跟读练习，你会越来越强！语感正在悄悄提升！';
+        } else if (accuracy >= 50) {
+            emoji = '📈'; title = '不错的开始！';
+            msg = '每一次开口都是勇气，继续跟读，进步会越来越快！不要放弃！';
+        } else {
+            emoji = '🌱'; title = '勇于开口就是进步！';
+            msg = '英语学习从来都不是一朝一夕，每一次练习都在积累！继续加油！';
+        }
+    }
+
+    document.getElementById('round-emoji').innerText = emoji;
+    document.getElementById('round-title').innerText = title;
+    document.getElementById('round-stats').innerText = `共 ${total} 句 · 通过 ${passedCount} 句 · 正确率 ${accuracy}%`;
+    document.getElementById('round-msg').innerText = msg;
+
+    const fill = document.getElementById('round-accuracy-fill');
+    fill.style.width = '0%';
+    setTimeout(() => { fill.style.width = accuracy + '%'; }, 100);
+
+    const reviewBtn = document.getElementById('round-review-btn');
+    if (!isReview && this.failedSentences.length > 0) {
+        reviewBtn.style.display = 'block';
+        reviewBtn.innerText = `💪 再次练习错误句子 (${this.failedSentences.length} 句)`;
+    } else {
+        reviewBtn.style.display = 'none';
+    }
+
+    document.getElementById('ai-round-modal').style.display = 'flex';
+},
+
+closeRoundModal() {
+    document.getElementById('ai-round-modal').style.display = 'none';
+},
+
+startReview() {
+    if (!this.failedSentences.length) return;
+    this.closeRoundModal();
+    this.reviewMode = true;
+    this.reviewQueue = [...this.failedSentences];
+    // [Fix 2] 统一在这里清空 failedSentences，start() 内不重复清空
+    this.failedSentences = [];
+    this.failCount = 0;
+    state.currIndex = this.reviewQueue[0];
+    ui.updatePractice(state.currIndex);
+    ui.toast(`💪 开始复习 ${this.reviewQueue.length} 个错误句子`);
+    setTimeout(() => this.start(), 300);
+},
+
+_normalize(s) {
+    return s.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+},
+
+_similarity(a, b) {
+    if (!a && !b) return 1;
+    if (!a || !b) return 0;
+    // [Fix 9] 词数差超过 60% 时快速返回低分，跳过完整 Levenshtein
+    const aWords = a.split(' ').length, bWords = b.split(' ').length;
+    const maxW = Math.max(aWords, bWords), minW = Math.min(aWords, bWords);
+    if (maxW > 0 && minW / maxW < 0.4) return minW / maxW * 0.5;
+    const dist = this._levenshtein(a, b);
+    return 1 - dist / Math.max(a.length, b.length);
+},
+
+_levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    let prev = Array.from({length: n+1}, (_,j) => j);
+    for (let i = 1; i <= m; i++) {
+        const curr = [i];
+        for (let j = 1; j <= n; j++) {
+            curr[j] = a[i-1]===b[j-1] ? prev[j-1] : 1+Math.min(prev[j],curr[j-1],prev[j-1]);
+        }
+        prev = curr;
+    }
+    return prev[n];
+},
+
+playBeep(type) {
+    try {
+        if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
+        const ctx = this.audioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+
+        if (type === 'success') {
+            const arpNotes = [
+                { freq: 659.25, t: 0,    dur: 0.22 },
+                { freq: 783.99, t: 0.075, dur: 0.22 },
+                { freq: 987.77, t: 0.15,  dur: 0.22 },
+                { freq: 1318.5, t: 0.225, dur: 0.38 },
+            ];
+            arpNotes.forEach(n => {
                 const osc = ctx.createOscillator(), g = ctx.createGain();
                 osc.connect(g); g.connect(ctx.destination);
-                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, now); osc.frequency.exponentialRampToValueAtTime(160, now + 0.4);
-                g.gain.setValueAtTime(0.18, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-                osc.start(now); osc.stop(now + 0.45);
+                osc.type = 'sine'; osc.frequency.value = n.freq;
+                const t = now + n.t;
+                g.gain.setValueAtTime(0, t);
+                g.gain.linearRampToValueAtTime(0.4, t + 0.018);
+                g.gain.exponentialRampToValueAtTime(0.001, t + n.dur);
+                osc.start(t); osc.stop(t + n.dur);
+            });
+            const shimmer = ctx.createOscillator(), sg = ctx.createGain();
+            shimmer.connect(sg); sg.connect(ctx.destination);
+            shimmer.type = 'triangle'; shimmer.frequency.value = 2637;
+            sg.gain.setValueAtTime(0.15, now); sg.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            shimmer.start(now); shimmer.stop(now + 0.1);
+            const base = ctx.createOscillator(), bg = ctx.createGain();
+            base.connect(bg); bg.connect(ctx.destination);
+            base.type = 'sine'; base.frequency.value = 329.63;
+            bg.gain.setValueAtTime(0.15, now); bg.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            base.start(now); base.stop(now + 0.4);
 
-            } else if (type === 'skip') {
-                for (let i = 0; i < 3; i++) {
-                    const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.connect(g); g.connect(ctx.destination);
-                    o.type = 'triangle'; o.frequency.value = 440;
-                    const t = now + i * 0.16;
-                    g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-                    o.start(t); o.stop(t + 0.1);
-                }
+        } else if (type === 'fail') {
+            const osc = ctx.createOscillator(), g = ctx.createGain();
+            osc.connect(g); g.connect(ctx.destination);
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(240, now); osc.frequency.exponentialRampToValueAtTime(160, now + 0.4);
+            g.gain.setValueAtTime(0.18, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc.start(now); osc.stop(now + 0.45);
 
-            } else if (type === 'complete') {
-                [523, 659, 784, 1047].forEach((freq, i) => {
-                    const o = ctx.createOscillator(), g = ctx.createGain();
-                    o.connect(g); g.connect(ctx.destination);
-                    o.type = 'sine'; o.frequency.value = freq;
-                    const t = now + i * 0.09;
-                    g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
-                    o.start(t); o.stop(t + 0.7);
-                });
+        } else if (type === 'skip') {
+            for (let i = 0; i < 3; i++) {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'triangle'; o.frequency.value = 440;
+                const t = now + i * 0.16;
+                g.gain.setValueAtTime(0.22, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                o.start(t); o.stop(t + 0.1);
             }
-        } catch(e) { console.warn('beep error:', e); }
-    },
 
-    setStatus(text, type) {
-        const pill = document.getElementById('ai-status-pill'); if (!pill) return;
-        pill.innerText = text;
-        pill.className = 'ai-status-pill' + (type ? ' ' + type : '');
-    },
-    _setBtn(mode) {
-        const btn = document.getElementById('btn-ai-mode'); if (!btn) return;
-        if (mode === 'running') { btn.className = 'btn-ai-toggle running'; btn.innerText = '⏹ 停止AI'; }
-        else { btn.className = 'btn-ai-toggle idle'; btn.innerText = '🤖 AI模式'; }
-    }
+        } else if (type === 'complete') {
+            [523, 659, 784, 1047].forEach((freq, i) => {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = 'sine'; o.frequency.value = freq;
+                const t = now + i * 0.09;
+                g.gain.setValueAtTime(0.28, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.7);
+                o.start(t); o.stop(t + 0.7);
+            });
+        }
+    } catch(e) { console.warn('beep error:', e); }
+},
+
+setStatus(text, type) {
+    const pill = document.getElementById('ai-status-pill'); if (!pill) return;
+    pill.innerText = text;
+    pill.className = 'ai-status-pill' + (type ? ' ' + type : '');
+},
+_setBtn(mode) {
+    const btn = document.getElementById('btn-ai-mode'); if (!btn) return;
+    if (mode === 'running') { btn.className = 'btn-ai-toggle running'; btn.innerText = '⏹ 停止AI'; }
+    else { btn.className = 'btn-ai-toggle idle'; btn.innerText = '🤖 AI模式'; }
+}
+```
+
 };
 
 // ============================================================
 //  事件绑定
 // ============================================================
-document.getElementById('project-file').addEventListener('change', e => app.loadProject(e.target));
-document.getElementById('audio-file').addEventListener('change', e => {
-    const f = e.target.files[0];
-    if (f) { document.getElementById('main-audio').src = URL.createObjectURL(f); ui.updateAudioStatus(); }
+document.getElementById(‘project-file’).addEventListener(‘change’, e => app.loadProject(e.target));
+document.getElementById(‘audio-file’).addEventListener(‘change’, e => {
+const f = e.target.files[0];
+if (f) {
+if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
+state._audioObjectUrl = URL.createObjectURL(f);
+document.getElementById(‘main-audio’).src = state._audioObjectUrl;
+ui.updateAudioStatus();
+}
 });
-document.getElementById('ai-threshold').addEventListener('input', function() {
-    const pct = ((this.value - this.min) / (this.max - this.min)) * 100;
-    this.style.setProperty('--fill', pct + '%');
+document.getElementById(‘ai-threshold’).addEventListener(‘input’, function() {
+const pct = ((this.value - this.min) / (this.max - this.min)) * 100;
+this.style.setProperty(’–fill’, pct + ‘%’);
 });
 
 // ============================================================
 //  工具函数
 // ============================================================
 function fmtTime(s, srt = false) {
-    const d = new Date(0); d.setMilliseconds(s * 1000);
-    const str = d.toISOString().substr(11, 12);
-    return srt ? str.replace('.', ',') : str.substr(0, 8);
+const d = new Date(0); d.setMilliseconds(s * 1000);
+const str = d.toISOString().substr(11, 12);
+return srt ? str.replace(’.’, ‘,’) : str.substr(0, 8);
 }
 
-// [Fix 5] SRT 解析：统一去除 \r，兼容 Windows 换行格式
-function parseSRT(t) {
-    t = t.replace(/\r/g, '');
-    const r = [];
-    const e = /(\d+)?\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s-->\s(\d{2}:\d{2}:\d{2}[,.]\d{3})\s+([\s\S]*?)(?=\n\d+\s+\d{2}:\d{2}|$)/g;
-    let m;
-    while (m = e.exec(t)) r.push({ start: pt(m[2]), end: pt(m[3]), text: m[4].trim() });
-    return r;
+// [Fix 5] SRT 状态机解析，替换旧正则，避免正文含数字+时间格式时误截断
+function parseSRT(raw) {
+raw = raw.replace(/\r/g, ‘’);
+const lines = raw.split(’\n’);
+const result = [];
+let state = ‘idle’; // idle | time | text
+let cur = null;
+const timeRe = /(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*–>\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})/;
+for (let i = 0; i < lines.length; i++) {
+const line = lines[i].trim();
+if (state === ‘idle’) {
+if (/^\d+$/.test(line)) { state = ‘time’; }
+} else if (state === ‘time’) {
+const m = timeRe.exec(line);
+if (m) { cur = { start: pt(m[1]), end: pt(m[2]), text: ‘’ }; state = ‘text’; }
+else { state = ‘idle’; }
+} else if (state === ‘text’) {
+if (line === ‘’) {
+if (cur) { cur.text = cur.text.trim(); result.push(cur); cur = null; }
+state = ‘idle’;
+} else {
+cur.text += (cur.text ? ‘\n’ : ‘’) + line;
+}
+}
+}
+// 文件末尾没有空行时也保存最后一条
+if (cur) { cur.text = cur.text.trim(); result.push(cur); }
+return result;
 }
 
 function pt(s) {
-    s = s.replace(',', '.'); const p = s.split(':');
-    return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseFloat(p[2]);
+s = s.replace(’,’, ‘.’); const p = s.split(’:’);
+return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseFloat(p[2]);
 }
 
+// [Fix 3] detectSilence 同步版（供 Worker 内部使用）
 function detectSilence(b, th) {
-    const d = b.getChannelData(0), sr = b.sampleRate, min = 0.4 * sr;
-    let res = [], sp = false, st = 0, sil = 0;
-    for (let i = 0; i < d.length; i += 200) {
-        if (Math.abs(d[i]) > th) {
-            if (!sp) { sp = true; st = i; } sil = 0;
-        } else if (sp) {
-            if (!sil) sil = i;
-            if (i - sil > min) {
-                const s = st/sr, e = sil/sr;
-                if (e-s > 0.3) res.push({start:s, end:e, text:""});
-                sp = false; sil = 0;
-            }
-        }
-    }
-    if (sp) res.push({start:st/sr, end:d.length/sr, text:""});
-    return res;
+const d = b.getChannelData(0), sr = b.sampleRate, min = 0.4 * sr;
+let res = [], sp = false, st = 0, sil = 0;
+for (let i = 0; i < d.length; i += 200) {
+if (Math.abs(d[i]) > th) {
+if (!sp) { sp = true; st = i; } sil = 0;
+} else if (sp) {
+if (!sil) sil = i;
+if (i - sil > min) {
+const s = st/sr, e = sil/sr;
+if (e-s > 0.3) res.push({start:s, end:e, text:””});
+sp = false; sil = 0;
+}
+}
+}
+if (sp) res.push({start:st/sr, end:d.length/sr, text:””});
+return res;
+}
+
+// [Fix 3] 异步版：用 Web Worker 跑，避免长音频卡死主线程
+function detectSilenceAsync(audioBuffer, threshold) {
+return new Promise((resolve) => {
+// 把 PCM 数据复制出来传给 Worker（transferable，零拷贝）
+const pcm = audioBuffer.getChannelData(0);
+const copy = new Float32Array(pcm.length);
+copy.set(pcm);
+const sr = audioBuffer.sampleRate;
+const workerCode = ` self.onmessage = function(e) { const { pcm, sr, th } = e.data; const min = 0.4 * sr; let res = [], sp = false, st = 0, sil = 0; for (let i = 0; i < pcm.length; i += 200) { if (Math.abs(pcm[i]) > th) { if (!sp) { sp = true; st = i; } sil = 0; } else if (sp) { if (!sil) sil = i; if (i - sil > min) { const s = st/sr, en = sil/sr; if (en-s > 0.3) res.push({start:s, end:en, text:""}); sp = false; sil = 0; } } } if (sp) res.push({start:st/sr, end:pcm.length/sr, text:""}); self.postMessage(res); };`;
+const blob = new Blob([workerCode], {type: ‘application/javascript’});
+const workerUrl = URL.createObjectURL(blob);
+const worker = new Worker(workerUrl);
+worker.onmessage = (e) => {
+worker.terminate();
+URL.revokeObjectURL(workerUrl);
+resolve(e.data);
+};
+worker.onerror = () => {
+// Worker 失败时降级到主线程同步执行
+worker.terminate();
+URL.revokeObjectURL(workerUrl);
+resolve(detectSilence(audioBuffer, threshold));
+};
+worker.postMessage({ pcm: copy, sr, th: threshold }, [copy.buffer]);
+});
 }
 
 // ============================================================
@@ -1680,5 +1773,6 @@ function detectSilence(b, th) {
 // ============================================================
 ui.init();
 </script>
+
 </body>
 </html>
