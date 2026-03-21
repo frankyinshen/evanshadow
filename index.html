@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V70.0</title>
+<title>影子跟读 Pro V70.1</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -176,7 +176,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.0</div>
+    <div class="nav-title">🎧 影子跟读 V70.1</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -484,9 +484,22 @@ const net = {
     fixUrl(url) {
         if (!url) return '';
         url = url.trim();
-        if (url.includes('gitee.com') && (url.includes('/edit/') || url.includes('/blob/'))) return url.replace(/\/edit\/|\/blob\//, '/raw/');
-        if (url.includes('github.com') && url.includes('/blob/')) return url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
-        return url;
+        if (url.includes('gitee.com') && (url.includes('/edit/') || url.includes('/blob/')))
+            url = url.replace(/\/edit\/|\/blob\//, '/raw/');
+        if (url.includes('github.com') && url.includes('/blob/'))
+            url = url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
+        // 安全编码：先解析为 URL 对象，再逐段 decode→encode pathname
+        // 保证中文/空格被正确编码，且不会对已有 %xx 双重编码
+        try {
+            const u = new URL(url);
+            u.pathname = u.pathname.split('/').map(seg => {
+                try { seg = decodeURIComponent(seg); } catch(e) {}
+                return encodeURIComponent(seg);
+            }).join('/');
+            return u.toString();
+        } catch(e) {
+            return url;
+        }
     },
     async fetchCommon(url, type) {
         ui.setLoadBtnText("尝试直连下载...");
