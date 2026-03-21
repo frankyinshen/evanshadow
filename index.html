@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>影子跟读 Pro V70.2</title>
+<title>影子跟读 Pro V70.3</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -178,7 +178,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.2</div>
+    <div class="nav-title">🎧 影子跟读 V70.3</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -1691,27 +1691,26 @@ function parseSRT(raw) {
 raw = raw.replace(/\r/g, ‘’);
 const lines = raw.split(’\n’);
 const result = [];
-let state = ‘idle’; // idle | time | text
+let phase = ‘idle’; // idle | time | text  （避免与全局 state 对象同名）
 let cur = null;
 const timeRe = /(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*–>\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})/;
 for (let i = 0; i < lines.length; i++) {
 const line = lines[i].trim();
-if (state === ‘idle’) {
-if (/^\d+$/.test(line)) { state = ‘time’; }
-} else if (state === ‘time’) {
+if (phase === ‘idle’) {
+if (/^\d+$/.test(line)) { phase = ‘time’; }
+} else if (phase === ‘time’) {
 const m = timeRe.exec(line);
-if (m) { cur = { start: pt(m[1]), end: pt(m[2]), text: ‘’ }; state = ‘text’; }
-else { state = ‘idle’; }
-} else if (state === ‘text’) {
+if (m) { cur = { start: pt(m[1]), end: pt(m[2]), text: ‘’ }; phase = ‘text’; }
+else { phase = ‘idle’; }
+} else if (phase === ‘text’) {
 if (line === ‘’) {
 if (cur) { cur.text = cur.text.trim(); result.push(cur); cur = null; }
-state = ‘idle’;
+phase = ‘idle’;
 } else {
 cur.text += (cur.text ? ‘\n’ : ‘’) + line;
 }
 }
 }
-// 文件末尾没有空行时也保存最后一条
 if (cur) { cur.text = cur.text.trim(); result.push(cur); }
 return result;
 }
