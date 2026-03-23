@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V70.6 | build:20250322 -->
+<!-- 影子跟读 Pro V70.9 | build:20250323 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V70.6</title>
+<title>影子跟读 Pro V70.9</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -180,7 +180,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.6</div>
+    <div class="nav-title">🎧 影子跟读 V70.9</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -548,8 +548,11 @@ const engine = {
         this.stopAll();
         const s = state.segments[i], a = document.getElementById('main-audio');
         if (!a.src) return ui.toast("音频未就绪");
+        // [Fix 1] 同步当前倍速，并以倍速修正暂停 timer，防止溢出播到下一句
+        a.playbackRate = state.playbackRate;
         a.currentTime = s.start; a.play();
-        this.editorTimer = setTimeout(() => a.pause(), (s.end - s.start) * 1000);
+        const realDuration = ((s.end - s.start) * 1000) / state.playbackRate;
+        this.editorTimer = setTimeout(() => a.pause(), realDuration);
     },
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
@@ -562,13 +565,15 @@ const engine = {
         } else if (this.mode === 'LOOP_ONE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
+            // [Fix 4] 加 0.02s 容差防止边界处产生"咔哒"声
+            if (seg && ct >= seg.end - 0.02) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
         } else if (this.mode === 'LOOP_RANGE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
             const endL = parseInt(document.getElementById('loop-end').value) - 1;
             const startL = parseInt(document.getElementById('loop-start').value) - 1;
-            if (seg && ct >= seg.end) {
+            // [Fix 4] 同上加容差
+            if (seg && ct >= seg.end - 0.02) {
                 let nx = state.currIndex + 1;
                 if (nx > endL || nx >= state.segments.length) nx = Math.max(0, startL);
                 this.startWait(() => { state.currIndex = nx; a.currentTime = state.segments[nx].start; ui.updatePractice(nx); a.play(); });
@@ -681,8 +686,11 @@ const ui = {
             const savedInputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
             const currentMp3 = net.fixUrl((savedInputs.mp3 || '').trim());
             if (savedSessionId && currentMp3 && savedSessionId === currentMp3) {
-                const name = currentMp3.split('/').pop().replace(/\.[^.]+$/, '');
-                document.getElementById('restore-title').innerText = name.length > 20 ? name.substring(0, 20) + '...' : name;
+                // 【规则4】截取文件名后 decode，restore-bar 显示可读中文
+                let rawName = currentMp3.split('/').pop().replace(/\.[^.]+$/, '');
+                try { rawName = decodeURIComponent(rawName); } catch(e) {}
+                const name = rawName.length > 20 ? rawName.substring(0, 20) + '...' : rawName;
+                document.getElementById('restore-title').innerText = name;
                 document.getElementById('restore-idx').innerText = state.currIndex + 1;
                 document.getElementById('restore-bar').style.display = 'block';
             }
@@ -725,6 +733,16 @@ const ui = {
         const rec = document.getElementById('btn-record');
         if (rec) { rec.classList.remove('recording','playing'); rec.innerText = "🎤 按下开始录音"; }
     },
+    // [Fix XSS] 渲染前转义 HTML 特殊字符，防止恶意 SRT/工程文件注入脚本
+    escapeHTML(str) {
+        if (str === undefined || str === null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
     renderEditor() {
         const l = document.getElementById('editor-list'); l.innerHTML = '';
         document.getElementById('row-count').innerText = state.segments.length;
@@ -732,9 +750,9 @@ const ui = {
             const d = document.createElement('div'); d.className = 'sub-item';
             d.innerHTML = `
                 <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
-                ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${s.text}</textarea></div>`:''}
-                ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${s.text2}</textarea></div>`:''}
-                ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${s.text3}</textarea></div>`:''}
+                ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${ui.escapeHTML(s.text)}</textarea></div>`:''}
+                ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${ui.escapeHTML(s.text2)}</textarea></div>`:''}
+                ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${ui.escapeHTML(s.text3)}</textarea></div>`:''}
                 <div class="sub-actions"><button class="action-btn btn-play-sm" onclick="engine.playSegment(${i})">▶ 试听</button><button class="action-btn btn-split" onclick="app.splitSeg(${i})">✂️ 拆分</button><button class="action-btn btn-merge" onclick="app.mergeSeg(${i})">🖇️ 合并</button><button class="action-btn btn-del" onclick="app.delSeg(${i})">❌ 删除</button></div>
             `;
             l.appendChild(d);
@@ -870,7 +888,11 @@ const app = {
         let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
         h = h.filter(i => i.mp3 !== mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-        h.unshift({ name: name||mp3.split('/').pop(), mp3, ...d });
+        // 【规则4】截取文件名后立即 decode，历史下拉显示可读中文而非 %xx
+        const displayName = name || (() => {
+            try { return decodeURIComponent(mp3.split('/').pop()); } catch(e) { return mp3.split('/').pop(); }
+        })();
+        h.unshift({ name: displayName, mp3, ...d });
         if (h.length > 10) h.pop();
         localStorage.setItem(CONST.HIST, JSON.stringify(h));
         ui.renderHistory();
@@ -1084,8 +1106,23 @@ const app = {
     importSub(el, k) {
         const f = el.files[0]; if (!f) return;
         const r = new FileReader();
-        r.onload = e => { const n=parseSRT(e.target.result); if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3'); ui.renderEditor(); };
-        r.readAsText(f);
+        r.onload = e => {
+            const buf = e.target.result;
+            const uint8 = new Uint8Array(buf);
+            let text;
+            try {
+                // [Fix 2] 先尝试 UTF-8（strict），失败则回退 GBK 兼容国内老字幕
+                text = new TextDecoder('utf-8', { fatal: true }).decode(uint8);
+            } catch(err) {
+                text = new TextDecoder('gbk').decode(uint8);
+            }
+            // 剥除 BOM 头，防止第一条时间轴解析失败
+            text = text.replace(/^\uFEFF/, '');
+            const n = parseSRT(text);
+            if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3');
+            ui.renderEditor();
+        };
+        r.readAsArrayBuffer(f);
     }
 };
 
@@ -1094,10 +1131,13 @@ const app = {
 // ============================================================
 const recorder = {
     rec: null, chunks: [], stream: null, isRec: false,
+    _isInitializing: false, // [Fix 4] 防止快速双击产生孤立的麦克风流
     async toggle() {
         if (aiMode.active) { ui.toast('AI模式运行中，请先停止AI模式'); return; }
+        if (this._isInitializing) return; // 正在初始化中，忽略重复点击
         const btn = document.getElementById('btn-record');
         if (!this.isRec) {
+            this._isInitializing = true; // 上锁
             engine.stopAll();
             try {
                 this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -1107,6 +1147,7 @@ const recorder = {
                 this.rec.start(); this.isRec = true;
                 if(btn) { btn.classList.add('recording'); btn.innerText="■ 停止录音"; }
             } catch(e) { alert("无麦克风权限"); }
+            finally { this._isInitializing = false; } // 无论成功失败都解锁
         } else { this.stop(false); }
     },
     stop(force) {
@@ -1332,6 +1373,7 @@ const aiMode = {
         const dynamicTimeout = Math.min(25000, Math.max(12000, wordCount * 1200));
 
         let settled = false;
+        let retried = false; // [Fix 6] 最多自动重试一次，应对 iOS 环境噪音导致的 onend 误触发
         const settle = fn => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
 
         r.onresult = e => settle(() => {
@@ -1357,10 +1399,27 @@ const aiMode = {
             this._scheduleOnFail();
         });
 
-        r.onend = () => settle(() => {
-            this.setStatus('🔇 无输入', 'fail');
-            this._scheduleOnFail();
-        });
+        r.onend = () => {
+            // [Fix 6] onend 触发但没有任何识别结果时，自动静默重试一次
+            // 场景：iOS Safari 遇到短暂噪音停顿会提前结束识别，重试能大幅提升体验
+            if (!settled && !retried) {
+                retried = true;
+                console.log('[AI] onend 无结果，自动重试一次...');
+                try {
+                    const r2 = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                    r2.lang = 'en-US'; r2.continuous = false; r2.interimResults = false; r2.maxAlternatives = 3;
+                    r2.onresult = r.onresult;
+                    r2.onerror = e => settle(() => { this.setStatus(`⚠️ ${e.error}`, 'fail'); this._scheduleOnFail(); });
+                    r2.onend = () => settle(() => { this.setStatus('🔇 无输入', 'fail'); this._scheduleOnFail(); });
+                    this.recognition = r2;
+                    r2.start();
+                } catch(e) {
+                    settle(() => { this.setStatus('🔇 无输入', 'fail'); this._scheduleOnFail(); });
+                }
+                return;
+            }
+            settle(() => { this.setStatus('🔇 无输入', 'fail'); this._scheduleOnFail(); });
+        };
 
         this._listenTimeout = setTimeout(() => settle(() => {
             try { r.abort(); } catch(e) {}
@@ -1548,7 +1607,32 @@ const aiMode = {
     },
 
     _normalize(s) {
-        return s.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
+        let str = s.toLowerCase();
+        // [Fix 5] 展开常见英文缩写，避免 "it's" vs "it is" 导致相似度误判失败
+        const contractions = {
+            "i'm": "i am", "i've": "i have", "i'll": "i will", "i'd": "i would",
+            "it's": "it is", "it'll": "it will", "it'd": "it would",
+            "he's": "he is", "he'll": "he will", "he'd": "he would",
+            "she's": "she is", "she'll": "she will", "she'd": "she would",
+            "we're": "we are", "we've": "we have", "we'll": "we will", "we'd": "we would",
+            "you're": "you are", "you've": "you have", "you'll": "you will", "you'd": "you would",
+            "they're": "they are", "they've": "they have", "they'll": "they will", "they'd": "they would",
+            "that's": "that is", "that'll": "that will", "that'd": "that would",
+            "there's": "there is", "there'll": "there will",
+            "what's": "what is", "what'll": "what will", "what've": "what have",
+            "who's": "who is", "who'll": "who will", "who've": "who have",
+            "don't": "do not", "doesn't": "does not", "didn't": "did not",
+            "can't": "cannot", "couldn't": "could not",
+            "won't": "will not", "wouldn't": "would not",
+            "isn't": "is not", "aren't": "are not", "wasn't": "was not", "weren't": "were not",
+            "hasn't": "has not", "haven't": "have not", "hadn't": "had not",
+            "shouldn't": "should not", "mustn't": "must not", "needn't": "need not",
+            "let's": "let us", "here's": "here is", "how's": "how is"
+        };
+        for (const [key, val] of Object.entries(contractions)) {
+            str = str.replace(new RegExp(`\\b${key}\\b`, 'g'), val);
+        }
+        return str.replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
     },
 
     _similarity(a, b) {
@@ -1575,11 +1659,13 @@ const aiMode = {
         return prev[n];
     },
 
-    playBeep(type) {
+    // [Fix 3] 改为 async，await ctx.resume() 确保 iOS Safari 上下文真正激活后再发声
+    // 否则第一个 beep 在 context 还未激活时就发出，iOS 会静默吞掉
+    async playBeep(type) {
         try {
             if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
             const ctx = this.audioCtx;
-            if (ctx.state === 'suspended') ctx.resume();
+            if (ctx.state === 'suspended') await ctx.resume();
             const now = ctx.currentTime;
 
             if (type === 'success') {
@@ -1668,6 +1754,19 @@ document.getElementById('audio-file').addEventListener('change', e => {
 document.getElementById('ai-threshold').addEventListener('input', function() {
     const pct = ((this.value - this.min) / (this.max - this.min)) * 100;
     this.style.setProperty('--fill', pct + '%');
+});
+
+// [Fix 8] 练习页键盘快捷键（仅在练习页激活，且用户不在输入框中时生效）
+// Space: 播单句 | ←: 上一句 | →: 下一句 | R: 录音 | L: 循环单句
+document.addEventListener('keydown', e => {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    const inPractice = document.getElementById('practice-view').classList.contains('active');
+    if (!inPractice) return;
+    if (e.code === 'Space') { e.preventDefault(); engine.playOnce(); }
+    else if (e.code === 'ArrowLeft')  { e.preventDefault(); app.prev(); }
+    else if (e.code === 'ArrowRight') { e.preventDefault(); app.next(); }
+    else if (e.code === 'KeyR') { e.preventDefault(); recorder.toggle(); }
+    else if (e.code === 'KeyL') { e.preventDefault(); engine.toggleLoop(); }
 });
 
 // ============================================================
