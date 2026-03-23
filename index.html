@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V70.4 | build:20250321 -->
+<!-- 影子跟读 Pro V70.6 | build:20250322 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V70.4</title>
+<title>影子跟读 Pro V70.6</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -180,7 +180,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.4</div>
+    <div class="nav-title">🎧 影子跟读 V70.6</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -424,6 +424,8 @@ const serverBrowser = {
         const pathEl = document.getElementById('server-browser-path');
         listEl.innerHTML = '<div class="browser-item loading">正在加载...</div>';
         let dp = url.replace(CONST.SERVER_BROWSER_BASE_URL, '/'); if (!dp.startsWith('/')) dp = '/' + dp;
+        // 【中文路径规范】显示给用户的路径必须 decode，fetch 请求用原始编码 URL
+        try { dp = decodeURIComponent(dp); } catch(e) {}
         pathEl.textContent = dp;
         fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
             .then(html => this.parseAndRender(html, url))
@@ -474,10 +476,12 @@ const serverBrowser = {
         if (!['mp3','wav','m4a','ogg'].includes(ext)) { ui.toast('请选择音频文件'); return; }
         const base = file.name.substring(0, file.name.lastIndexOf('.'));
         const findSub = sfx => { const t = (base + sfx).toLowerCase(); const f = this.allParsedFiles.find(x => !x.isDirectory && x.name.toLowerCase() === t); return f ? f.url : ''; };
-        document.getElementById('url-audio').value = file.url;
-        document.getElementById('url-srt-1').value = findSub('.eng.srt') || findSub('.srt');
-        document.getElementById('url-srt-2').value = findSub('.engchs.srt');
-        document.getElementById('url-srt-3').value = findSub('.chs.srt');
+        // 【中文路径规范】写入输入框前 decode，让用户看到可读路径而非 %xx；fetch 时 fixUrl 会重新 encode
+        const toDisplay = u => { try { return decodeURIComponent(u); } catch(e) { return u; } };
+        document.getElementById('url-audio').value = toDisplay(file.url);
+        document.getElementById('url-srt-1').value = toDisplay(findSub('.eng.srt') || findSub('.srt'));
+        document.getElementById('url-srt-2').value = toDisplay(findSub('.engchs.srt'));
+        document.getElementById('url-srt-3').value = toDisplay(findSub('.chs.srt'));
         app.saveInput(); this.close();
         ui.toast('🔗 链接已自动填充，开始加载...');
         setTimeout(() => app.loadFromUrl(), 500);
@@ -658,10 +662,11 @@ const ui = {
             setTimeout(() => app.loadFromUrl(), 500);
         } else {
             const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-            if (inputs.mp3) document.getElementById('url-audio').value = inputs.mp3;
-            if (inputs.s1) document.getElementById('url-srt-1').value = inputs.s1;
-            if (inputs.s2) document.getElementById('url-srt-2').value = inputs.s2;
-            if (inputs.s3) document.getElementById('url-srt-3').value = inputs.s3;
+            const dec = u => { try { return u ? decodeURIComponent(u) : ''; } catch(e) { return u||''; } };
+            if (inputs.mp3) document.getElementById('url-audio').value = dec(inputs.mp3);
+            if (inputs.s1) document.getElementById('url-srt-1').value = dec(inputs.s1);
+            if (inputs.s2) document.getElementById('url-srt-2').value = dec(inputs.s2);
+            if (inputs.s3) document.getElementById('url-srt-3').value = dec(inputs.s3);
         }
         this.renderHistory();
 
@@ -873,11 +878,12 @@ const app = {
     fillHistory(i) {
         if (i==="") return;
         const h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]'), item = h[i];
+        const dec = u => { try { return u ? decodeURIComponent(u) : ''; } catch(e) { return u||''; } };
         if (item) {
-            document.getElementById('url-audio').value = item.mp3;
-            document.getElementById('url-srt-1').value = item.s1||'';
-            document.getElementById('url-srt-2').value = item.s2||'';
-            document.getElementById('url-srt-3').value = item.s3||'';
+            document.getElementById('url-audio').value = dec(item.mp3);
+            document.getElementById('url-srt-1').value = dec(item.s1);
+            document.getElementById('url-srt-2').value = dec(item.s2);
+            document.getElementById('url-srt-3').value = dec(item.s3);
             this.saveInput();
         }
     },
