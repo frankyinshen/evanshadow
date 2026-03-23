@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V70.9 | build:20250323 -->
+<!-- 影子跟读 Pro V71.0 | build:20250323 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V70.9</title>
+<title>影子跟读 Pro V71.0</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -180,7 +180,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V70.9</div>
+    <div class="nav-title">🎧 影子跟读 V71.0</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -1162,7 +1162,9 @@ const recorder = {
         if (state._recordObjectUrl) { URL.revokeObjectURL(state._recordObjectUrl); state._recordObjectUrl = null; }
         state._recordObjectUrl = URL.createObjectURL(b);
         r.src = state._recordObjectUrl;
-        ui.toast("▶️ 原音"); a.currentTime=s.start; a.play();
+        ui.toast("▶️ 原音");
+        a.playbackRate = 1.0; // 强制正常语速播原音，确保与用户录音做等速对比
+        a.currentTime=s.start; a.play();
         const timer = setInterval(() => {
             if (a.currentTime >= s.end) {
                 a.pause(); clearInterval(timer);
@@ -1799,7 +1801,7 @@ function parseSRT(raw) {
                 if (cur) { cur.text = cur.text.trim(); result.push(cur); cur = null; }
                 phase = 'idle';
             } else {
-                cur.text += (cur.text ? '\n' : '') + line;
+                cur.text += (cur.text ? '\n' : '') + line.replace(/<[^>]+>/g, '');
             }
         }
     }
