@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V71.0 | build:20250323 -->
+<!-- 影子跟读 Pro V72.0 | build:20250330 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V71.0</title>
+<title>影子跟读 Pro V72.0</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
     --red: #EA4335; --purple: #A142F4; --ai: #00897B; --ai-dark: #00695C;
     --bg: #F8F9FA; --text: #202124; --border: #DADCE0;
+    --preview: #F57C00; --preview-light: #FFF3E0; --preview-border: #FFE0B2;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
@@ -25,6 +26,63 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 #editor-view { width: 100%; height: 100%; overflow-y: auto; padding: 16px; max-width: 800px; margin: 0 auto; display: block; }
 #practice-view { width: 100%; height: 100%; padding: 0; display: none; flex-direction: column; align-items: center; }
 #practice-view.active { display: flex; }
+
+/* ============ 预习模式视图 ============ */
+#preview-view { width: 100%; height: 100%; padding: 0; display: none; flex-direction: column; align-items: center; }
+#preview-view.active { display: flex; }
+.preview-card { background: #fff; width: 100%; height: 100%; max-width: 800px; padding: 12px; display: flex; flex-direction: column; }
+@media (min-width: 800px) { .preview-card { height: 96%; margin-top: 2%; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 20px; } }
+
+/* 预习顶栏 */
+.preview-header { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; margin-bottom: 10px; }
+.preview-title { font-size: 15px; font-weight: 700; color: var(--preview); }
+.preview-progress { font-size: 13px; color: #5F6368; }
+.btn-exit-preview { border: 1px solid #ddd; background: #fff; color: #5F6368; border-radius: 8px; padding: 5px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* 预习阶段：逐句听 */
+#preview-listen-phase { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.preview-sentence-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #FFFDE7; border: 2px solid var(--preview-border); border-radius: 16px; padding: 20px; margin-bottom: 12px; min-height: 0; }
+.preview-sentence-num { font-size: 12px; font-weight: 700; color: var(--preview); background: var(--preview-border); padding: 2px 10px; border-radius: 10px; margin-bottom: 12px; }
+.preview-sentence-text { font-size: 26px; font-weight: 600; color: #202124; text-align: center; line-height: 1.5; white-space: pre-wrap; overflow-y: auto; max-height: 200px; }
+.preview-sentence-text2 { font-size: 16px; color: #555; text-align: center; margin-top: 8px; line-height: 1.5; }
+.preview-play-hint { font-size: 13px; color: #999; margin-top: 10px; }
+.preview-action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0; margin-bottom: 10px; }
+.btn-preview-know { background: #E6F4EA; color: #137333; border: 2px solid #34A853; border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.15s; }
+.btn-preview-know:active { background: #34A853; color: #fff; }
+.btn-preview-star { background: var(--preview-light); color: var(--preview); border: 2px solid var(--preview-border); border-radius: 14px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.15s; }
+.btn-preview-star:active { background: var(--preview); color: #fff; }
+.preview-replay-row { display: flex; gap: 8px; flex-shrink: 0; }
+.btn-preview-replay { flex: 1; background: #E8F0FE; color: var(--primary); border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-preview-skip { flex: 1; background: #F1F3F4; color: #5F6368; border: none; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* 预习阶段：重点句练习 */
+#preview-focus-phase { display: none; flex-direction: column; flex: 1; min-height: 0; }
+#preview-focus-phase.active { display: flex; }
+.focus-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.focus-title { font-size: 15px; font-weight: 700; color: var(--preview); }
+.focus-count { font-size: 12px; color: #888; background: #f1f3f4; padding: 2px 8px; border-radius: 8px; }
+
+/* 重点句列表 */
+.focus-list { flex: 1; overflow-y: auto; min-height: 0; border: 1px solid #eee; border-radius: 12px; background: #fafafa; margin-bottom: 10px; }
+.focus-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; }
+.focus-item:last-child { border-bottom: none; }
+.focus-item:active, .focus-item.playing { background: #FFF3E0; }
+.focus-item.done { opacity: 0.45; }
+.focus-item-left { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; padding-top: 2px; }
+.focus-check { width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; transition: 0.15s; background: #fff; }
+.focus-check.checked { background: var(--green); border-color: var(--green); color: #fff; }
+.focus-num { font-size: 10px; color: #aaa; font-weight: 700; }
+.focus-item-body { flex: 1; min-width: 0; }
+.focus-item-text { font-size: 17px; font-weight: 600; color: #202124; line-height: 1.45; }
+.focus-item-text2 { font-size: 13px; color: #666; margin-top: 3px; line-height: 1.4; }
+.focus-item-play { font-size: 20px; color: var(--preview); flex-shrink: 0; padding: 2px 4px; align-self: center; }
+
+/* 重点句控制区（复用练习页控制区样式） */
+.focus-control-area { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid #f5f5f5; }
+.focus-now-playing { background: #FFF3E0; border: 1px solid var(--preview-border); border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--preview); font-weight: 600; text-align: center; display: none; }
+.focus-now-playing.show { display: block; }
+
+/* ============ 原有样式保留 ============ */
 .card { background: #fff; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(60,64,67,0.15); border: 1px solid #eee; }
 .practice-card { background: #fff; width: 100%; height: 100%; max-width: 800px; padding: 12px; display: flex; flex-direction: column; box-shadow: none; position: relative; }
 @media (min-width: 800px) { .practice-card { height: 96%; margin-top: 2%; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 24px; } }
@@ -74,6 +132,12 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 #btn-play-once { grid-row: 1 / 4; grid-column: 2; width: 100%; height: 100%; font-size: 16px; }
 .btn-next-grid { grid-row: 4 / 7; grid-column: 2; width: 100%; height: 100%; font-size: 18px; font-weight: 700; background: #FFF; border: 1px solid #E0E0E0; }
 
+/* 预习模式入口按钮 */
+.btn-preview-entry { background: var(--preview-light); color: var(--preview); border: 1.5px solid var(--preview-border); border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+.btn-preview-entry:active { background: var(--preview); color: #fff; }
+.preview-badge { background: var(--preview); color: #fff; border-radius: 8px; padding: 1px 5px; font-size: 11px; font-weight: 700; display: none; }
+.preview-badge.show { display: inline-block; }
+
 .ai-mode-bar { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 6px 10px; background: #E0F2F1; border-radius: 10px; border: 1px solid #B2DFDB; margin-bottom: 6px; transition: background 0.3s; }
 .ai-mode-bar.ai-running { background: linear-gradient(90deg, #E0F2F1, #F1F8E9, #E0F2F1); background-size: 200% 100%; animation: ai-shimmer 2.5s infinite; border-color: var(--ai); }
 .ai-mode-bar.ai-manual { background: #FFF3E0; border-color: var(--orange); animation: none; }
@@ -94,7 +158,6 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .ai-status-pill.listening { background: #E8F0FE; color: var(--primary); animation: pulse 1s infinite; }
 .ai-status-pill.manual { background: #FFF3E0; color: #E37400; animation: pulse 1.5s infinite; }
 
-/* 速率按钮 */
 .speed-bar { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
 .speed-label { font-size: 11px; color: #5F6368; font-weight: 600; margin-right: 2px; }
 .btn-speed { border: 1px solid var(--border); background: #fff; color: #5F6368; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
@@ -114,6 +177,18 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .round-btn-review { background: var(--ai); color: white; }
 .round-btn-review:active { background: var(--ai-dark); }
 .round-btn-done { background: #F1F3F4; color: #3C4043; }
+
+/* 预习完成弹窗 */
+#preview-done-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); z-index: 2000; display: none; justify-content: center; align-items: center; }
+.preview-done-card { background: #fff; border-radius: 20px; padding: 28px 22px 22px; max-width: 320px; width: 90%; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.25); animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+.preview-done-emoji { font-size: 48px; margin-bottom: 10px; display: block; }
+.preview-done-title { font-size: 19px; font-weight: 700; color: #202124; margin: 0 0 8px; }
+.preview-done-stats { font-size: 14px; color: #5F6368; margin-bottom: 16px; line-height: 1.6; }
+.preview-done-btn { width: 100%; padding: 13px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-bottom: 8px; }
+.preview-done-btn:last-child { margin-bottom: 0; }
+.preview-done-btn-focus { background: var(--preview); color: #fff; }
+.preview-done-btn-practice { background: #E8F0FE; color: var(--primary); }
+.preview-done-btn-close { background: #F1F3F4; color: #3C4043; }
 
 /* 编辑页 */
 .sub-item { background: #fff; padding: 16px; border: 1px solid #E0E0E0; border-radius: 12px; margin-bottom: 12px; }
@@ -180,7 +255,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V71.0</div>
+    <div class="nav-title">🎧 影子跟读 V72.0</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -313,7 +388,17 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
                     <span class="ai-status-pill" id="ai-status-pill">待机</span>
                 </div>
 
-                <!-- [新增 Fix B] 播放速率条 -->
+                <!-- 预习模式入口 -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+                    <button class="btn-preview-entry" id="btn-preview-entry" onclick="previewMode.start()">
+                        📚 预习模式
+                    </button>
+                    <span class="preview-badge" id="preview-badge">0</span>
+                    <span id="preview-focus-hint" style="font-size:12px;color:#888;display:none;"></span>
+                    <button id="btn-goto-focus" style="display:none;background:var(--preview-light);color:var(--preview);border:1.5px solid var(--preview-border);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;" onclick="previewMode.enterFocusPhase()">⭐ 查看重点句</button>
+                </div>
+
+                <!-- 速率条 -->
                 <div class="speed-bar">
                     <span class="speed-label">速率:</span>
                     <button class="btn-speed" onclick="ui.setSpeed(0.75)" data-speed="0.75">0.75×</button>
@@ -343,6 +428,70 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
             </div>
         </div>
     </div>
+
+    <!-- ============ 预习模式视图 ============ -->
+    <div id="preview-view">
+        <div class="preview-card">
+
+            <div class="preview-header">
+                <div class="preview-title">📚 预习模式</div>
+                <div class="preview-progress" id="preview-progress-text"></div>
+                <button class="btn-exit-preview" onclick="previewMode.exit()">✕ 退出</button>
+            </div>
+
+            <!-- 逐句听阶段 -->
+            <div id="preview-listen-phase">
+                <div class="preview-sentence-box">
+                    <div class="preview-sentence-num" id="preview-sentence-num">#1</div>
+                    <div class="preview-sentence-text" id="preview-sentence-text">(加载中)</div>
+                    <div class="preview-sentence-text2" id="preview-sentence-text2"></div>
+                    <div class="preview-play-hint" id="preview-play-hint">▶ 正在播放...</div>
+                </div>
+
+                <div class="preview-action-row">
+                    <button class="btn-preview-know" onclick="previewMode.markKnow()">✅ 我会了</button>
+                    <button class="btn-preview-star" onclick="previewMode.markStar()">⭐ 加入重点</button>
+                </div>
+
+                <div class="preview-replay-row">
+                    <button class="btn-preview-replay" onclick="previewMode.replayCurrentSentence()">🔄 再听一次</button>
+                    <button class="btn-preview-skip" onclick="previewMode.skipSentence()">⏭ 跳过此句</button>
+                </div>
+            </div>
+
+            <!-- 重点句练习阶段 -->
+            <div id="preview-focus-phase">
+                <div class="focus-header">
+                    <div class="focus-title">⭐ 重点句练习</div>
+                    <div class="focus-count" id="focus-count-label">共 0 句</div>
+                </div>
+
+                <div class="focus-now-playing" id="focus-now-playing"></div>
+
+                <div class="focus-list" id="focus-list"></div>
+
+                <div class="focus-control-area">
+                    <!-- 速率 -->
+                    <div class="speed-bar">
+                        <span class="speed-label">速率:</span>
+                        <button class="btn-speed" onclick="ui.setSpeed(0.75)" data-speed="0.75">0.75×</button>
+                        <button class="btn-speed active" onclick="ui.setSpeed(1.0)" data-speed="1.0">1.0×</button>
+                        <button class="btn-speed" onclick="ui.setSpeed(1.25)" data-speed="1.25">1.25×</button>
+                        <button class="btn-speed" onclick="ui.setSpeed(1.5)" data-speed="1.5">1.5×</button>
+                    </div>
+                    <div class="control-grid">
+                        <button class="btn-action btn-orange" id="focus-btn-loop" onclick="engine.toggleLoop()">🔁 循环单句</button>
+                        <button class="btn-action btn-blue" id="focus-btn-play-once" onclick="engine.playOnce()">▶ 播单句</button>
+                        <button class="btn-action btn-nav btn-prev-grid" onclick="previewMode.focusPrev()">← 上一重点</button>
+                        <button class="btn-action btn-nav btn-next-grid" onclick="previewMode.focusNext()">下一重点 →</button>
+                        <button class="btn-record" id="focus-btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
+                    </div>
+                    <button style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;" onclick="previewMode.exitFocusToSwitcher()">✅ 完成重点练习，去正式跟读</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 <!-- AI 轮次完成弹窗 -->
@@ -355,6 +504,18 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
         <p class="round-msg" id="round-msg"></p>
         <button class="round-btn round-btn-review" id="round-review-btn" onclick="aiMode.startReview()" style="display:none;">💪 再次练习错误句子</button>
         <button class="round-btn round-btn-done" onclick="aiMode.closeRoundModal()">✅ 结束本次学习</button>
+    </div>
+</div>
+
+<!-- 预习完成弹窗 -->
+<div id="preview-done-modal" onclick="previewMode.closeDoneModal()">
+    <div class="preview-done-card" onclick="event.stopPropagation()">
+        <span class="preview-done-emoji">📚</span>
+        <h3 class="preview-done-title">预习完成！</h3>
+        <p class="preview-done-stats" id="preview-done-stats"></p>
+        <button class="preview-done-btn preview-done-btn-focus" id="preview-done-btn-focus" onclick="previewMode.closeDoneAndFocus()">⭐ 开始重点句练习</button>
+        <button class="preview-done-btn preview-done-btn-practice" onclick="previewMode.closeDoneAndPractice()">🎧 直接去正式跟读</button>
+        <button class="preview-done-btn preview-done-btn-close" onclick="previewMode.closeDoneModal()">稍后再说</button>
     </div>
 </div>
 
@@ -382,6 +543,7 @@ const CONST = {
     HIST:     'shadow_v50_hist',
     INPUTS:   'shadow_v50_inputs',
     SESSION:  'shadow_v68_session_id',
+    PREVIEW:  'shadow_v72_preview',   // 预习重点句持久化 key
     PROXY: ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url='],
     SERVER_BROWSER_BASE_URL: 'https://res.evanyin.dpdns.org/'
 };
@@ -394,7 +556,6 @@ const state = {
     hasShownHint: false,
     permBlurMode: 'none',
     playbackRate: 1.0,
-    // [Fix 1] 追踪 ObjectURL，切换时释放旧的防内存泄漏
     _audioObjectUrl: null,
     _recordObjectUrl: null
 };
@@ -424,7 +585,6 @@ const serverBrowser = {
         const pathEl = document.getElementById('server-browser-path');
         listEl.innerHTML = '<div class="browser-item loading">正在加载...</div>';
         let dp = url.replace(CONST.SERVER_BROWSER_BASE_URL, '/'); if (!dp.startsWith('/')) dp = '/' + dp;
-        // 【中文路径规范】显示给用户的路径必须 decode，fetch 请求用原始编码 URL
         try { dp = decodeURIComponent(dp); } catch(e) {}
         pathEl.textContent = dp;
         fetch(url).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
@@ -476,7 +636,6 @@ const serverBrowser = {
         if (!['mp3','wav','m4a','ogg'].includes(ext)) { ui.toast('请选择音频文件'); return; }
         const base = file.name.substring(0, file.name.lastIndexOf('.'));
         const findSub = sfx => { const t = (base + sfx).toLowerCase(); const f = this.allParsedFiles.find(x => !x.isDirectory && x.name.toLowerCase() === t); return f ? f.url : ''; };
-        // 【中文路径规范】写入输入框前 decode，让用户看到可读路径而非 %xx；fetch 时 fixUrl 会重新 encode
         const toDisplay = u => { try { return decodeURIComponent(u); } catch(e) { return u; } };
         document.getElementById('url-audio').value = toDisplay(file.url);
         document.getElementById('url-srt-1').value = toDisplay(findSub('.eng.srt') || findSub('.srt'));
@@ -499,8 +658,6 @@ const net = {
             url = url.replace(/\/edit\/|\/blob\//, '/raw/');
         if (url.includes('github.com') && url.includes('/blob/'))
             url = url.replace('/blob/', '/raw/').replace('github.com', 'raw.githubusercontent.com');
-        // 安全编码：先解析为 URL 对象，再逐段 decode→encode pathname
-        // 保证中文/空格被正确编码，且不会对已有 %xx 双重编码
         try {
             const u = new URL(url);
             u.pathname = u.pathname.split('/').map(seg => {
@@ -531,7 +688,6 @@ const net = {
 const engine = {
     mode: 'IDLE', reqId: null, editorTimer: null, isWaiting: false, waitTimer: null,
     startTicker() { if (this.reqId) cancelAnimationFrame(this.reqId); this.tick(); },
-    // [Fix 4] stopAll 无条件重置 engine.mode，并移除 releaseMic 时的孤立情况
     stopAll(releaseMic = false) {
         this.mode = 'IDLE'; this.isWaiting = false;
         if (this.waitTimer) { clearTimeout(this.waitTimer); this.waitTimer = null; }
@@ -548,7 +704,6 @@ const engine = {
         this.stopAll();
         const s = state.segments[i], a = document.getElementById('main-audio');
         if (!a.src) return ui.toast("音频未就绪");
-        // [Fix 1] 同步当前倍速，并以倍速修正暂停 timer，防止溢出播到下一句
         a.playbackRate = state.playbackRate;
         a.currentTime = s.start; a.play();
         const realDuration = ((s.end - s.start) * 1000) / state.playbackRate;
@@ -565,14 +720,12 @@ const engine = {
         } else if (this.mode === 'LOOP_ONE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
-            // [Fix 4] 加 0.02s 容差防止边界处产生"咔哒"声
             if (seg && ct >= seg.end - 0.02) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
         } else if (this.mode === 'LOOP_RANGE') {
             if (this.isWaiting) return;
             const seg = state.segments[state.currIndex];
             const endL = parseInt(document.getElementById('loop-end').value) - 1;
             const startL = parseInt(document.getElementById('loop-start').value) - 1;
-            // [Fix 4] 同上加容差
             if (seg && ct >= seg.end - 0.02) {
                 let nx = state.currIndex + 1;
                 if (nx > endL || nx >= state.segments.length) nx = Math.max(0, startL);
@@ -581,8 +734,15 @@ const engine = {
         } else if (this.mode === 'FULL_PLAY') {
             const ai = state.segments.findIndex(s => ct >= s.start && ct < s.end);
             if (ai !== -1 && ai !== state.currIndex) { state.currIndex = ai; ui.updatePractice(ai); }
-            // [Fix 3] 容错改为 -0.5s 避免 iOS Safari 结尾漂移
             if (a.ended || (a.duration > 0 && ct >= a.duration - 0.5)) { a.currentTime = 0; a.play(); state.currIndex = 0; ui.updatePractice(0); }
+        } else if (this.mode === 'PREVIEW_PLAY') {
+            // 预习模式：播到句尾自动暂停，通知 previewMode
+            const seg = state.segments[state.currIndex];
+            if (seg && ct >= seg.end - 0.02) {
+                a.pause();
+                this.mode = 'IDLE';
+                previewMode._onPlayEnd();
+            }
         }
     },
     startWait(cb) {
@@ -595,7 +755,13 @@ const engine = {
         this.stopAll();
         if (!this.check()) return;
         this.mode = 'PLAY_ONCE';
-        document.getElementById('btn-play-once').classList.add('active');
+        // 优先激活 focus-btn-play-once，若不在 focus 则激活 btn-play-once
+        const btn = document.getElementById('focus-btn-play-once') || document.getElementById('btn-play-once');
+        if (document.getElementById('preview-view').classList.contains('active')) {
+            document.getElementById('focus-btn-play-once').classList.add('active');
+        } else {
+            document.getElementById('btn-play-once').classList.add('active');
+        }
         this.startPlay();
     },
     toggleLoop() {
@@ -605,7 +771,11 @@ const engine = {
             this.stopAll();
             if (!this.check()) return;
             this.mode = 'LOOP_ONE';
-            document.getElementById('btn-loop').classList.add('active');
+            if (document.getElementById('preview-view').classList.contains('active')) {
+                document.getElementById('focus-btn-loop').classList.add('active');
+            } else {
+                document.getElementById('btn-loop').classList.add('active');
+            }
             this.startPlay();
         }
     },
@@ -640,7 +810,6 @@ const engine = {
     startPlay() {
         const seg = state.segments[state.currIndex], a = document.getElementById('main-audio');
         a.currentTime = seg.start;
-        // [Fix B] 应用当前速率
         a.playbackRate = state.playbackRate;
         a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); });
     },
@@ -686,7 +855,6 @@ const ui = {
             const savedInputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
             const currentMp3 = net.fixUrl((savedInputs.mp3 || '').trim());
             if (savedSessionId && currentMp3 && savedSessionId === currentMp3) {
-                // 【规则4】截取文件名后 decode，restore-bar 显示可读中文
                 let rawName = currentMp3.split('/').pop().replace(/\.[^.]+$/, '');
                 try { rawName = decodeURIComponent(rawName); } catch(e) {}
                 const name = rawName.length > 20 ? rawName.substring(0, 20) + '...' : rawName;
@@ -697,6 +865,9 @@ const ui = {
         }
         this.updateAudioStatus();
         this.updatePermButtons();
+        // 恢复预习徽章
+        previewMode.loadFromStorage();
+        previewMode.updateBadge();
     },
     renderHistory() {
         const h = JSON.parse(localStorage.getItem(CONST.HIST) || '[]');
@@ -726,14 +897,15 @@ const ui = {
         } else { m.className = 'audio-status warn'; m.style.display = 'block'; m.innerText = "⚠️ 音频未就绪"; }
     },
     resetButtons() {
-        document.getElementById('btn-play-once').classList.remove('active');
-        document.getElementById('btn-loop').classList.remove('active');
-        const rb = document.getElementById('btn-range-play'); rb.classList.remove('active'); rb.innerText = "循环";
-        const fb = document.getElementById('btn-full-play'); fb.classList.remove('active'); fb.innerText = "🎧 全文磨耳朵";
-        const rec = document.getElementById('btn-record');
-        if (rec) { rec.classList.remove('recording','playing'); rec.innerText = "🎤 按下开始录音"; }
+        const po = document.getElementById('btn-play-once'); if (po) po.classList.remove('active');
+        const bl = document.getElementById('btn-loop'); if (bl) bl.classList.remove('active');
+        const fpo = document.getElementById('focus-btn-play-once'); if (fpo) fpo.classList.remove('active');
+        const fbl = document.getElementById('focus-btn-loop'); if (fbl) fbl.classList.remove('active');
+        const rb = document.getElementById('btn-range-play'); if (rb) { rb.classList.remove('active'); rb.innerText = "循环"; }
+        const fb = document.getElementById('btn-full-play'); if (fb) { fb.classList.remove('active'); fb.innerText = "🎧 全文磨耳朵"; }
+        const rec = document.getElementById('btn-record'); if (rec) { rec.classList.remove('recording','playing'); rec.innerText = "🎤 按下开始录音"; }
+        const frec = document.getElementById('focus-btn-record'); if (frec) { frec.classList.remove('recording','playing'); frec.innerText = "🎤 按下开始录音"; }
     },
-    // [Fix XSS] 渲染前转义 HTML 特殊字符，防止恶意 SRT/工程文件注入脚本
     escapeHTML(str) {
         if (str === undefined || str === null) return '';
         return String(str)
@@ -811,7 +983,6 @@ const ui = {
     },
     toggleDrawer() { document.getElementById('drawer-overlay').classList.toggle('open'); },
     toggleSleepModal() { document.getElementById('sleep-popup').classList.toggle('show'); },
-    // [Fix B] 设置播放速率
     setSpeed(rate) {
         state.playbackRate = rate;
         document.querySelectorAll('.btn-speed').forEach(b => {
@@ -852,11 +1023,10 @@ const app = {
         document.getElementById('url-srt-3').value = s3;
         this.saveInput(); ui.toast("📋 链接已智能分配");
     },
-    sleepTimerId: null, sleepIntervalId: null,  // [Fix 8] 改名避免歧义
+    sleepTimerId: null, sleepIntervalId: null,
     startSleepTimer() {
         const mins = parseInt(document.getElementById('sleep-input').value);
         if (!mins||mins<1||mins>100) return ui.toast("请输入 1-100");
-        // [Fix 8] 明确清除旧定时器后再启动新的
         if (this.sleepTimerId) { clearTimeout(this.sleepTimerId); this.sleepTimerId = null; }
         if (this.sleepIntervalId) { clearInterval(this.sleepIntervalId); this.sleepIntervalId = null; }
         const end = Date.now() + mins*60*1000;
@@ -888,7 +1058,6 @@ const app = {
         let h = JSON.parse(localStorage.getItem(CONST.HIST)||'[]');
         h = h.filter(i => i.mp3 !== mp3);
         const d = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
-        // 【规则4】截取文件名后立即 decode，历史下拉显示可读中文而非 %xx
         const displayName = name || (() => {
             try { return decodeURIComponent(mp3.split('/').pop()); } catch(e) { return mp3.split('/').pop(); }
         })();
@@ -921,7 +1090,6 @@ const app = {
         try {
             ui.toast("正在下载音频...");
             const ab = await net.fetchBlobSmart(mp3);
-            // [Fix 1] 释放旧 ObjectURL，防止多次加载导致内存泄漏
             if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
             state._audioObjectUrl = URL.createObjectURL(ab);
             document.getElementById('main-audio').src = state._audioObjectUrl;
@@ -938,7 +1106,6 @@ const app = {
                 const buf = await ab.arrayBuffer();
                 const ctx = new(window.AudioContext||window.webkitAudioContext)();
                 state.audioBuffer = await ctx.decodeAudioData(buf);
-                // [Fix 3] 用 Web Worker 做断句运算，避免长音频卡死 UI 主线程
                 state.segments = await detectSilenceAsync(
                     state.audioBuffer,
                     parseFloat(document.getElementById('threshold-range').value)
@@ -947,6 +1114,8 @@ const app = {
             }
             localStorage.setItem(CONST.SESSION, mp3);
             this.addHistory(mp3);
+            // 新音频加载后，清除旧的预习数据
+            previewMode.clearForNewAudio(mp3);
             ui.renderEditor(); ui.updateAudioStatus();
             ui.toast("✅ 全部就绪，正在跳转...");
             app.switchView('practice');
@@ -962,6 +1131,10 @@ const app = {
         const pv = document.getElementById('practice-view');
         pv.style.display = v==='practice' ? 'flex' : 'none';
         pv.classList.toggle('active', v==='practice');
+        // 预习视图切走时确保隐藏
+        const pvw = document.getElementById('preview-view');
+        pvw.style.display = 'none';
+        pvw.classList.remove('active');
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes(v)));
         if (v==='practice') this.loadItem(state.currIndex, false);
     },
@@ -1024,7 +1197,6 @@ const app = {
         localStorage.setItem(CONST.STORAGE, JSON.stringify(state.segments));
         localStorage.setItem(CONST.INDEX, state.currIndex);
     },
-    // [Fix 1] 恢复进度：重新加载音频再跳转练习页
     restoreProgress() {
         const d = localStorage.getItem(CONST.STORAGE), i = parseInt(localStorage.getItem(CONST.INDEX) || 0);
         if (!d) return;
@@ -1038,12 +1210,10 @@ const app = {
         const mp3 = net.fixUrl((savedInputs.mp3 || '').trim());
 
         if (mainAudio.src && mainAudio.src !== location.href) {
-            // 音频 blob URL 仍然有效（同一页面会话内）
             ui.updateAudioStatus();
             ui.toast(`✅ 已恢复到第 ${i + 1} 句`);
             app.switchView('practice');
         } else if (mp3) {
-            // 刷新后 blob URL 失效，需要重新下载音频
             ui.toast('⏳ 正在重新加载音频，请稍候...');
             net.fetchBlobSmart(mp3).then(ab => {
                 if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
@@ -1061,17 +1231,16 @@ const app = {
             ui.updateAudioStatus();
         }
     },
-    // [Fix 6] exportProject 包含音频链接
     exportProject() {
         const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
         const data = {
-            version: 70,
+            version: 72,
             segments: state.segments,
             idx: state.currIndex,
-            inputs: inputs   // 保存 mp3/srt 链接，loadProject 时可自动回填
+            inputs: inputs
         };
         const b = new Blob([JSON.stringify(data, null, 2)]);
-        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow_v70.json'; a.click();
+        const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='shadow_v72.json'; a.click();
     },
     exportSRT(slot) {
         if (!state.segments.length) return ui.toast("无数据");
@@ -1080,7 +1249,6 @@ const app = {
         let c = ""; state.segments.forEach((s,i) => { c+=`${i+1}\n${fmtTime(s.start,true)} --> ${fmtTime(s.end,true)}\n${s[key]||''}\n\n`; });
         const a = document.createElement('a'); a.href=URL.createObjectURL(new Blob([c],{type:'text/plain'})); a.download=`sub_${slot}.srt`; a.click();
     },
-    // [Fix 6] loadProject 自动回填输入框并尝试加载音频
     loadProject(el) {
         const f = el.files[0]; if (!f) return;
         const r = new FileReader();
@@ -1088,7 +1256,6 @@ const app = {
             const d = JSON.parse(e.target.result);
             state.segments = d.segments || d;
             state.currIndex = d.idx || 0;
-            // 回填链接（兼容旧版无 inputs 字段）
             if (d.inputs) {
                 if (d.inputs.mp3) document.getElementById('url-audio').value = d.inputs.mp3;
                 if (d.inputs.s1)  document.getElementById('url-srt-1').value = d.inputs.s1;
@@ -1111,12 +1278,10 @@ const app = {
             const uint8 = new Uint8Array(buf);
             let text;
             try {
-                // [Fix 2] 先尝试 UTF-8（strict），失败则回退 GBK 兼容国内老字幕
                 text = new TextDecoder('utf-8', { fatal: true }).decode(uint8);
             } catch(err) {
                 text = new TextDecoder('gbk').decode(uint8);
             }
-            // 剥除 BOM 头，防止第一条时间轴解析失败
             text = text.replace(/^\uFEFF/, '');
             const n = parseSRT(text);
             if(k===0) state.segments=n; else app.mergeSub(n,k===1?'text2':'text3');
@@ -1131,13 +1296,15 @@ const app = {
 // ============================================================
 const recorder = {
     rec: null, chunks: [], stream: null, isRec: false,
-    _isInitializing: false, // [Fix 4] 防止快速双击产生孤立的麦克风流
+    _isInitializing: false,
     async toggle() {
         if (aiMode.active) { ui.toast('AI模式运行中，请先停止AI模式'); return; }
-        if (this._isInitializing) return; // 正在初始化中，忽略重复点击
-        const btn = document.getElementById('btn-record');
+        if (this._isInitializing) return;
+        // 确定当前活跃的录音按钮（练习页或预习重点句页）
+        const inPreview = document.getElementById('preview-view').classList.contains('active');
+        const btn = inPreview ? document.getElementById('focus-btn-record') : document.getElementById('btn-record');
         if (!this.isRec) {
-            this._isInitializing = true; // 上锁
+            this._isInitializing = true;
             engine.stopAll();
             try {
                 this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
@@ -1147,31 +1314,33 @@ const recorder = {
                 this.rec.start(); this.isRec = true;
                 if(btn) { btn.classList.add('recording'); btn.innerText="■ 停止录音"; }
             } catch(e) { alert("无麦克风权限"); }
-            finally { this._isInitializing = false; } // 无论成功失败都解锁
+            finally { this._isInitializing = false; }
         } else { this.stop(false); }
     },
     stop(force) {
         if (this.isRec) { this.forceStop=force; this.rec.stop(); this.isRec=false; }
-        const btn = document.getElementById('btn-record');
+        const inPreview = document.getElementById('preview-view').classList.contains('active');
+        const btn = inPreview ? document.getElementById('focus-btn-record') : document.getElementById('btn-record');
         if(btn) { btn.classList.remove('recording'); btn.innerText="🎤 按下开始录音"; }
     },
     playCmp() {
         const s = state.segments[state.currIndex], a = document.getElementById('main-audio'), r = document.getElementById('record-audio');
         const b = new Blob(this.chunks,{type:'audio/mp3'});
-        // [Fix 1] 释放上次录音的 ObjectURL
         if (state._recordObjectUrl) { URL.revokeObjectURL(state._recordObjectUrl); state._recordObjectUrl = null; }
         state._recordObjectUrl = URL.createObjectURL(b);
         r.src = state._recordObjectUrl;
         ui.toast("▶️ 原音");
-        a.playbackRate = 1.0; // 强制正常语速播原音，确保与用户录音做等速对比
+        a.playbackRate = 1.0;
         a.currentTime=s.start; a.play();
         const timer = setInterval(() => {
             if (a.currentTime >= s.end) {
                 a.pause(); clearInterval(timer);
                 setTimeout(() => {
                     ui.toast("🎙️ 录音"); r.currentTime=0; r.play();
-                    r.onended = () => { const btn=document.getElementById('btn-record'); if(btn) btn.classList.remove('playing'); ui.toast("播放完毕"); };
-                    const btn = document.getElementById('btn-record'); if(btn) btn.classList.add('playing');
+                    const inPreview = document.getElementById('preview-view').classList.contains('active');
+                    const btn = inPreview ? document.getElementById('focus-btn-record') : document.getElementById('btn-record');
+                    r.onended = () => { if(btn) btn.classList.remove('playing'); ui.toast("播放完毕"); };
+                    if(btn) btn.classList.add('playing');
                 }, 500);
             }
         }, 30);
@@ -1179,7 +1348,400 @@ const recorder = {
 };
 
 // ============================================================
-//  AI MODE —— V70 修复版
+//  PREVIEW MODE — 预习模式
+// ============================================================
+const previewMode = {
+    // 当前预习游标
+    cursorIdx: 0,
+    // 重点句索引列表（持久化）
+    starredIndices: [],
+    // 已完成预习的句子数
+    previewedCount: 0,
+    // 重点句练习时的游标（在 starredIndices 中的位置）
+    focusCursor: 0,
+    // 是否已完成全部预习
+    previewDone: false,
+    // 播放结束后是否自动进行下一步（用于自动播放逻辑）
+    _autoAdvance: false,
+    // 当前音频 URL key（用于持久化分类）
+    _audioKey: '',
+
+    // ── 持久化 ──
+    _getKey() {
+        const inputs = JSON.parse(localStorage.getItem(CONST.INPUTS) || '{}');
+        return (inputs.mp3 || '').trim();
+    },
+    loadFromStorage() {
+        const key = this._getKey();
+        if (!key) return;
+        this._audioKey = key;
+        try {
+            const raw = localStorage.getItem(CONST.PREVIEW);
+            if (!raw) return;
+            const all = JSON.parse(raw);
+            const data = all[key];
+            if (!data) return;
+            this.starredIndices = data.starred || [];
+            this.previewedCount = data.previewedCount || 0;
+            this.previewDone = data.done || false;
+            this.cursorIdx = data.cursor || 0;
+        } catch(e) {}
+    },
+    saveToStorage() {
+        const key = this._getKey();
+        if (!key) return;
+        this._audioKey = key;
+        try {
+            let all = {};
+            try { all = JSON.parse(localStorage.getItem(CONST.PREVIEW) || '{}'); } catch(e) {}
+            all[key] = {
+                starred: this.starredIndices,
+                previewedCount: this.previewedCount,
+                done: this.previewDone,
+                cursor: this.cursorIdx
+            };
+            localStorage.setItem(CONST.PREVIEW, JSON.stringify(all));
+        } catch(e) {}
+    },
+    clearForNewAudio(mp3Url) {
+        // 新音频加载时重置预习状态（不清除其他音频的历史记录）
+        this.starredIndices = [];
+        this.previewedCount = 0;
+        this.previewDone = false;
+        this.cursorIdx = 0;
+        this.focusCursor = 0;
+        this._audioKey = mp3Url;
+        this.updateBadge();
+    },
+
+    // ── 徽章更新 ──
+    updateBadge() {
+        const badge = document.getElementById('preview-badge');
+        const hint = document.getElementById('preview-focus-hint');
+        const gotoBtn = document.getElementById('btn-goto-focus');
+        if (!badge) return;
+        const cnt = this.starredIndices.length;
+        if (cnt > 0) {
+            badge.innerText = cnt;
+            badge.classList.add('show');
+        } else {
+            badge.classList.remove('show');
+        }
+        if (this.previewDone && cnt > 0) {
+            if (hint) { hint.style.display = 'inline'; hint.innerText = `已标记 ${cnt} 个重点句`; }
+            if (gotoBtn) gotoBtn.style.display = 'inline-block';
+        } else {
+            if (hint) hint.style.display = 'none';
+            if (gotoBtn) gotoBtn.style.display = 'none';
+        }
+    },
+
+    // ── 进入预习模式 ──
+    start() {
+        if (!state.segments.length) return ui.toast('请先加载内容');
+        if (!document.getElementById('main-audio').src) return ui.toast('音频未就绪');
+
+        engine.stopAll();
+        aiMode.active && aiMode.stop();
+
+        // 从持久化恢复
+        this.loadFromStorage();
+
+        // 显示预习视图，隐藏其他视图
+        document.getElementById('editor-view').style.display = 'none';
+        document.getElementById('practice-view').style.display = 'none';
+        document.getElementById('practice-view').classList.remove('active');
+        const pvw = document.getElementById('preview-view');
+        pvw.style.display = 'flex';
+        pvw.classList.add('active');
+
+        // 如果已经完成过预习且有重点句，直接进入重点句视图
+        if (this.previewDone && this.starredIndices.length > 0) {
+            this._showFocusPhase();
+            return;
+        }
+
+        // 否则进入逐句听阶段
+        this._showListenPhase();
+        this._gotoSentence(this.cursorIdx);
+    },
+
+    exit() {
+        engine.stopAll();
+        this.saveToStorage();
+        this.updateBadge();
+        // 回到练习页
+        const pvw = document.getElementById('preview-view');
+        pvw.style.display = 'none';
+        pvw.classList.remove('active');
+        const pv = document.getElementById('practice-view');
+        pv.style.display = 'flex';
+        pv.classList.add('active');
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.onclick.toString().includes('practice')));
+        ui.updatePractice(state.currIndex);
+    },
+
+    // ── 阶段切换 ──
+    _showListenPhase() {
+        document.getElementById('preview-listen-phase').style.display = 'flex';
+        document.getElementById('preview-focus-phase').style.display = 'none';
+        document.getElementById('preview-focus-phase').classList.remove('active');
+    },
+    _showFocusPhase() {
+        document.getElementById('preview-listen-phase').style.display = 'none';
+        const fp = document.getElementById('preview-focus-phase');
+        fp.style.display = 'flex';
+        fp.classList.add('active');
+        this._renderFocusList();
+        // 跳到第一句重点
+        if (this.starredIndices.length > 0) {
+            this.focusCursor = 0;
+            this._jumpToFocusSentence(this.starredIndices[0]);
+        }
+    },
+
+    // ── 跳到某句进行预习 ──
+    _gotoSentence(idx) {
+        if (idx >= state.segments.length) {
+            // 全部预习完
+            this._finishListenPhase();
+            return;
+        }
+        this.cursorIdx = idx;
+        state.currIndex = idx;
+        const seg = state.segments[idx];
+        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+        const key2 = state.activeSub===0?'text2':'text';
+        const text = seg[key] || '(无内容)';
+        const text2 = seg[key2] || '';
+
+        document.getElementById('preview-sentence-num').innerText = `#${idx+1} / ${state.segments.length}`;
+        document.getElementById('preview-sentence-text').innerText = text;
+        // text2 显示辅助字幕（如有中文字幕则显示）
+        const t2el = document.getElementById('preview-sentence-text2');
+        t2el.innerText = (state.activeSub === 0 && text2 && text2 !== text) ? text2 : '';
+
+        // 进度文本
+        document.getElementById('preview-progress-text').innerText =
+            `进度 ${idx}/${state.segments.length}  ⭐${this.starredIndices.length}`;
+
+        // 播放提示
+        document.getElementById('preview-play-hint').innerText = '▶ 正在播放...';
+
+        // 自动播放这句
+        this._playCurrentSentence();
+        this.saveToStorage();
+    },
+
+    _playCurrentSentence() {
+        const a = document.getElementById('main-audio');
+        const seg = state.segments[this.cursorIdx];
+        if (!seg || !a.src) return;
+        engine.stopAll();
+        a.currentTime = seg.start;
+        a.playbackRate = state.playbackRate;
+        engine.mode = 'PREVIEW_PLAY';
+        a.play().then(() => engine.startTicker()).catch(e => console.error(e));
+        document.getElementById('preview-play-hint').innerText = '▶ 正在播放...';
+    },
+
+    // 播放结束回调（由 engine.tick 的 PREVIEW_PLAY 分支调用）
+    _onPlayEnd() {
+        document.getElementById('preview-play-hint').innerText = '✅ 播放完毕，请做出选择';
+    },
+
+    replayCurrentSentence() {
+        this._playCurrentSentence();
+    },
+
+    // ── 标记操作 ──
+    markKnow() {
+        this.previewedCount++;
+        this._gotoSentence(this.cursorIdx + 1);
+    },
+    markStar() {
+        if (!this.starredIndices.includes(this.cursorIdx)) {
+            this.starredIndices.push(this.cursorIdx);
+        }
+        this.previewedCount++;
+        ui.toast('⭐ 已加入重点句');
+        this._gotoSentence(this.cursorIdx + 1);
+    },
+    skipSentence() {
+        this._gotoSentence(this.cursorIdx + 1);
+    },
+
+    // ── 预习完成 ──
+    _finishListenPhase() {
+        engine.stopAll();
+        this.previewDone = true;
+        this.saveToStorage();
+        this.updateBadge();
+
+        const cnt = this.starredIndices.length;
+        const total = state.segments.length;
+        const statsEl = document.getElementById('preview-done-stats');
+        statsEl.innerHTML = `共预习 <strong>${total}</strong> 句<br>标记重点句 <strong>${cnt}</strong> 个`;
+
+        const focusBtn = document.getElementById('preview-done-btn-focus');
+        if (cnt === 0) {
+            focusBtn.style.display = 'none';
+        } else {
+            focusBtn.style.display = 'block';
+            focusBtn.innerText = `⭐ 开始重点句练习（${cnt} 句）`;
+        }
+
+        document.getElementById('preview-done-modal').style.display = 'flex';
+    },
+
+    closeDoneModal() {
+        document.getElementById('preview-done-modal').style.display = 'none';
+    },
+    closeDoneAndFocus() {
+        this.closeDoneModal();
+        this._showFocusPhase();
+    },
+    closeDoneAndPractice() {
+        this.closeDoneModal();
+        this.exit();
+        app.switchView('practice');
+    },
+
+    // ── 重点句练习阶段 ──
+    _renderFocusList() {
+        const list = document.getElementById('focus-list');
+        list.innerHTML = '';
+        const label = document.getElementById('focus-count-label');
+        label.innerText = `共 ${this.starredIndices.length} 句`;
+
+        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+        const key2 = state.activeSub===0?'text2':'text3';
+
+        this.starredIndices.forEach((segIdx, i) => {
+            const seg = state.segments[segIdx];
+            if (!seg) return;
+            const text = seg[key] || '(无内容)';
+            const text2 = seg[key2] || '';
+
+            const item = document.createElement('div');
+            item.className = 'focus-item';
+            item.id = `focus-item-${i}`;
+
+            const checkDone = document.createElement('div');
+            checkDone.className = 'focus-check';
+            checkDone.dataset.idx = i;
+            checkDone.onclick = (e) => { e.stopPropagation(); this._toggleFocusDone(i, checkDone, item); };
+
+            const numEl = document.createElement('div');
+            numEl.className = 'focus-num';
+            numEl.innerText = `#${segIdx+1}`;
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'focus-item-left';
+            leftCol.appendChild(checkDone);
+            leftCol.appendChild(numEl);
+
+            const body = document.createElement('div');
+            body.className = 'focus-item-body';
+            const textEl = document.createElement('div');
+            textEl.className = 'focus-item-text';
+            textEl.innerText = text;
+            body.appendChild(textEl);
+            if (text2 && text2 !== text) {
+                const text2El = document.createElement('div');
+                text2El.className = 'focus-item-text2';
+                text2El.innerText = text2;
+                body.appendChild(text2El);
+            }
+
+            const playIcon = document.createElement('div');
+            playIcon.className = 'focus-item-play';
+            playIcon.innerText = '▶';
+            playIcon.onclick = (e) => { e.stopPropagation(); this.focusCursor = i; this._jumpToFocusSentence(segIdx); };
+
+            item.appendChild(leftCol);
+            item.appendChild(body);
+            item.appendChild(playIcon);
+            // 点击整行也跳转播放
+            item.onclick = () => { this.focusCursor = i; this._jumpToFocusSentence(segIdx); };
+            list.appendChild(item);
+        });
+    },
+
+    _toggleFocusDone(i, checkEl, itemEl) {
+        const isDone = checkEl.classList.contains('checked');
+        if (isDone) {
+            checkEl.classList.remove('checked');
+            checkEl.innerText = '';
+            itemEl.classList.remove('done');
+        } else {
+            checkEl.classList.add('checked');
+            checkEl.innerText = '✓';
+            itemEl.classList.add('done');
+        }
+    },
+
+    _jumpToFocusSentence(segIdx) {
+        engine.stopAll();
+        state.currIndex = segIdx;
+        // 高亮当前项
+        document.querySelectorAll('.focus-item').forEach((el, i) => {
+            el.classList.toggle('playing', this.starredIndices[i] === segIdx);
+        });
+        // 滚动到该项
+        const curItem = document.getElementById(`focus-item-${this.focusCursor}`);
+        if (curItem) curItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // 更新"正在练习"提示
+        const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
+        const text = state.segments[segIdx][key] || '';
+        const nowEl = document.getElementById('focus-now-playing');
+        nowEl.innerText = `▶ 第 ${segIdx+1} 句：${text.length > 40 ? text.substring(0, 40) + '...' : text}`;
+        nowEl.classList.add('show');
+        // 播放
+        engine.playOnce();
+    },
+
+    focusNext() {
+        if (!this.starredIndices.length) return;
+        this.focusCursor = (this.focusCursor + 1) % this.starredIndices.length;
+        this._jumpToFocusSentence(this.starredIndices[this.focusCursor]);
+    },
+    focusPrev() {
+        if (!this.starredIndices.length) return;
+        this.focusCursor = (this.focusCursor - 1 + this.starredIndices.length) % this.starredIndices.length;
+        this._jumpToFocusSentence(this.starredIndices[this.focusCursor]);
+    },
+
+    // 从重点句练习直接进入正式练习
+    exitFocusToSwitcher() {
+        engine.stopAll();
+        this.saveToStorage();
+        this.updateBadge();
+        const pvw = document.getElementById('preview-view');
+        pvw.style.display = 'none';
+        pvw.classList.remove('active');
+        app.switchView('practice');
+    },
+
+    // 从练习页"查看重点句"按钮入口
+    enterFocusPhase() {
+        if (!state.segments.length) return ui.toast('请先加载内容');
+        if (!document.getElementById('main-audio').src) return ui.toast('音频未就绪');
+        if (!this.starredIndices.length) return ui.toast('还没有标记重点句，请先进行预习');
+
+        engine.stopAll();
+        document.getElementById('editor-view').style.display = 'none';
+        document.getElementById('practice-view').style.display = 'none';
+        document.getElementById('practice-view').classList.remove('active');
+        const pvw = document.getElementById('preview-view');
+        pvw.style.display = 'flex';
+        pvw.classList.add('active');
+        this._showFocusPhase();
+    }
+};
+
+// ============================================================
+//  AI MODE —— V70 修复版（完整保留）
 // ============================================================
 const aiMode = {
     active: false,
@@ -1196,7 +1758,6 @@ const aiMode = {
     failedSentences: [],
     reviewMode: false,
     reviewQueue: [],
-    // [Fix 7] 记录AI启动前的 permBlurMode，停止后还原
     _prevPermBlurMode: 'none',
 
     toggle() {
@@ -1218,8 +1779,6 @@ const aiMode = {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return ui.toast('❌ 浏览器不支持语音识别 (需 iOS Safari 14.5+ 或 Chrome)');
 
-        // [Fix 6] iOS AudioContext 彻底解锁：在用户手势同步上下文内播一个 gain=0.001
-        // 的极微弱振荡器（50ms），确保后续所有 playBeep（在 setTimeout 里）都不会静音
         try {
             if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
             if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
@@ -1237,7 +1796,6 @@ const aiMode = {
             stream.getTracks().forEach(t=>t.stop());
         } catch(e) { ui.toast('❌ 麦克风权限被拒绝'); return; }
 
-        // [Fix 4] 无条件调用 engine.stopAll()
         engine.stopAll(true);
 
         this.active = true;
@@ -1253,7 +1811,6 @@ const aiMode = {
         document.getElementById('text-container').classList.remove('ai-manual');
         this.setStatus('🚀 启动中', '');
 
-        // [Fix 7] 保存当前 permBlurMode，再强制永隐
         this._prevPermBlurMode = state.permBlurMode;
         state.permBlurMode = 'hide';
         state.userBlurState = true;
@@ -1273,7 +1830,6 @@ const aiMode = {
         if (this._playRafId) { cancelAnimationFrame(this._playRafId); this._playRafId = null; }
         if (this.recognition) { try { this.recognition.abort(); } catch(e) {} this.recognition = null; }
         if (this._warmSR) { try { this._warmSR.abort(); } catch(e) {} this._warmSR = null; }
-        // [Fix 4] 无条件停止引擎（不只在 wasManual 时）
         engine.stopAll();
         this._setBtn('idle');
         document.getElementById('ai-mode-bar').classList.remove('ai-running', 'ai-manual');
@@ -1281,11 +1837,9 @@ const aiMode = {
         document.getElementById('text-container').classList.remove('ai-manual');
         this.setStatus('待机', '');
 
-        // [Fix 7] 还原 permBlurMode，并刷新字幕显隐状态
         state.permBlurMode = this._prevPermBlurMode;
         if (state.permBlurMode === 'show') state.userBlurState = false;
         else if (state.permBlurMode === 'hide') state.userBlurState = true;
-        // none: 保持用户上次手动切换的状态（不改变 userBlurState）
         ui.updatePermButtons();
         ui.updatePractice(state.currIndex);
     },
@@ -1299,7 +1853,6 @@ const aiMode = {
             document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
             this.setStatus('复习完成', 'success');
             this.playBeep('complete');
-            // [Fix 7] 还原 permBlurMode
             state.permBlurMode = this._prevPermBlurMode;
             if (state.permBlurMode === 'show') state.userBlurState = false;
             ui.updatePermButtons(); ui.updatePractice(state.currIndex);
@@ -1319,7 +1872,6 @@ const aiMode = {
         const a = document.getElementById('main-audio');
         this._preWarmSR();
         a.currentTime = seg.start;
-        // [Fix B] AI 模式下也应用当前速率
         a.playbackRate = state.playbackRate;
         const playP = a.play();
         if (playP) playP.catch(e => { console.error('AI play failed:', e); this.stop(); });
@@ -1375,7 +1927,7 @@ const aiMode = {
         const dynamicTimeout = Math.min(25000, Math.max(12000, wordCount * 1200));
 
         let settled = false;
-        let retried = false; // [Fix 6] 最多自动重试一次，应对 iOS 环境噪音导致的 onend 误触发
+        let retried = false;
         const settle = fn => { if (settled) return; settled = true; clearTimeout(this._listenTimeout); fn(); };
 
         r.onresult = e => settle(() => {
@@ -1402,8 +1954,6 @@ const aiMode = {
         });
 
         r.onend = () => {
-            // [Fix 6] onend 触发但没有任何识别结果时，自动静默重试一次
-            // 场景：iOS Safari 遇到短暂噪音停顿会提前结束识别，重试能大幅提升体验
             if (!settled && !retried) {
                 retried = true;
                 console.log('[AI] onend 无结果，自动重试一次...');
@@ -1456,7 +2006,6 @@ const aiMode = {
                     document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
                     this.setStatus('🎊 完成！', 'success');
                     this.playBeep('complete');
-                    // [Fix 7] 还原 permBlurMode
                     state.permBlurMode = this._prevPermBlurMode;
                     if (state.permBlurMode === 'show') state.userBlurState = false;
                     ui.updatePermButtons(); ui.updatePractice(state.currIndex);
@@ -1520,7 +2069,6 @@ const aiMode = {
                     this._setBtn('idle');
                     document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
                     this.setStatus('完成', 'success');
-                    // [Fix 7] 还原 permBlurMode
                     state.permBlurMode = this._prevPermBlurMode;
                     if (state.permBlurMode === 'show') state.userBlurState = false;
                     ui.updatePermButtons(); ui.updatePractice(state.currIndex);
@@ -1599,7 +2147,6 @@ const aiMode = {
         this.closeRoundModal();
         this.reviewMode = true;
         this.reviewQueue = [...this.failedSentences];
-        // [Fix 2] 统一在这里清空 failedSentences，start() 内不重复清空
         this.failedSentences = [];
         this.failCount = 0;
         state.currIndex = this.reviewQueue[0];
@@ -1610,7 +2157,6 @@ const aiMode = {
 
     _normalize(s) {
         let str = s.toLowerCase();
-        // [Fix 5] 展开常见英文缩写，避免 "it's" vs "it is" 导致相似度误判失败
         const contractions = {
             "i'm": "i am", "i've": "i have", "i'll": "i will", "i'd": "i would",
             "it's": "it is", "it'll": "it will", "it'd": "it would",
@@ -1640,7 +2186,6 @@ const aiMode = {
     _similarity(a, b) {
         if (!a && !b) return 1;
         if (!a || !b) return 0;
-        // [Fix 9] 词数差超过 60% 时快速返回低分，跳过完整 Levenshtein
         const aWords = a.split(' ').length, bWords = b.split(' ').length;
         const maxW = Math.max(aWords, bWords), minW = Math.min(aWords, bWords);
         if (maxW > 0 && minW / maxW < 0.4) return minW / maxW * 0.5;
@@ -1661,8 +2206,6 @@ const aiMode = {
         return prev[n];
     },
 
-    // [Fix 3] 改为 async，await ctx.resume() 确保 iOS Safari 上下文真正激活后再发声
-    // 否则第一个 beep 在 context 还未激活时就发出，iOS 会静默吞掉
     async playBeep(type) {
         try {
             if (!this.audioCtx) this.audioCtx = new(window.AudioContext||window.webkitAudioContext)();
@@ -1758,8 +2301,6 @@ document.getElementById('ai-threshold').addEventListener('input', function() {
     this.style.setProperty('--fill', pct + '%');
 });
 
-// [Fix 8] 练习页键盘快捷键（仅在练习页激活，且用户不在输入框中时生效）
-// Space: 播单句 | ←: 上一句 | →: 下一句 | R: 录音 | L: 循环单句
 document.addEventListener('keydown', e => {
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
     const inPractice = document.getElementById('practice-view').classList.contains('active');
@@ -1780,12 +2321,11 @@ function fmtTime(s, srt = false) {
     return srt ? str.replace('.', ',') : str.substr(0, 8);
 }
 
-// [Fix 5] SRT 状态机解析，替换旧正则，避免正文含数字+时间格式时误截断
 function parseSRT(raw) {
     raw = raw.replace(/\r/g, '');
     const lines = raw.split('\n');
     const result = [];
-    let phase = 'idle'; // idle | time | text  （避免与全局 state 对象同名）
+    let phase = 'idle';
     let cur = null;
     const timeRe = /(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})/;
     for (let i = 0; i < lines.length; i++) {
@@ -1814,7 +2354,6 @@ function pt(s) {
     return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseFloat(p[2]);
 }
 
-// [Fix 3] detectSilence 同步版（供 Worker 内部使用）
 function detectSilence(b, th) {
     const d = b.getChannelData(0), sr = b.sampleRate, min = 0.4 * sr;
     let res = [], sp = false, st = 0, sil = 0;
@@ -1834,10 +2373,8 @@ function detectSilence(b, th) {
     return res;
 }
 
-// [Fix 3] 异步版：用 Web Worker 跑，避免长音频卡死主线程
 function detectSilenceAsync(audioBuffer, threshold) {
     return new Promise((resolve) => {
-        // 把 PCM 数据复制出来传给 Worker（transferable，零拷贝）
         const pcm = audioBuffer.getChannelData(0);
         const copy = new Float32Array(pcm.length);
         copy.set(pcm);
@@ -1871,7 +2408,6 @@ self.onmessage = function(e) {
             resolve(e.data);
         };
         worker.onerror = () => {
-            // Worker 失败时降级到主线程同步执行
             worker.terminate();
             URL.revokeObjectURL(workerUrl);
             resolve(detectSilence(audioBuffer, threshold));
