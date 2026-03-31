@@ -75,10 +75,11 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 .focus-item-body { flex: 1; min-width: 0; }
 .focus-item-text { font-size: 17px; font-weight: 600; color: #202124; line-height: 1.45; }
 .focus-item-text2 { font-size: 13px; color: #666; margin-top: 3px; line-height: 1.4; }
-.focus-item-play { font-size: 20px; color: var(--preview); flex-shrink: 0; padding: 2px 4px; align-self: center; }
+.focus-item-play { width: 36px; height: 36px; background: var(--preview-light); border: 1.5px solid var(--preview-border); border-radius: 8px; color: var(--preview); flex-shrink: 0; align-self: center; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; -webkit-appearance: none; appearance: none; font-family: inherit; }
 
 /* 重点句控制区（复用练习页控制区样式） */
 .focus-control-area { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; border-top: 1px solid #f5f5f5; }
+.focus-control-area .control-grid { height: 152px; grid-template-rows: repeat(6, 1fr); }
 .focus-now-playing { background: #FFF3E0; border: 1px solid var(--preview-border); border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--preview); font-weight: 600; text-align: center; display: none; }
 .focus-now-playing.show { display: block; }
 
@@ -131,6 +132,10 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 #btn-record { grid-row: 5 / 7; grid-column: 1; width: 100%; height: 100%; border-radius: 10px; }
 #btn-play-once { grid-row: 1 / 4; grid-column: 2; width: 100%; height: 100%; font-size: 16px; }
 .btn-next-grid { grid-row: 4 / 7; grid-column: 2; width: 100%; height: 100%; font-size: 18px; font-weight: 700; background: #FFF; border: 1px solid #E0E0E0; }
+/* 重点句页按钮 grid 定位（与练习页保持一致） */
+#focus-btn-loop { grid-row: 1 / 3; grid-column: 1; width: 100%; height: 100%; }
+#focus-btn-play-once { grid-row: 1 / 4; grid-column: 2; width: 100%; height: 100%; font-size: 16px; }
+#focus-btn-record { grid-row: 5 / 7; grid-column: 1; width: 100%; height: 100%; border-radius: 10px; }
 
 /* 预习模式入口按钮 */
 .btn-preview-entry { background: var(--preview-light); color: var(--preview); border: 1.5px solid var(--preview-border); border-radius: 8px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
@@ -1654,9 +1659,9 @@ const previewMode = {
                 body.appendChild(text2El);
             }
 
-            const playIcon = document.createElement('div');
+            const playIcon = document.createElement('button');
             playIcon.className = 'focus-item-play';
-            playIcon.innerText = '▶';
+            playIcon.innerText = '播放';
             playIcon.onclick = (e) => { e.stopPropagation(); this.focusCursor = i; this._jumpToFocusSentence(segIdx); };
 
             item.appendChild(leftCol);
@@ -1674,10 +1679,16 @@ const previewMode = {
             checkEl.classList.remove('checked');
             checkEl.innerText = '';
             itemEl.classList.remove('done');
+            // 移除删除线
+            const textEl = itemEl.querySelector('.focus-item-text');
+            if (textEl) textEl.style.textDecoration = '';
         } else {
             checkEl.classList.add('checked');
             checkEl.innerText = '✓';
             itemEl.classList.add('done');
+            // 加删除线
+            const textEl = itemEl.querySelector('.focus-item-text');
+            if (textEl) textEl.style.textDecoration = 'line-through';
         }
     },
 
