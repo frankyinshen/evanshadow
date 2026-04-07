@@ -1616,10 +1616,26 @@ const previewMode = {
 
     // ── 重点句练习阶段 ──
     _renderFocusList() {
-        const list = document.getElementById('focus-list');
-        list.innerHTML = '';
-        const label = document.getElementById('focus-count-label');
-        label.innerText = `共 ${this.starredIndices.length} 句`;
+    const list = document.getElementById('focus-list');
+    list.innerHTML = '';
+    const label = document.getElementById('focus-count-label');
+    label.innerText = `共 ${this.starredIndices.length} 句`;
+    // 清空按钮
+    if (this.starredIndices.length > 0) {
+        const clearBtn = document.createElement('button');
+        clearBtn.innerText = '🗑 清空全部重点句';
+        clearBtn.style.cssText = 'width:100%;padding:8px;border:1px solid #ffb3b3;background:#fff0f0;color:#c5221f;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:6px;';
+        clearBtn.onclick = () => {
+            if (confirm('确认清空全部重点句？')) {
+                this.starredIndices = [];
+                this.focusCursor = 0;
+                this.saveToStorage();
+                this.updateBadge();
+                this._renderFocusList();
+            }
+        };
+        list.appendChild(clearBtn);
+    }
 
         const key = state.activeSub===1?'text2':(state.activeSub===2?'text3':'text');
         const key2 = state.activeSub===0?'text2':'text3';
@@ -1666,9 +1682,23 @@ const previewMode = {
             playIcon.innerText = '播放';
             playIcon.onclick = (e) => { e.stopPropagation(); this.focusCursor = i; this._jumpToFocusSentence(segIdx); };
 
+            const delIcon = document.createElement('button');
+            delIcon.className = 'focus-item-play';
+            delIcon.innerText = '删除';
+            delIcon.style.cssText = 'background:#fff0f0;border-color:#ffb3b3;color:#c5221f;margin-left:4px;';
+            delIcon.onclick = (e) => {
+                e.stopPropagation();
+                this.starredIndices.splice(i, 1);
+                this.focusCursor = Math.min(this.focusCursor, this.starredIndices.length - 1);
+                this.saveToStorage();
+                this.updateBadge();
+                this._renderFocusList();
+            };
+
             item.appendChild(leftCol);
             item.appendChild(body);
             item.appendChild(playIcon);
+            item.appendChild(delIcon);
             // 点击整行也跳转播放
             item.onclick = () => { this.focusCursor = i; this._jumpToFocusSentence(segIdx); };
             list.appendChild(item);
