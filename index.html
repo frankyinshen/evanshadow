@@ -498,6 +498,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
                         <button class="btn-action btn-nav btn-next-grid" onclick="previewMode.focusNext()">下一重点 →</button>
                         <button class="btn-record" id="focus-btn-record" onclick="recorder.toggle()">🎤 按下开始录音</button>
                     </div>
+                    <button id="btn-continue-preview" style="width:100%;padding:11px;border:1.5px solid var(--preview-border);border-radius:10px;background:var(--preview-light);color:var(--preview);font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;" onclick="previewMode.continueListen()">📚 继续预习剩余句子</button>
                     <button style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--primary);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;" onclick="previewMode.exitFocusToSwitcher()">✅ 完成重点练习，去正式跟读</button>
                 </div>
             </div>
@@ -1505,10 +1506,14 @@ const previewMode = {
         fp.style.display = 'flex';
         fp.classList.add('active');
         this._renderFocusList();
-        // 跳到第一句重点
         if (this.starredIndices.length > 0) {
             this.focusCursor = 0;
             this._jumpToFocusSentence(this.starredIndices[0]);
+        }
+        // 如果还有未听完的句子，显示"继续预习"按钮；否则隐藏
+        const continueBtn = document.getElementById('btn-continue-preview');
+        if (continueBtn) {
+            continueBtn.style.display = this.cursorIdx < state.segments.length ? 'block' : 'none';
         }
     },
 
@@ -1822,6 +1827,18 @@ const previewMode = {
         } else {
             this.exit();
         }
+    },
+
+    continueListen() {
+        if (this.cursorIdx >= state.segments.length) {
+            ui.toast('所有句子已预习完毕');
+            return;
+        }
+        this.previewDone = false;
+        this.saveToStorage();
+        this._showListenPhase();
+        this._updateEarlyBtn();
+        this._gotoSentence(this.cursorIdx);
     }
 };
 
