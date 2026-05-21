@@ -441,7 +441,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
             <div class="preview-header">
                 <div class="preview-title">📚 预习模式</div>
                 <div class="preview-progress" id="preview-progress-text"></div>
-                <button class="btn-exit-preview" onclick="previewMode.exit()">✕ 退出</button>
+                <button class="btn-exit-preview" onclick="previewMode.tryExit()">✕ 退出</button>
             </div>
 
             <!-- 逐句听阶段 -->
@@ -461,6 +461,11 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
                 <div class="preview-replay-row">
                     <button class="btn-preview-replay" onclick="previewMode.replayCurrentSentence()">🔄 再听一次</button>
                     <button class="btn-preview-skip" onclick="previewMode.skipSentence()">⏭ 跳过此句</button>
+                </div>
+                <div id="preview-goto-focus-btn-wrap" style="margin-top:8px;display:none;">
+                    <button style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--preview);color:#fff;font-size:14px;font-weight:700;cursor:pointer;" onclick="previewMode.earlyFinish()">
+                        ⭐ 提前结束，去练习已标记的 <span id="preview-early-count">0</span> 个重点句
+                    </button>
                 </div>
             </div>
 
@@ -1572,6 +1577,7 @@ const previewMode = {
         }
         this.previewedCount++;
         ui.toast('⭐ 已加入重点句');
+        this._updateEarlyBtn(); 
         this._gotoSentence(this.cursorIdx + 1);
     },
     skipSentence() {
@@ -1786,6 +1792,36 @@ const previewMode = {
         pvw.style.display = 'flex';
         pvw.classList.add('active');
         this._showFocusPhase();
+    },
+
+    _updateEarlyBtn() {
+        const cnt = this.starredIndices.length;
+        const wrap = document.getElementById('preview-goto-focus-btn-wrap');
+        const countEl = document.getElementById('preview-early-count');
+        if (wrap) wrap.style.display = cnt > 0 ? 'block' : 'none';
+        if (countEl) countEl.innerText = cnt;
+    },
+
+    earlyFinish() {
+        engine.stopAll();
+        this.previewDone = true;
+        this.saveToStorage();
+        this.updateBadge();
+        this._showFocusPhase();
+    },
+
+    tryExit() {
+        if (this.starredIndices.length > 0) {
+            const cnt = this.starredIndices.length;
+            const statsEl = document.getElementById('preview-done-stats');
+            statsEl.innerHTML = `已预习 <strong>${this.cursorIdx}</strong> 句<br>标记重点句 <strong>${cnt}</strong> 个`;
+            const focusBtn = document.getElementById('preview-done-btn-focus');
+            focusBtn.style.display = 'block';
+            focusBtn.innerText = `⭐ 去练习重点句（${cnt} 句）`;
+            document.getElementById('preview-done-modal').style.display = 'flex';
+        } else {
+            this.exit();
+        }
     }
 };
 
