@@ -460,7 +460,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
 
                 <div class="preview-replay-row">
                     <button class="btn-preview-replay" onclick="previewMode.replayCurrentSentence()">🔄 再听一次</button>
-                    <button class="btn-preview-skip" onclick="previewMode.skipSentence()">⏭ 跳过此句</button>
+                    <button class="btn-preview-skip" onclick="previewMode.prevSentence()">⏮ 上一句</button>
                 </div>
                 <div id="preview-goto-focus-btn-wrap" style="margin-top:8px;display:none;">
                     <button style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--preview);color:#fff;font-size:14px;font-weight:700;cursor:pointer;" onclick="previewMode.earlyFinish()">
@@ -699,11 +699,12 @@ const net = {
 //  ENGINE
 // ============================================================
 const engine = {
-    mode: 'IDLE', reqId: null, editorTimer: null, isWaiting: false, waitTimer: null,
+    mode: 'IDLE', reqId: null, editorTimer: null, isWaiting: false, waitTimer: null, segTimer: null,
     startTicker() { if (this.reqId) cancelAnimationFrame(this.reqId); this.tick(); },
     stopAll(releaseMic = false) {
         this.mode = 'IDLE'; this.isWaiting = false;
         if (this.waitTimer) { clearTimeout(this.waitTimer); this.waitTimer = null; }
+        if (this.segTimer) { clearTimeout(this.segTimer); this.segTimer = null; }
         const a = document.getElementById('main-audio'), r = document.getElementById('record-audio');
         try { a.pause(); } catch(e) {}
         try { r.pause(); } catch(e) {}
@@ -722,41 +723,37 @@ const engine = {
         const realDuration = ((s.end - s.start) * 1000) / state.playbackRate;
         this.editorTimer = setTimeout(() => a.pause(), realDuration);
     },
+    // 跳转+倒计时播放一个片段：到点触发 onEnd，不依赖 currentTime 比较（躲开音频seek不准导致的偏差）
+    _playSegmentTimed(seg, onEnd) {
+        const a = document.getElementById('main-audio');
+        a.currentTime = seg.start;
+        a.playbackRate = state.playbackRate;
+        const duration = Math.max(50, ((seg.end - seg.start) * 1000) / state.playbackRate);
+        a.play().catch(e => { console.error(e); ui.toast("播放失败"); });
+        this.segTimer = setTimeout(() => { this.segTimer = null; onEnd(); }, duration);
+    },
     tick() {
         this.reqId = requestAnimationFrame(() => this.tick());
         const a = document.getElementById('main-audio');
         if (a.paused) return;
         const ct = a.currentTime;
-        if (this.mode === 'PLAY_ONCE') {
-            const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end) { a.pause(); this.mode = 'IDLE'; ui.resetButtons(); }
-        } else if (this.mode === 'LOOP_ONE') {
-            if (this.isWaiting) return;
-            const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end - 0.02) { this.startWait(() => { a.currentTime = seg.start; a.play(); }); }
-        } else if (this.mode === 'LOOP_RANGE') {
-            if (this.isWaiting) return;
-            const seg = state.segments[state.currIndex];
+        if (this.mode === 'LOOP_RANGE') {
+            // 范围循环：只在开始/循环回起点时跳转一次，中途连续播放，字幕跟着当前位置切换
             const endL = parseInt(document.getElementById('loop-end').value) - 1;
             const startL = parseInt(document.getElementById('loop-start').value) - 1;
-            if (seg && ct >= seg.end - 0.02) {
-                let nx = state.currIndex + 1;
-                if (nx > endL || nx >= state.segments.length) nx = Math.max(0, startL);
-                this.startWait(() => { state.currIndex = nx; a.currentTime = state.segments[nx].start; ui.updatePractice(nx); a.play(); });
+            const ai = state.segments.findIndex((s, i) => i >= startL && i <= endL && ct >= s.start && ct < s.end);
+            if (ai !== -1 && ai !== state.currIndex) { state.currIndex = ai; ui.updatePractice(ai); }
+            const startSeg = state.segments[startL], endSeg = state.segments[endL];
+            if (endSeg && ct >= endSeg.end && startSeg) {
+                a.currentTime = startSeg.start;
+                state.currIndex = startL; ui.updatePractice(startL);
             }
         } else if (this.mode === 'FULL_PLAY') {
             const ai = state.segments.findIndex(s => ct >= s.start && ct < s.end);
             if (ai !== -1 && ai !== state.currIndex) { state.currIndex = ai; ui.updatePractice(ai); }
             if (a.ended || (a.duration > 0 && ct >= a.duration - 0.5)) { a.currentTime = 0; a.play(); state.currIndex = 0; ui.updatePractice(0); }
-        } else if (this.mode === 'PREVIEW_PLAY') {
-            // 预习模式：播到句尾自动暂停，通知 previewMode
-            const seg = state.segments[state.currIndex];
-            if (seg && ct >= seg.end - 0.02) {
-                a.pause();
-                this.mode = 'IDLE';
-                previewMode._onPlayEnd();
-            }
         }
+        // PLAY_ONCE / LOOP_ONE / PREVIEW_PLAY 已改用"跳转+倒计时"驱动（见 _playSegmentTimed），不再依赖这里的 currentTime 比较
     },
     startWait(cb) {
         this.isWaiting = true;
@@ -769,13 +766,18 @@ const engine = {
         if (!this.check()) return;
         this.mode = 'PLAY_ONCE';
         // 优先激活 focus-btn-play-once，若不在 focus 则激活 btn-play-once
-        const btn = document.getElementById('focus-btn-play-once') || document.getElementById('btn-play-once');
         if (document.getElementById('preview-view').classList.contains('active')) {
             document.getElementById('focus-btn-play-once').classList.add('active');
         } else {
             document.getElementById('btn-play-once').classList.add('active');
         }
-        this.startPlay();
+        const seg = state.segments[state.currIndex];
+        this._playSegmentTimed(seg, () => {
+            if (this.mode !== 'PLAY_ONCE') return;
+            document.getElementById('main-audio').pause();
+            this.mode = 'IDLE';
+            ui.resetButtons();
+        });
     },
     toggleLoop() {
         if (aiMode.active && !aiMode.manualPracticeMode) aiMode.stop();
@@ -789,8 +791,20 @@ const engine = {
             } else {
                 document.getElementById('btn-loop').classList.add('active');
             }
-            this.startPlay();
+            this._loopOneCycle();
         }
+    },
+    _loopOneCycle() {
+        if (this.mode !== 'LOOP_ONE') return;
+        const seg = state.segments[state.currIndex];
+        this._playSegmentTimed(seg, () => {
+            if (this.mode !== 'LOOP_ONE') return;
+            document.getElementById('main-audio').pause();
+            this.waitTimer = setTimeout(() => {
+                if (this.mode !== 'LOOP_ONE') return;
+                this._loopOneCycle();
+            }, 1500);
+        });
     },
     toggleRangeLoop() {
         if (aiMode.active) aiMode.stop();
@@ -802,7 +816,10 @@ const engine = {
             state.currIndex = start; ui.updatePractice(start);
             this.mode = 'LOOP_RANGE';
             const btn = document.getElementById('btn-range-play'); btn.classList.add('active'); btn.innerText = "停止";
-            this.startPlay();
+            const a = document.getElementById('main-audio');
+            a.currentTime = state.segments[start].start;
+            a.playbackRate = state.playbackRate;
+            a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); });
         }
     },
     toggleFullPlay() {
@@ -819,12 +836,6 @@ const engine = {
                 this.startTicker();
             });
         }
-    },
-    startPlay() {
-        const seg = state.segments[state.currIndex], a = document.getElementById('main-audio');
-        a.currentTime = seg.start;
-        a.playbackRate = state.playbackRate;
-        a.play().then(() => this.startTicker()).catch(e => { console.error(e); ui.toast("播放失败"); });
     },
     check() {
         if (!state.segments.length) { ui.toast("请先加载内容"); return false; }
@@ -1551,18 +1562,20 @@ const previewMode = {
     },
 
     _playCurrentSentence() {
-        const a = document.getElementById('main-audio');
         const seg = state.segments[this.cursorIdx];
-        if (!seg || !a.src) return;
+        if (!seg || !document.getElementById('main-audio').src) return;
         engine.stopAll();
-        a.currentTime = seg.start;
-        a.playbackRate = state.playbackRate;
         engine.mode = 'PREVIEW_PLAY';
-        a.play().then(() => engine.startTicker()).catch(e => console.error(e));
         document.getElementById('preview-play-hint').innerText = '▶ 正在播放...';
+        engine._playSegmentTimed(seg, () => {
+            if (engine.mode !== 'PREVIEW_PLAY') return;
+            document.getElementById('main-audio').pause();
+            engine.mode = 'IDLE';
+            this._onPlayEnd();
+        });
     },
 
-    // 播放结束回调（由 engine.tick 的 PREVIEW_PLAY 分支调用）
+    // 播放结束回调（由 engine._playSegmentTimed 的 onEnd 回调触发）
     _onPlayEnd() {
         document.getElementById('preview-play-hint').innerText = '✅ 播放完毕，请做出选择';
     },
@@ -1585,8 +1598,9 @@ const previewMode = {
         this._updateEarlyBtn(); 
         this._gotoSentence(this.cursorIdx + 1);
     },
-    skipSentence() {
-        this._gotoSentence(this.cursorIdx + 1);
+    prevSentence() {
+        if (this.cursorIdx <= 0) { ui.toast('已经是第一句了'); return; }
+        this._gotoSentence(this.cursorIdx - 1);
     },
 
     // ── 预习完成 ──
