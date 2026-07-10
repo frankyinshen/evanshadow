@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V72.1 | build:20250708 -->
+<!-- 影子跟读 Pro V72.2 | build:20250708 -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V72.1</title>
+<title>影子跟读 Pro V72.2</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -260,7 +260,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V72.1</div>
+    <div class="nav-title">🎧 影子跟读 V72.2</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -945,7 +945,7 @@ const ui = {
         state.segments.forEach((s, i) => {
             const d = document.createElement('div'); d.className = 'sub-item';
             d.innerHTML = `
-                <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+                <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" va<div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" id="start-input-${i}" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" id="end-input-${i}" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>lue="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
                 ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${ui.escapeHTML(s.text)}</textarea></div>`:''}
                 ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${ui.escapeHTML(s.text2)}</textarea></div>`:''}
                 ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${ui.escapeHTML(s.text3)}</textarea></div>`:''}
@@ -1186,7 +1186,22 @@ const app = {
         state.userBlurState = state.permBlurMode==='show' ? false : true;
         this.loadItem(parseInt(v), true);
     },
-    updateSeg(i,k,v) { if(k.startsWith('text')) state.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
+    updateSeg(i,k,v) { if(k.startsWith('text')) supdateSeg(i,k,v) {
+    if(k.startsWith('text')) {
+        state.segments[i][k]=v;
+    } else {
+        state.segments[i][k]=parseFloat(v);
+        // 修改结束时间时，自动把下一句的开始时间设为 end+0.01（仅为方便，用户仍可在下一句手动改）
+        if (k === 'end' && i + 1 < state.segments.length && !isNaN(state.segments[i].end)) {
+            const newStart = Math.round((state.segments[i].end + 0.01) * 100) / 100;
+            state.segments[i+1].start = newStart;
+            const nextStartInput = document.getElementById('start-input-' + (i+1));
+            if (nextStartInput) nextStartInput.value = newStart.toFixed(2);
+        }
+    }
+    this.save();
+},
+    tate.segments[i][k]=v; else state.segments[i][k]=parseFloat(v); this.save(); },
     delSeg(i) { state.segments.splice(i,1); ui.renderEditor(); },
     splitSeg(i) {
         const t = document.getElementById('main-audio').currentTime;
