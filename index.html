@@ -945,7 +945,7 @@ const ui = {
         state.segments.forEach((s, i) => {
             const d = document.createElement('div'); d.className = 'sub-item';
             d.innerHTML = `
-                <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" class="time-input" va<div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" id="start-input-${i}" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" id="end-input-${i}" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>lue="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
+                <div class="sub-meta"><span class="idx-badge">#${i+1}</span><div><input type="number" id="start-input-${i}" class="time-input" value="${s.start.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'start',this.value)"> - <input type="number" id="end-input-${i}" class="time-input" value="${s.end.toFixed(2)}" step="0.1" onchange="app.updateSeg(${i},'end',this.value)"></div></div>
                 ${s.text!==undefined?`<div class="sub-text-block"><span class="sub-label">SUB 1</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text',this.value)">${ui.escapeHTML(s.text)}</textarea></div>`:''}
                 ${s.text2!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 2</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text2',this.value)">${ui.escapeHTML(s.text2)}</textarea></div>`:''}
                 ${s.text3!==undefined?`<div class="sub-text-block"><span class="sub-label secondary">SUB 3</span><textarea class="sub-line" onchange="app.updateSeg(${i},'text3',this.value)">${ui.escapeHTML(s.text3)}</textarea></div>`:''}
@@ -1186,7 +1186,7 @@ const app = {
         state.userBlurState = state.permBlurMode==='show' ? false : true;
         this.loadItem(parseInt(v), true);
     },
-    updateSeg(i,k,v) { if(k.startsWith('text')) supdateSeg(i,k,v) {
+    updateSeg(i,k,v) {
     if(k.startsWith('text')) {
         state.segments[i][k]=v;
     } else {
