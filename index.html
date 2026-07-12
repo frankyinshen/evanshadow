@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<!-- 影子跟读 Pro V72.2 | build:20250708 -->
+<!-- 影子跟读 Pro V72.4 | build:20260712 | 修复：音频未就绪时seek静默卡死（播单句/下一句无反应） -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>影子跟读 Pro V72.2</title>
+<title>影子跟读 Pro V72.4</title>
 <style>
 :root {
     --primary: #1A73E8; --green: #34A853; --orange: #FBBC04;
@@ -260,7 +260,7 @@ body { font-family: 'Google Sans', Roboto, sans-serif; margin: 0; padding: 0; ba
     🔖 发现上次进度：<strong>《<span id="restore-title">...</span>》</strong> 第 <span id="restore-idx">1</span> 句，点击恢复
 </div>
 <div class="navbar">
-    <div class="nav-title">🎧 影子跟读 V72.2</div>
+    <div class="nav-title">🎧 影子跟读 V72.4</div>
     <div class="mode-switch">
         <button class="mode-btn active" onclick="app.switchView('editor')">编辑</button>
         <button class="mode-btn" onclick="app.switchView('practice')">练习</button>
@@ -692,7 +692,25 @@ const net = {
         throw new Error("下载失败(请检查链接或网络)");
     },
     async fetchBlobSmart(url) { return this.fetchCommon(url, 'blob'); },
-    async fetchTextSmart(url) { return this.fetchCommon(url, 'text'); }
+    async fetchTextSmart(url) { return this.fetchCommon(url, 'text'); },
+    // 等待 <audio> 元素真正加载到"可寻址"状态（readyState >= HAVE_METADATA）。
+    // 刚设置完 src 时，浏览器可能还没消化音频数据；此时若直接 seek 到非 0 的时间点再 play，
+    // 部分浏览器会静默卡住（不报错、不出声）。等 loadedmetadata 触发后再放行可以避免这个问题。
+    // 加超时保护，避免极端情况下永久卡住加载流程。
+    waitAudioReady(audioEl, timeoutMs = 4000) {
+        return new Promise((resolve) => {
+            if (audioEl.readyState >= 1) { resolve(); return; }
+            let done = false;
+            const finish = () => {
+                if (done) return; done = true;
+                audioEl.removeEventListener('loadedmetadata', finish);
+                resolve();
+            };
+            audioEl.addEventListener('loadedmetadata', finish);
+            try { audioEl.load(); } catch(e) {}
+            setTimeout(finish, timeoutMs);
+        });
+    }
 };
 
 // ============================================================
@@ -1119,7 +1137,10 @@ const app = {
             document.getElementById('main-audio').src = state._audioObjectUrl;
             ui.toast("✅ 音频下载成功！正在获取字幕...");
             const lt = async u => u ? await net.fetchTextSmart(u) : null;
+            // 与字幕下载并行等待音频真正可寻址，避免进入练习页后"播单句/下一句"首次点击没反应
+            const audioReadyPromise = net.waitAudioReady(document.getElementById('main-audio'));
             const [t1,t2,t3] = await Promise.all([lt(s1),lt(s2),lt(s3)]);
+            await audioReadyPromise;
             if (t1||t2||t3) {
                 if (t1) { state.segments = parseSRT(t1); if(t2) this.mergeSub(parseSRT(t2),'text2'); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
                 else if (t2) { state.segments = parseSRT(t2).map(s=>({start:s.start,end:s.end,text2:s.text})); if(t3) this.mergeSub(parseSRT(t3),'text3'); }
@@ -1213,7 +1234,9 @@ const app = {
     mergeSeg(i) {
         if (i < state.segments.length-1) {
             state.segments[i].end = state.segments[i+1].end;
-            state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
+            if (state.segments[i].text !== undefined) {
+                state.segments[i].text = (state.segments[i].text + " " + (state.segments[i+1].text||"")).trim();
+            }
             if(state.segments[i].text2) state.segments[i].text2 += " " + (state.segments[i+1].text2||"");
             if(state.segments[i].text3) state.segments[i].text3 += " " + (state.segments[i+1].text3||"");
             state.segments.splice(i+1,1); ui.renderEditor();
@@ -1253,10 +1276,11 @@ const app = {
             app.switchView('practice');
         } else if (mp3) {
             ui.toast('⏳ 正在重新加载音频，请稍候...');
-            net.fetchBlobSmart(mp3).then(ab => {
+            net.fetchBlobSmart(mp3).then(async ab => {
                 if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
                 state._audioObjectUrl = URL.createObjectURL(ab);
                 mainAudio.src = state._audioObjectUrl;
+                await net.waitAudioReady(mainAudio); // 同样预热，避免恢复进度后首次操作没反应
                 ui.updateAudioStatus();
                 ui.toast(`✅ 音频就绪，已恢复到第 ${i + 1} 句`);
                 app.switchView('practice');
@@ -1484,6 +1508,7 @@ const previewMode = {
 
         // 从持久化恢复
         this.loadFromStorage();
+        this._updateEarlyBtn();
 
         // 显示预习视图，隐藏其他视图
         document.getElementById('editor-view').style.display = 'none';
@@ -1545,7 +1570,8 @@ const previewMode = {
     // ── 跳到某句进行预习 ──
     _gotoSentence(idx) {
         if (idx >= state.segments.length) {
-            // 全部预习完
+            // 全部预习完：先把游标归位到"末尾"，避免"继续预习"按钮误判还有剩余句子
+            this.cursorIdx = state.segments.length;
             this._finishListenPhase();
             return;
         }
@@ -2182,29 +2208,42 @@ const aiMode = {
         this.failCount++;
         this.playBeep('fail');
 
-        if (!this.reviewMode && this.failCount >= this.maxFails) {
-            if (!this.failedSentences.includes(state.currIndex)) {
-                this.failedSentences.push(state.currIndex);
-            }
+        if (this.failCount >= this.maxFails) {
             this.failCount = 0;
             this.setStatus('⏭ 跳过', 'fail');
             this.playBeep('skip');
-            this._cycleTimer = setTimeout(() => {
-                if (!this.active) return;
-                if (state.currIndex < state.segments.length - 1) {
-                    state.currIndex++;
-                    this.runCycle();
-                } else {
-                    this.active = false;
-                    this._setBtn('idle');
-                    document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
-                    this.setStatus('完成', 'success');
-                    state.permBlurMode = this._prevPermBlurMode;
-                    if (state.permBlurMode === 'show') state.userBlurState = false;
-                    ui.updatePermButtons(); ui.updatePractice(state.currIndex);
-                    setTimeout(() => this.showRoundComplete(), 800);
+
+            if (this.reviewMode) {
+                // 复习模式：跳过当前这句（仍计入未通过），继续复习队列中的下一句
+                const skippedIdx = this.reviewQueue.shift();
+                if (skippedIdx !== undefined && !this.failedSentences.includes(skippedIdx)) {
+                    this.failedSentences.push(skippedIdx);
                 }
-            }, 1500);
+                this._cycleTimer = setTimeout(() => {
+                    if (!this.active) return;
+                    this.runCycle(); // runCycle 会自动判断 reviewQueue 是否为空并显示"复习完成"
+                }, 1500);
+            } else {
+                if (!this.failedSentences.includes(state.currIndex)) {
+                    this.failedSentences.push(state.currIndex);
+                }
+                this._cycleTimer = setTimeout(() => {
+                    if (!this.active) return;
+                    if (state.currIndex < state.segments.length - 1) {
+                        state.currIndex++;
+                        this.runCycle();
+                    } else {
+                        this.active = false;
+                        this._setBtn('idle');
+                        document.getElementById('ai-mode-bar').classList.remove('ai-running','ai-manual');
+                        this.setStatus('完成', 'success');
+                        state.permBlurMode = this._prevPermBlurMode;
+                        if (state.permBlurMode === 'show') state.userBlurState = false;
+                        ui.updatePermButtons(); ui.updatePractice(state.currIndex);
+                        setTimeout(() => this.showRoundComplete(), 800);
+                    }
+                }, 1500);
+            }
         } else {
             this._cycleTimer = setTimeout(() => {
                 if (!this.active) return;
@@ -2422,7 +2461,9 @@ document.getElementById('audio-file').addEventListener('change', e => {
     if (f) {
         if (state._audioObjectUrl) { URL.revokeObjectURL(state._audioObjectUrl); state._audioObjectUrl = null; }
         state._audioObjectUrl = URL.createObjectURL(f);
-        document.getElementById('main-audio').src = state._audioObjectUrl;
+        const mainAudioEl = document.getElementById('main-audio');
+        mainAudioEl.src = state._audioObjectUrl;
+        try { mainAudioEl.load(); } catch(err) {}
         ui.updateAudioStatus();
     }
 });
